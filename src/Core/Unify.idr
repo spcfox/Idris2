@@ -175,7 +175,8 @@ convertError : {vars : _} ->
 convertError loc env x y
     = do defs <- get Ctxt
          empty <- clearDefs defs
-         throw (CantConvert loc env !(quote empty env x)
+         throw (CantConvert loc (gamma defs)
+                                env !(quote empty env x)
                                     !(quote empty env y))
 
 convertErrorS : {vars : _} ->
@@ -1411,7 +1412,7 @@ retry mode c
                                      pure cs)
                       (\err => do defs <- get Ctxt
                                   empty <- clearDefs defs
-                                  throw (WhenUnifying loc env !(quote empty env x) !(quote empty env y) err))
+                                  throw (WhenUnifying loc (gamma defs) env !(quote empty env x) !(quote empty env y) err))
               Just (MkSeqConstraint loc env xsold ysold)
                   => do defs <- get Ctxt
                         xs <- traverse (continueNF defs env) xsold
@@ -1477,7 +1478,7 @@ retryGuess mode smode (hid, (loc, hname))
                                       ("Search failed at " ++ show rig ++ " for " ++ show hname)
                                       [] (type def)
                             case smode of
-                                 LastChance => throw !(normaliseErr err)
+                                 LastChance => throw err
                                  _ => pure False -- Postpone again
                Guess tm envb [constr] =>
                  do let umode = case smode of
