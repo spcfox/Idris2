@@ -1,0 +1,5 @@
+rm -rf build
+. ../../../testutils.sh
+
+check Issue2354.idr
+check Issue2354-2.idr

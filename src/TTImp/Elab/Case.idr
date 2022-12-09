@@ -390,7 +390,7 @@ checkCase : {vars : _} ->
             Maybe (Glued vars) ->
             Core (Term vars, Glued vars)
 checkCase rig elabinfo nest env fc opts scr scrty_in alts exp
-    = delayElab fc rig env exp CaseBlock $
+    = delayElab fc rig elabinfo env exp CaseBlock $
         do scrty_exp <- case scrty_in of
                              Implicit _ _ => guessScrType alts
                              _ => pure scrty_in
