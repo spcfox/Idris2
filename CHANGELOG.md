@@ -110,6 +110,11 @@
 * Fixed a bug in the totality checker that missed indirect references to
   partial data.
 
+* Refactor the idris2protocols package to depend on fewer Idris2 modules.
+  We can now export the package independently.
+  To avoid confusing tooling about which `.ipkg` to use, the
+  package file is under the newly added `ipkg` sub-directory.
+
 ### Library changes
 
 #### Prelude
