@@ -18,6 +18,9 @@ This CHANGELOG describes the merged but unreleased changes. Please see [CHANGELO
 
 * The `idris2 --help pragma` command now outputs the `%hint` pragma.
 
+* The `idris2 --init` command now ensures that package names are
+  valid Idris2 identifiers.
+
 ### Building/Packaging changes
 
 * The Nix flake's `buildIdris` function now returns a set with `executable` and
