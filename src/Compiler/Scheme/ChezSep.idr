@@ -261,7 +261,7 @@ compileExpr :
   Ref Ctxt Defs ->
   Ref Syn SyntaxInfo ->
   (tmpDir : String) -> (outputDir : String) ->
-  ClosedTerm -> (outfile : String) -> Core (Maybe String)
+  ClosedTerm -> (outfile : String) -> Core String
 compileExpr makeitso c s tmpDir outputDir tm outfile = do
   -- set up paths
   cwd <- currentDir
@@ -301,7 +301,7 @@ compileExpr makeitso c s tmpDir outputDir tm outfile = do
      then makeShWindows chez outShRel appDirSh launchTargetSh
      else makeSh        chez outShRel appDirSh launchTargetSh
   handleFileError outShRel $ chmodRaw outShRel 0o755
-  pure (Just outShRel)
+  pure outShRel
 
 ||| Chez Scheme implementation of the `executeExpr` interface.
 ||| This implementation simply runs the usual compiler, saving it to a temp file, then interpreting it.
@@ -310,9 +310,7 @@ executeExpr :
   Ref Syn SyntaxInfo ->
   (tmpDir : String) -> ClosedTerm -> Core ()
 executeExpr c s tmpDir tm
-    = do Just sh <- compileExpr False c s tmpDir tmpDir tm "_tmpchez"
-            | Nothing => throw (InternalError "compileExpr returned Nothing")
-         system sh
+    = system =<< compileExpr False c s tmpDir tmpDir tm "_tmpchez"
 
 ||| Codegen wrapper for Chez scheme implementation.
 export

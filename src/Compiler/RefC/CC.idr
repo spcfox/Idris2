@@ -63,7 +63,7 @@ compileCObjectFile : {auto c : Ref Ctxt Defs}
                   -> {default False asLibrary : Bool}
                   -> (sourceFile : String)
                   -> (objectFile : String)
-                  -> Core (Maybe String)
+                  -> Core String
 compileCObjectFile {asLibrary} sourceFile objectFile =
   do cc <- coreLift findCC
      cFlags <- coreLift findCFLAGS
@@ -83,14 +83,14 @@ compileCObjectFile {asLibrary} sourceFile objectFile =
 
      log "compiler.refc.cc" 10 runccobj
      system runccobj
-     pure (Just objectFile)
+     pure objectFile
 
 export
 compileCFile : {auto c : Ref Ctxt Defs}
             -> {default False asShared : Bool}
             -> (objectFile : String)
             -> (outFile : String)
-            -> Core (Maybe String)
+            -> Core String
 compileCFile {asShared} objectFile outFile =
   do cc <- coreLift findCC
      cFlags <- coreLift findCFLAGS
@@ -115,4 +115,4 @@ compileCFile {asShared} objectFile outFile =
 
      log "compiler.refc.cc" 10 runcc
      system runcc
-     pure (Just outFile)
+     pure outFile

@@ -983,15 +983,14 @@ generateCSourceFile defs outn =
      log "compiler.refc" 10 $ "Generated C file " ++ outn
 
 export
-compileExpr : UsePhase
-           -> Ref Ctxt Defs
+compileExpr : Ref Ctxt Defs
            -> Ref Syn SyntaxInfo
            -> (tmpDir : String)
            -> (outputDir : String)
            -> ClosedTerm
            -> (outfile : String)
-           -> Core (Maybe String)
-compileExpr ANF c s _ outputDir tm outfile =
+           -> Core String
+compileExpr c s _ outputDir tm outfile =
   do let outn = outputDir </> outfile ++ ".c"
      let outobj = outputDir </> outfile ++ ".o"
      let outexec = outputDir </> outfile
@@ -1001,23 +1000,17 @@ compileExpr ANF c s _ outputDir tm outfile =
      let defs = anf cdata
 
      generateCSourceFile defs outn
-     Just _ <- compileCObjectFile outn outobj
-       | Nothing => pure Nothing
+     ignore $ compileCObjectFile outn outobj
      compileCFile outobj outexec
-
-compileExpr _ _ _ _ _ _ _ = pure Nothing
-
-
 
 export
 executeExpr : Ref Ctxt Defs -> Ref Syn SyntaxInfo ->
               (execDir : String) -> ClosedTerm -> Core ()
 executeExpr c s tmpDir tm = do
   do let outfile = "_tmp_refc"
-     Just _ <- compileExpr ANF c s tmpDir tmpDir tm outfile
-       | Nothing => do coreLift_ $ putStrLn "Error: failed to compile"
+     ignore $ compileExpr c s tmpDir tmpDir tm outfile
      system (tmpDir </> outfile)
 
 export
 codegenRefC : Codegen
-codegenRefC = MkCG (compileExpr ANF) executeExpr Nothing Nothing
+codegenRefC = MkCG compileExpr executeExpr Nothing Nothing

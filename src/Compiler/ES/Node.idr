@@ -50,13 +50,13 @@ compileExpr :
   (outputDir : String) ->
   ClosedTerm ->
   (outfile : String) ->
-  Core (Maybe String)
+  Core String
 compileExpr c s tmpDir outputDir tm outfile =
   do es <- compileToNode c s tm
      let out = outputDir </> outfile
      writeFile out es
      handleFileError out $ chmodRaw out 0o755
-     pure (Just out)
+     pure out
 
 ||| Node implementation of the `executeExpr` interface.
 executeExpr :
