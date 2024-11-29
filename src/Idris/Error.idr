@@ -711,6 +711,8 @@ perrorRaw (TTCError msg)
 perrorRaw (FileErr fname err)
     = pure $ errorDesc (reflow "File error in" <++> pretty0 fname <++> colon)
        <++> byShow err
+perrorRaw (SystemError cmd status) =
+    pure $ reflow "Command" <++> enclose "'" "'" (reflow cmd) <++> "exited with return code" <++> byShow status
 perrorRaw (CantFindPackage fname)
     = pure $ errorDesc (reflow "Can't find package " <++> pretty0 fname)
 perrorRaw (LazyImplicitFunction fc)

@@ -81,11 +81,8 @@ compileCObjectFile {asLibrary} sourceFile objectFile =
               "-I" ++ cDir])
               ++ " " ++ cppFlags ++ " " ++ cFlags
 
-
      log "compiler.refc.cc" 10 runccobj
-     0 <- coreLift $ system runccobj
-       | _ => pure Nothing
-
+     system runccobj
      pure (Just objectFile)
 
 export
@@ -117,7 +114,5 @@ compileCFile {asShared} objectFile outFile =
               ++ " " ++ (unwords [cFlags, ldFlags, ldLibs])
 
      log "compiler.refc.cc" 10 runcc
-     0 <- coreLift $ system runcc
-       | _ => pure Nothing
-
+     system runcc
      pure (Just outFile)

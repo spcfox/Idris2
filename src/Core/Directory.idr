@@ -35,8 +35,7 @@ export
 pkgLocalDirectory : {auto c : Ref Ctxt Defs} -> Core String
 pkgLocalDirectory =
   do d <- getDirs
-     Just srcdir <- coreLift currentDir
-       | Nothing => throw (InternalError "Can't get current directory")
+     srcdir <- currentDir
      pure $ srcdir </> depends_dir d
 
 ------------------------------------------------------------------------

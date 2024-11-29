@@ -54,8 +54,8 @@ compileExpr :
 compileExpr c s tmpDir outputDir tm outfile =
   do es <- compileToNode c s tm
      let out = outputDir </> outfile
-     Core.writeFile out es
-     coreLift_ $ chmodRaw out 0o755
+     writeFile out es
+     handleFileError out $ chmodRaw out 0o755
      pure (Just out)
 
 ||| Node implementation of the `executeExpr` interface.
@@ -66,10 +66,10 @@ executeExpr :
 executeExpr c s tmpDir tm =
   do let outn = tmpDir </> "_tmp_node.js"
      js <- compileToNode c s tm
-     Core.writeFile outn js
+     writeFile outn js
      node <- coreLift findNode
      quoted_node <- pure $ "\"" ++ node ++ "\"" -- Windows often have a space in the path.
-     coreLift_ $ system (quoted_node ++ " " ++ outn)
+     system (quoted_node ++ " " ++ outn)
 
 ||| Codegen wrapper for Node implementation.
 export

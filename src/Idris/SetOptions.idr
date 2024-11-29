@@ -227,8 +227,7 @@ dirOption dirs Prefix
 
 findIpkg : {auto c : Ref Ctxt Defs} -> Core (List String)
 findIpkg =
-  do Just srcdir <- coreLift currentDir
-       | Nothing => throw (InternalError "Can't get current directory")
+  do srcdir <- currentDir
      Right fs <- coreLift $ listDir srcdir
        | Left err => pure []
      pure $ filter (".ipkg" `isSuffixOf`) fs

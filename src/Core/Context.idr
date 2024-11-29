@@ -799,6 +799,7 @@ HasNames Error where
   full gam (GenericMsgSol fc x y z) = pure (GenericMsgSol fc x y z)
   full gam (TTCError x) = pure (TTCError x)
   full gam (FileErr x y) = pure (FileErr x y)
+  full gam (SystemError x y) = pure (SystemError x y)
   full gam (CantFindPackage x) = pure (CantFindPackage x)
   full gam (LazyImplicitFunction fc) = pure (LazyImplicitFunction fc)
   full gam (LazyPatternVar fc) = pure (LazyPatternVar fc)
@@ -897,6 +898,7 @@ HasNames Error where
   resolved gam (GenericMsgSol fc x y z) = pure (GenericMsgSol fc x y z)
   resolved gam (TTCError x) = pure (TTCError x)
   resolved gam (FileErr x y) = pure (FileErr x y)
+  resolved gam (SystemError x y) = pure (SystemError x y)
   resolved gam (CantFindPackage x) = pure (CantFindPackage x)
   resolved gam (LazyImplicitFunction fc) = pure (LazyImplicitFunction fc)
   resolved gam (LazyPatternVar fc) = pure (LazyPatternVar fc)
@@ -2182,16 +2184,12 @@ export
 setWorkingDir : {auto c : Ref Ctxt Defs} -> String -> Core ()
 setWorkingDir dir
     = do coreLift_ $ changeDir dir
-         Just cdir <- coreLift $ currentDir
-              | Nothing => throw (InternalError "Can't get current directory")
+         cdir <- currentDir
          update Ctxt { options->dirs->working_dir := cdir }
 
 export
 getWorkingDir : Core String
-getWorkingDir
-    = do Just d <- coreLift $ currentDir
-              | Nothing => throw (InternalError "Can't get current directory")
-         pure d
+getWorkingDir = currentDir
 
 export
 setExtraDirs : {auto c : Ref Ctxt Defs} -> List String -> Core ()
