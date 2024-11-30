@@ -408,7 +408,7 @@ executeExpr :
   Ref Syn SyntaxInfo ->
   (tmpDir : String) -> ClosedTerm -> Core ()
 executeExpr c s tmpDir tm
-    = system =<< compileExpr c s tmpDir tmpDir tm "_tmpgambit" -- TODO: on windows, should add exe extension
+    = coreLift_ . system =<< compileExpr c s tmpDir tmpDir tm "_tmpgambit" -- TODO: on windows, should add exe extension
 
 export
 codegenGambit : Codegen

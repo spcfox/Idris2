@@ -1009,7 +1009,7 @@ executeExpr : Ref Ctxt Defs -> Ref Syn SyntaxInfo ->
 executeExpr c s tmpDir tm = do
   do let outfile = "_tmp_refc"
      ignore $ compileExpr c s tmpDir tmpDir tm outfile
-     system (tmpDir </> outfile)
+     coreLift_ $ system (tmpDir </> outfile)
 
 export
 codegenRefC : Codegen

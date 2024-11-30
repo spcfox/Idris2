@@ -69,7 +69,7 @@ executeExpr c s tmpDir tm =
      writeFile outn js
      node <- coreLift findNode
      quoted_node <- pure $ "\"" ++ node ++ "\"" -- Windows often have a space in the path.
-     system (quoted_node ++ " " ++ outn)
+     coreLift_ $ system (quoted_node ++ " " ++ outn)
 
 ||| Codegen wrapper for Node implementation.
 export

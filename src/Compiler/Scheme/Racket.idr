@@ -464,7 +464,7 @@ executeExpr :
   Ref Syn SyntaxInfo ->
   (tmpDir : String) -> ClosedTerm -> Core ()
 executeExpr c s tmpDir tm
-    = system =<< compileExpr False c s tmpDir tmpDir tm "_tmpracket"
+    = coreLift_ . system =<< compileExpr False c s tmpDir tmpDir tm "_tmpracket"
 
 export
 codegenRacket : Codegen

@@ -310,7 +310,7 @@ executeExpr :
   Ref Syn SyntaxInfo ->
   (tmpDir : String) -> ClosedTerm -> Core ()
 executeExpr c s tmpDir tm
-    = system =<< compileExpr False c s tmpDir tmpDir tm "_tmpchez"
+    = coreLift_ . system =<< compileExpr False c s tmpDir tmpDir tm "_tmpchez"
 
 ||| Codegen wrapper for Chez scheme implementation.
 export
