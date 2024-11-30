@@ -534,7 +534,7 @@ compileToSO prof chez appDirRel outSsAbs
                     show outSsAbs ++ "))"
          writeFile tmpFileAbs build
          handleFileError tmpFileAbs $ chmodRaw tmpFileAbs 0o755
-         system [chez, "--script", tmpFileAbs]
+         safeSystem [chez, "--script", tmpFileAbs]
 
 ||| Compile a TT expression to Chez Scheme using incremental module builds
 compileToSSInc : Ref Ctxt Defs ->
@@ -647,9 +647,8 @@ compileExpr makeitso c s tmpDir outputDir tm outfile
 executeExpr :
   Ref Ctxt Defs ->
   Ref Syn SyntaxInfo ->
-  (tmpDir : String) -> ClosedTerm -> Core ()
-executeExpr c s tmpDir tm
-    = coreLift_ . system =<< compileExpr False c s tmpDir tmpDir tm "_tmpchez"
+  (tmpDir : String) -> ClosedTerm -> Core Int
+executeExpr c s tmpDir tm = system =<< compileExpr False c s tmpDir tmpDir tm "_tmpchez"
 
 incCompile :
   Ref Ctxt Defs ->
@@ -687,7 +686,7 @@ incCompile c s sourceFile
                            "[compile-file-message #f]) (compile-file " ++
                           show ssFile ++ "))"
                writeFile tmpFileAbs build
-               system [chez, "--script", tmpFileAbs]
+               safeSystem [chez, "--script", tmpFileAbs]
                pure (soFilename, mapMaybe fst fgndefs)
 
 ||| Codegen wrapper for Chez scheme implementation.

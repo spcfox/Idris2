@@ -974,13 +974,21 @@ handleExitCode _ 0 = pure ()
 handleExitCode cmd status = throw $ SystemError cmd status
 
 export
-system : String -> Core ()
-system cmd = coreLift (system cmd) >>= handleExitCode cmd
+system : String -> Core Int
+system = coreLift . system
+
+export
+safeSystem : String -> Core ()
+safeSystem cmd = system cmd >>= handleExitCode cmd
 
 namespace Escaped
   export
-  system : List String -> Core ()
-  system cmd = coreLift (system cmd) >>= handleExitCode (escapeCmd cmd)
+  system : List String -> Core Int
+  system = coreLift . system
+
+  export
+  safeSystem : List String -> Core ()
+  safeSystem cmd = system cmd >>= handleExitCode (escapeCmd cmd)
 
 namespace Functor
 

@@ -99,7 +99,7 @@ startChezWinSh chez appDirSh targetSh = """
 
 -- TODO: parallelise this
 compileChezLibraries : (chez : String) -> (libDir : String) -> (ssFiles : List String) -> Core ()
-compileChezLibraries chez libDir ssFiles = system
+compileChezLibraries chez libDir ssFiles = safeSystem
   [ "echo"
   , unwords
     [ "'(parameterize ([optimize-level 3] [compile-file-message #f]) (compile-library " ++ build (chezString ssFile) ++ "))'"
@@ -112,7 +112,7 @@ compileChezLibraries chez libDir ssFiles = system
   ]
 
 compileChezLibrary : (chez : String) -> (libDir : String) -> (ssFile : String) -> Core ()
-compileChezLibrary chez libDir ssFile = system
+compileChezLibrary chez libDir ssFile = safeSystem
   [ "echo"
   , "'(parameterize ([optimize-level 3] [compile-file-message #f]) (compile-library " ++ build (chezString ssFile) ++ "))'"
   , "'(delete-file " ++ build (chezString ssFile) ++ ")'"
@@ -120,7 +120,7 @@ compileChezLibrary chez libDir ssFile = system
   ]
 
 compileChezProgram : (chez : String) -> (libDir : String) -> (ssFile : String) -> Core ()
-compileChezProgram chez libDir ssFile = system
+compileChezProgram chez libDir ssFile = safeSystem
   [ "echo"
   , "'(parameterize ([optimize-level 3] [compile-file-message #f]) (compile-program " ++ build (chezString ssFile) ++ "))'"
   , "'(delete-file " ++ build (chezString ssFile) ++ ")'"
@@ -138,7 +138,7 @@ chezLibraryName : CompilationUnit def -> String
 chezLibraryName cu = chezNS (foldl1 min cu.namespaces)
 
 touch : String -> Core ()
-touch s = system ["touch", s]
+touch s = safeSystem ["touch", s]
 
 record ChezLib where
   constructor MkChezLib
@@ -308,9 +308,8 @@ compileExpr makeitso c s tmpDir outputDir tm outfile = do
 executeExpr :
   Ref Ctxt Defs ->
   Ref Syn SyntaxInfo ->
-  (tmpDir : String) -> ClosedTerm -> Core ()
-executeExpr c s tmpDir tm
-    = coreLift_ . system =<< compileExpr False c s tmpDir tmpDir tm "_tmpchez"
+  (tmpDir : String) -> ClosedTerm -> Core Int
+executeExpr c s tmpDir tm = system =<< compileExpr False c s tmpDir tmpDir tm "_tmpchez"
 
 ||| Codegen wrapper for Chez scheme implementation.
 export

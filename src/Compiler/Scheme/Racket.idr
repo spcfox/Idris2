@@ -451,7 +451,7 @@ compileExpr mkexec c s tmpDir outputDir tm outfile
          racket <- coreLift findRacket
 
          when mkexec $ logTime 1 "Build racket" $
-             system $ raco ++ ["-o", outBinAbs, outRktAbs]
+             safeSystem $ raco ++ ["-o", outBinAbs, outRktAbs]
 
          -- TODO: add launcher script
          let outShRel = outputDir </> outfile
@@ -462,9 +462,8 @@ compileExpr mkexec c s tmpDir outputDir tm outfile
 executeExpr :
   Ref Ctxt Defs ->
   Ref Syn SyntaxInfo ->
-  (tmpDir : String) -> ClosedTerm -> Core ()
-executeExpr c s tmpDir tm
-    = coreLift_ . system =<< compileExpr False c s tmpDir tmpDir tm "_tmpracket"
+  (tmpDir : String) -> ClosedTerm -> Core Int
+executeExpr c s tmpDir tm = system =<< compileExpr False c s tmpDir tmpDir tm "_tmpracket"
 
 export
 codegenRacket : Codegen

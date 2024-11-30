@@ -82,7 +82,7 @@ compileCObjectFile {asLibrary} sourceFile objectFile =
               ++ " " ++ cppFlags ++ " " ++ cFlags
 
      log "compiler.refc.cc" 10 runccobj
-     system runccobj
+     safeSystem runccobj
      pure objectFile
 
 export
@@ -114,5 +114,5 @@ compileCFile {asShared} objectFile outFile =
               ++ " " ++ (unwords [cFlags, ldFlags, ldLibs])
 
      log "compiler.refc.cc" 10 runcc
-     system runcc
+     safeSystem runcc
      pure outFile

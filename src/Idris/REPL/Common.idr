@@ -212,7 +212,7 @@ public export
 data REPLResult : Type where
   Done : REPLResult
   REPLError : Doc IdrisAnn -> REPLResult
-  Executed : PTerm -> REPLResult
+  Executed : PTerm -> Int -> REPLResult
   RequestedHelp : REPLResult
   RequestedDetails : String -> REPLResult
   Evaluated : IPTerm -> Maybe IPTerm -> REPLResult

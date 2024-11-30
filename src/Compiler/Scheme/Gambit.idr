@@ -400,15 +400,14 @@ compileExpr c s tmpDir outputDir tm outfile
                  Nothing => gscBackend ++ ["-exe", "-cc-options", "-Wno-implicit-function-declaration", "-ld-options"] ++ libsfile
                  Just _ => ["-c"]
          let cmd = gsc ++ gscCompileOpts ++ ["-o", execPath, srcPath]
-         system cmd
+         safeSystem cmd
          pure execPath
 
 executeExpr :
   Ref Ctxt Defs ->
   Ref Syn SyntaxInfo ->
-  (tmpDir : String) -> ClosedTerm -> Core ()
-executeExpr c s tmpDir tm
-    = coreLift_ . system =<< compileExpr c s tmpDir tmpDir tm "_tmpgambit" -- TODO: on windows, should add exe extension
+  (tmpDir : String) -> ClosedTerm -> Core Int
+executeExpr c s tmpDir tm = system =<< compileExpr c s tmpDir tmpDir tm "_tmpgambit" -- TODO: on windows, should add exe extension
 
 export
 codegenGambit : Codegen
