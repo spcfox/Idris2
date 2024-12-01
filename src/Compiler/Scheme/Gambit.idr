@@ -23,7 +23,6 @@ import Data.Vect
 import Idris.Env
 import Idris.Syntax
 
-import System
 import System.Directory
 
 %default covering
@@ -406,7 +405,7 @@ compileExpr c s tmpDir outputDir tm outfile
 executeExpr :
   Ref Ctxt Defs ->
   Ref Syn SyntaxInfo ->
-  (tmpDir : String) -> ClosedTerm -> Core Int
+  (tmpDir : String) -> ClosedTerm -> Core ExitCode
 executeExpr c s tmpDir tm = system =<< compileExpr c s tmpDir tmpDir tm "_tmpgambit" -- TODO: on windows, should add exe extension
 
 export

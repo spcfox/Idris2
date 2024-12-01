@@ -4,8 +4,11 @@ import Core.Context.Context
 import Core.Env
 import Core.TT
 
+import Data.Bool
 import Data.List1
 import Data.Vect
+
+import Decidable.Equality
 
 import Libraries.Data.IMaybe
 import Libraries.Text.PrettyPrint.Prettyprinter
@@ -14,7 +17,7 @@ import Libraries.Text.PrettyPrint.Prettyprinter.Doc
 import Libraries.Data.Tap
 
 import public Data.IORef
-import System
+import public System
 import System.Directory
 import System.File
 
@@ -969,13 +972,20 @@ export
 readFile : (fname : String) -> Core String
 readFile fname = handleFileError fname $ readFile fname
 
-handleExitCode : String -> Int -> Core ()
-handleExitCode _ 0 = pure ()
-handleExitCode cmd status = throw $ SystemError cmd status
+handleExitCode : String -> ExitCode -> Core ()
+handleExitCode _ ExitSuccess = pure ()
+handleExitCode cmd (ExitFailure status) = throw $ SystemError cmd status
+
+Cast Int ExitCode where
+  cast status = case status `decEq` 0 of
+    Yes x => ExitSuccess
+    No contra =>
+      -- TODO: create named theorem instead believe_me
+      ExitFailure status @{eqToSo $ cong not $ notTrueIsFalse $ contra . believe_me}
 
 export
-system : String -> Core Int
-system = coreLift . system
+system : String -> Core ExitCode
+system cmd = coreLift $ cast <$> system cmd
 
 export
 safeSystem : String -> Core ()
@@ -983,8 +993,8 @@ safeSystem cmd = system cmd >>= handleExitCode cmd
 
 namespace Escaped
   export
-  system : List String -> Core Int
-  system = coreLift . system
+  system : List String -> Core ExitCode
+  system cmd = coreLift $ cast <$> system cmd
 
   export
   safeSystem : List String -> Core ()

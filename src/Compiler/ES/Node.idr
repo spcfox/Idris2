@@ -13,7 +13,6 @@ import Core.Options
 import Core.TT
 import Libraries.Utils.Path
 
-import System
 import System.File.Permissions
 
 import Data.Maybe
@@ -62,7 +61,7 @@ compileExpr c s tmpDir outputDir tm outfile =
 executeExpr :
   Ref Ctxt Defs ->
   Ref Syn SyntaxInfo ->
-  (tmpDir : String) -> ClosedTerm -> Core Int
+  (tmpDir : String) -> ClosedTerm -> Core ExitCode
 executeExpr c s tmpDir tm =
   do out <- compileExpr c s tmpDir tmpDir tm "_tmp_node.js"
      node <- coreLift findNode
