@@ -3,12 +3,17 @@ module Idris.CommandLine
 import Idris.Env
 import Idris.Version
 
+import Core.Core
+import Core.FC
+import Core.Name
 import Core.Options
 
 import Data.List
 import Data.Maybe
 import Data.String
 import Data.Either
+
+import Parser.Source
 
 import System
 
@@ -75,7 +80,7 @@ data CLOpt
    ||| The output file from the code generator
   OutputFile String |
    ||| Execute a given function after checking the source file
-  ExecFn String |
+  ExecFn Name |
    ||| Use a specific code generator
   SetCG String |
    ||| Pass a directive to the code generator
@@ -206,11 +211,11 @@ Show OptType where
 
 ActType : List OptType -> Type
 ActType [] = List CLOpt
-ActType (Required a :: as) = String -> ActType as
-ActType (RequiredNat a :: as) = Nat -> ActType as
-ActType (RequiredLogLevel a :: as) = LogLevel -> ActType as
-ActType (Optional a :: as) = Maybe String -> ActType as
-ActType (AutoNat a :: as) = Maybe Nat -> ActType as
+ActType (Required a :: as) = String -> Either String (ActType as)
+ActType (RequiredNat a :: as) = Nat -> Either String (ActType as)
+ActType (RequiredLogLevel a :: as) = LogLevel -> Either String (ActType as)
+ActType (Optional a :: as) = Maybe String -> Either String (ActType as)
+ActType (AutoNat a :: as) = Maybe Nat -> Either String (ActType as)
 
 record OptDesc where
   constructor MkOpt
@@ -228,27 +233,27 @@ showDefault x = "(default " ++ show x ++ ")"
 options : List OptDesc
 options = [MkOpt ["--check", "-c"] [] [CheckOnly]
               (Just "Exit after checking source file"),
-           MkOpt ["--output", "-o"] [Required "file"] (\f => [OutputFile f, Quiet])
+           MkOpt ["--output", "-o"] [Required "file"] (\f => pure [OutputFile f, Quiet])
               (Just "Specify output file"),
-           MkOpt ["--exec", "-x"] [Required "name"] (\f => [ExecFn f, Quiet])
+           MkOpt ["--exec", "-x"] [Required "name"] (\f => pure [ExecFn !(parseName f), Quiet])
               (Just "Execute function after checking source file"),
            MkOpt ["--no-prelude"] [] [NoPrelude]
               (Just "Don't implicitly import Prelude"),
-           MkOpt ["--codegen", "--cg"] [Required "backend"] (\f => [SetCG f])
+           MkOpt ["--codegen", "--cg"] [Required "backend"] (\f => pure [SetCG f])
               (Just $ "Set code generator " ++ showDefault (codegen defaultSession)),
-           MkOpt ["--incremental-cg", "--inc"] [Required "backend"] (\f => [IncrementalCG f])
+           MkOpt ["--incremental-cg", "--inc"] [Required "backend"] (\f => pure [IncrementalCG f])
              (Just "Incremental code generation on given backend"),
            MkOpt ["--whole-program", "--wp"] [] [WholeProgram]
              (Just "Use whole program compilation (overrides --inc)"),
-           MkOpt ["--directive"] [Required "directive"] (\d => [Directive d])
+           MkOpt ["--directive"] [Required "directive"] (\d => pure [Directive d])
               (Just $ "Pass a directive to the current code generator"),
-           MkOpt ["--package", "-p"] [Required "package"] (\f => [PkgPath f])
+           MkOpt ["--package", "-p"] [Required "package"] (\f => pure [PkgPath f])
               (Just "Add a package as a dependency"),
-           MkOpt ["--source-dir"] [Required "dir"] (\d => [SourceDir d])
+           MkOpt ["--source-dir"] [Required "dir"] (\d => pure [SourceDir d])
               (Just $ "Set source directory"),
-           MkOpt ["--build-dir"] [Required "dir"] (\d => [BuildDir d])
+           MkOpt ["--build-dir"] [Required "dir"] (\d => pure [BuildDir d])
               (Just $ "Set build directory"),
-           MkOpt ["--output-dir"] [Required "dir"] (\d => [OutputDir d])
+           MkOpt ["--output-dir"] [Required "dir"] (\d => pure [OutputDir d])
               (Just $ "Set output directory"),
            MkOpt ["--profile"] [] [Profile]
               (Just "Generate profile data when compiling, if supported"),
@@ -281,32 +286,32 @@ options = [MkOpt ["--check", "-c"] [] [CheckOnly]
 
            optSeparator,
            MkOpt ["--init"] [Optional "package file"]
-              (\ f => [Package Init f])
+              (\f => pure [Package Init f])
               (Just "Interactively initialise a new project"),
            MkOpt ["--dump-ipkg-json"] [Optional "package file"]
-              (\ f => [Package DumpJson f])
+              (\f => pure [Package DumpJson f])
               (Just "Dump an Idris2 package file in the JSON format"),
            MkOpt ["--dump-installdir"] [Optional "package file"]
-              (\ f => [Package DumpInstallDir f])
+              (\f => pure [Package DumpInstallDir f])
               (Just "Dump the location where the given package will be installed"),
            MkOpt ["--build"] [Optional "package file"]
-               (\f => [Package Build f])
+              (\f => pure [Package Build f])
               (Just "Build modules/executable for the given package"),
            MkOpt ["--install"] [Optional "package file"]
-              (\f => [Package Install f])
+              (\f => pure [Package Install f])
               (Just "Install the given package"),
            MkOpt ["--install-with-src"] [Optional "package file"]
-              (\f => [Package InstallWithSrc f])
+              (\f => pure [Package InstallWithSrc f])
               (Just "Install the given package"),
            MkOpt ["--mkdoc"] [Optional "package file"]
-              (\f => [Package MkDoc f])
+              (\f => pure [Package MkDoc f])
               (Just "Build documentation for the given package"),
            MkOpt ["--typecheck"] [Optional "package file"]
-              (\f => [Package Typecheck f])
+              (\f => pure [Package Typecheck f])
               (Just "Typechecks the given package without code generation"),
-           MkOpt ["--clean"] [Optional "package file"] (\f => [Package Clean f])
+           MkOpt ["--clean"] [Optional "package file"] (\f => pure [Package Clean f])
               (Just "Clean intermediate files/executables for the given package"),
-           MkOpt ["--repl"] [Optional "package file"] (\f => [Package REPL f])
+           MkOpt ["--repl"] [Optional "package file"] (\f => pure [Package REPL f])
               (Just "Build the given package and launch a REPL instance."),
            MkOpt ["--find-ipkg"] [] [FindIPKG]
               (Just "Find and use an .ipkg file in a parent directory."),
@@ -317,13 +322,13 @@ options = [MkOpt ["--check", "-c"] [] [CheckOnly]
            MkOpt ["--ide-mode"] [] [IdeMode]
               (Just "Run the REPL with machine-readable syntax"),
            MkOpt ["--ide-mode-socket"] [Optional "host:port"]
-                 (\hp => [IdeModeSocket $ fromMaybe (formatSocketAddress (ideSocketModeAddress [])) hp])
+                 (\hp => pure [IdeModeSocket $ fromMaybe (formatSocketAddress (ideSocketModeAddress [])) hp])
               (Just $ "Run the ide socket mode on given host and port (random open socket by default)"),
 
            optSeparator,
-           MkOpt ["--client"] [Required "REPL command"] (\f => [RunREPL f])
+           MkOpt ["--client"] [Required "REPL command"] (\f => pure [RunREPL f])
               (Just "Run a REPL command then quit immediately"),
-           MkOpt ["--timing"] [AutoNat "level"] (\ n => [Timing n])
+           MkOpt ["--timing"] [AutoNat "level"] (\n => pure [Timing n])
               (Just "Display timing logs"),
 
            optSeparator,
@@ -331,7 +336,7 @@ options = [MkOpt ["--check", "-c"] [] [CheckOnly]
               (Just "Suppress the banner"),
            MkOpt ["--quiet", "-q"] [] [Quiet]
               (Just "Quiet mode; display fewer messages"),
-           MkOpt ["--console-width"] [AutoNat "console width"] (\l => [ConsoleWidth l])
+           MkOpt ["--console-width"] [AutoNat "console width"] (\l => pure [ConsoleWidth l])
               (Just "Width for console output (0 for unbounded) (auto by default)"),
            MkOpt ["--show-machine-names"] [] [ShowMachineNames]
               (Just "Show machine names when pretty printing"),
@@ -343,7 +348,7 @@ options = [MkOpt ["--check", "-c"] [] [CheckOnly]
               (Just "Disables colored console output"),
            MkOpt ["--verbose"] [] [Verbose]
               (Just "Verbose mode (default)"),
-           MkOpt ["--log"] [RequiredLogLevel "log level"] (\l => [Logging l])
+           MkOpt ["--log"] [RequiredLogLevel "log level"] (\l => pure [Logging l])
               (Just "Global log level (0 by default)"),
 
            optSeparator,
@@ -351,25 +356,25 @@ options = [MkOpt ["--check", "-c"] [] [CheckOnly]
               (Just "Display version string"),
            MkOpt ["--ttc-version"] [] [TTCVersion]
               (Just "Display TTC version string"),
-           MkOpt ["--help", "-h", "-?"] [Optional "topic"] (\ tp => [Help (tp >>= recogniseHelpTopic)])
+           MkOpt ["--help", "-h", "-?"] [Optional "topic"] (\tp => pure [Help (tp >>= recogniseHelpTopic)])
               (Just "Display help text"),
 
            -- Internal debugging options
-           MkOpt ["--yaffle", "--ttimp"] [Required "ttimp file"] (\f => [Yaffle f])
+           MkOpt ["--yaffle", "--ttimp"] [Required "ttimp file"] (\f => pure [Yaffle f])
               Nothing, -- run ttimp REPL rather than full Idris
-           MkOpt ["--ttm" ] [Required "ttimp file"] (\f => [Metadata f])
+           MkOpt ["--ttm" ] [Required "ttimp file"] (\f => pure [Metadata f])
               Nothing, -- dump metadata information from the given ttm file
-           MkOpt ["--dumpcases"] [Required "output file"] (\f => [DumpCases f])
+           MkOpt ["--dumpcases"] [Required "output file"] (\f => pure [DumpCases f])
               Nothing, -- dump case trees to the given file
-           MkOpt ["--dumplifted"] [Required "output file"] (\f => [DumpLifted f])
+           MkOpt ["--dumplifted"] [Required "output file"] (\f => pure [DumpLifted f])
               Nothing, -- dump lambda lifted trees to the given file
-           MkOpt ["--dumpanf"] [Required "output file"] (\f => [DumpANF f])
+           MkOpt ["--dumpanf"] [Required "output file"] (\f => pure [DumpANF f])
               Nothing, -- dump ANF to the given file
-           MkOpt ["--dumpvmcode"] [Required "output file"] (\f => [DumpVMCode f])
+           MkOpt ["--dumpvmcode"] [Required "output file"] (\f => pure [DumpVMCode f])
               Nothing, -- dump VM Code to the given file
            MkOpt ["--debug-elab-check"] [] [DebugElabCheck]
               Nothing, -- do more elaborator checks (currently conversion in LinearCheck)
-           MkOpt ["--alt-error-count"] [RequiredNat "alternative count"] (\c => [AltErrorCount c])
+           MkOpt ["--alt-error-count"] [RequiredNat "alternative count"] (\c => pure [AltErrorCount c])
               (Just "Outputs errors for the given number of alternative parsing attempts."),
 
            optSeparator,
@@ -377,18 +382,21 @@ options = [MkOpt ["--check", "-c"] [] [CheckOnly]
            MkOpt ["--bash-completion"]
                  [ Required "input"
                  , Required "previous input"]
-                 (\w1,w2 => [BashCompletion w1 w2])
+                 (\w1 => pure $ \w2 => pure [BashCompletion w1 w2])
                  (Just "Print bash autocompletion information"),
            MkOpt ["--bash-completion-script"]
                  [ Required "function name" ]
-                 (\n => [BashCompletionScript n])
+                 (\n => pure [BashCompletionScript n])
                  (Just "Generate a bash script to activate autocompletion for Idris2"),
            -- zsh completion
            MkOpt ["--zsh-completion-script"]
                  [ Required "function name" ]
-                 (\n => [ZshCompletionScript n])
+                 (\n => pure [ZshCompletionScript n])
                  (Just "Generate a zsh script (via bashcompinit) to activate autocompletion for Idris2")
            ]
+  where
+    parseName : String -> Either String Name
+    parseName inp = bimap (assert_total show) (snd . snd) $ runParser (Virtual Interactive) Nothing inp name
 
 optShow : OptDesc -> (String, Maybe String)
 optShow (MkOpt [] _ _ _) = ("", Just "")
@@ -453,30 +461,30 @@ processArgs flag (opt@(RequiredNat _) :: as) [] f =
 processArgs flag (opt@(RequiredLogLevel _) :: as) [] f =
   Left $ "Missing required argument " ++ show opt ++ " for flag " ++ flag
 processArgs flag (Optional a :: as) [] f =
-  processArgs flag as [] (f Nothing)
+  processArgs flag as [] !(f Nothing)
 processArgs flag (opt@(AutoNat _) :: as) [] f =
   Left $ "Missing required argument " ++ show opt ++ " for flag " ++ flag
 -- Happy cases
 processArgs flag (RequiredNat a :: as) (x :: xs) f =
   do arg <- maybeToEither ("Expected Nat argument " ++ show x ++ " for flag " ++ flag)
                           (parseInteger x >>= checkNat)
-     processArgs flag as xs (f arg)
+     processArgs flag as xs !(f arg)
 processArgs flag (RequiredLogLevel a :: as) (x :: xs) f =
   do arg <- maybeToEither ("Expected LogLevel argument " ++ show x ++ " for flag " ++ flag)
                           (parseLogLevel x)
-     processArgs flag as xs (f arg)
+     processArgs flag as xs !(f arg)
 processArgs flag (AutoNat a :: as) ("auto" :: xs) f =
-  processArgs flag as xs (f Nothing)
+  processArgs flag as xs !(f Nothing)
 processArgs flag (AutoNat a :: as) (x :: xs) f =
   do arg <- maybeToEither ("Expected Nat or \"auto\" argument " ++ show x ++ " for flag " ++ flag)
                           (parseInteger x >>= checkNat)
-     processArgs flag as xs (f (Just arg))
+     processArgs flag as xs !(f (Just arg))
 processArgs flag (Required a :: as) (x :: xs) f =
-  processArgs flag as xs (f x)
+  processArgs flag as xs !(f x)
 processArgs flag (Optional a :: as) (x :: xs) f =
   if isPrefixOf "-" x
-    then processArgs flag as (x :: xs) (f Nothing)
-    else processArgs flag as xs (f $ Just x)
+    then processArgs flag as (x :: xs) !(f Nothing)
+    else processArgs flag as xs !(f $ Just x)
 
 matchFlag : (d : OptDesc) -> List String ->
             Either String (Maybe (List CLOpt, List String))

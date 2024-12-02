@@ -1,0 +1,8 @@
+Hi, XX!
+------
+Hi, YY!
+------
+Error: Ambiguous elaboration. Possible results:
+    Main.XX.main
+    Main.YY.main
+
