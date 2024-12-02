@@ -296,8 +296,9 @@ data ExitCode : Type where
 
 export
 Cast Int ExitCode where
-  cast 0 = ExitSuccess
-  cast code = ExitFailure code @{believe_me Oh}
+  cast code with (code == 0) proof prf
+    _ | True = ExitSuccess
+    _ | False = ExitFailure code @{rewrite prf in Oh}
 
 export
 Cast ExitCode Int where
