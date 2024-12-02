@@ -3,12 +3,17 @@ module Idris.CommandLine
 import Idris.Env
 import Idris.Version
 
+import Core.Core
+import Core.FC
+import Core.Name
 import Core.Options
 
 import Data.List
 import Data.Maybe
 import Data.String
 import Data.Either
+
+import Parser.Source
 
 import System
 
@@ -75,7 +80,7 @@ data CLOpt
    ||| The output file from the code generator
   OutputFile String |
    ||| Execute a given function after checking the source file
-  ExecFn String |
+  ExecFn Name |
    ||| Use a specific code generator
   SetCG String |
    ||| Pass a directive to the code generator
@@ -230,7 +235,7 @@ options = [MkOpt ["--check", "-c"] [] [CheckOnly]
               (Just "Exit after checking source file"),
            MkOpt ["--output", "-o"] [Required "file"] (\f => [OutputFile f, Quiet])
               (Just "Specify output file"),
-           MkOpt ["--exec", "-x"] [Required "name"] (\f => [ExecFn f, Quiet])
+           MkOpt ["--exec", "-x"] [Required "name"] (\f => [ExecFn $ parseName f, Quiet])
               (Just "Execute function after checking source file"),
            MkOpt ["--no-prelude"] [] [NoPrelude]
               (Just "Don't implicitly import Prelude"),
@@ -281,16 +286,16 @@ options = [MkOpt ["--check", "-c"] [] [CheckOnly]
 
            optSeparator,
            MkOpt ["--init"] [Optional "package file"]
-              (\ f => [Package Init f])
+              (\f => [Package Init f])
               (Just "Interactively initialise a new project"),
            MkOpt ["--dump-ipkg-json"] [Optional "package file"]
-              (\ f => [Package DumpJson f])
+              (\f => [Package DumpJson f])
               (Just "Dump an Idris2 package file in the JSON format"),
            MkOpt ["--dump-installdir"] [Optional "package file"]
-              (\ f => [Package DumpInstallDir f])
+              (\f => [Package DumpInstallDir f])
               (Just "Dump the location where the given package will be installed"),
            MkOpt ["--build"] [Optional "package file"]
-               (\f => [Package Build f])
+              (\f => [Package Build f])
               (Just "Build modules/executable for the given package"),
            MkOpt ["--install"] [Optional "package file"]
               (\f => [Package Install f])
@@ -323,7 +328,7 @@ options = [MkOpt ["--check", "-c"] [] [CheckOnly]
            optSeparator,
            MkOpt ["--client"] [Required "REPL command"] (\f => [RunREPL f])
               (Just "Run a REPL command then quit immediately"),
-           MkOpt ["--timing"] [AutoNat "level"] (\ n => [Timing n])
+           MkOpt ["--timing"] [AutoNat "level"] (\n => [Timing n])
               (Just "Display timing logs"),
 
            optSeparator,
@@ -351,7 +356,7 @@ options = [MkOpt ["--check", "-c"] [] [CheckOnly]
               (Just "Display version string"),
            MkOpt ["--ttc-version"] [] [TTCVersion]
               (Just "Display TTC version string"),
-           MkOpt ["--help", "-h", "-?"] [Optional "topic"] (\ tp => [Help (tp >>= recogniseHelpTopic)])
+           MkOpt ["--help", "-h", "-?"] [Optional "topic"] (\tp => [Help (tp >>= recogniseHelpTopic)])
               (Just "Display help text"),
 
            -- Internal debugging options
@@ -377,7 +382,7 @@ options = [MkOpt ["--check", "-c"] [] [CheckOnly]
            MkOpt ["--bash-completion"]
                  [ Required "input"
                  , Required "previous input"]
-                 (\w1,w2 => [BashCompletion w1 w2])
+                 (\w1, w2 => [BashCompletion w1 w2])
                  (Just "Print bash autocompletion information"),
            MkOpt ["--bash-completion-script"]
                  [ Required "function name" ]
@@ -389,6 +394,11 @@ options = [MkOpt ["--check", "-c"] [] [CheckOnly]
                  (\n => [ZshCompletionScript n])
                  (Just "Generate a zsh script (via bashcompinit) to activate autocompletion for Idris2")
            ]
+  where
+    parseName : String -> Name
+    parseName inp =
+      either (const $ UN $ Basic inp) (snd . snd) $
+        runParser (Virtual Interactive) Nothing inp name
 
 optShow : OptDesc -> (String, Maybe String)
 optShow (MkOpt [] _ _ _) = ("", Just "")

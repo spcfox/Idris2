@@ -1,0 +1,7 @@
+. ../../testutils.sh
+
+idris2 --exec XX.main Issue3398.idr
+echo "------"
+idris2 --exec YY.main Issue3398.idr
+echo "------"
+idris2 --exec main Issue3398.idr

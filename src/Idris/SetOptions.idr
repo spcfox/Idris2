@@ -514,8 +514,8 @@ postOptions res (OutputFile outfile :: rest)
     = do ignore $ compileExp (PRef EmptyFC (UN $ Basic "main")) outfile
          ignore $ postOptions res rest
          pure False
-postOptions res (ExecFn str :: rest)
-    = do ignore $ execExp (PRef EmptyFC (UN $ Basic str))
+postOptions res (ExecFn name :: rest)
+    = do ignore $ execExp (PRef EmptyFC name)
          ignore $ postOptions res rest
          pure False
 postOptions res (CheckOnly :: rest)
