@@ -270,7 +270,7 @@ compileExpr makeitso c s tmpDir outputDir tm outfile = do
   handleFileError appDirRel $ mkdirAll appDirRel
 
   -- generate the code
-  chez <- coreLift $ findChez
+  chez <- coreLift findChez
   (supportChanged, chezLibs) <- compileToSS c chez appDirRel tm
 
   -- compile the code

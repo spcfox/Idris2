@@ -799,7 +799,8 @@ HasNames Error where
   full gam (GenericMsgSol fc x y z) = pure (GenericMsgSol fc x y z)
   full gam (TTCError x) = pure (TTCError x)
   full gam (FileErr x y) = pure (FileErr x y)
-  full gam (SystemError x y) = pure (SystemError x y)
+  full gam (NonZeroExitCode x y) = pure (NonZeroExitCode x y)
+  full gam (SystemError x) = pure (SystemError x)
   full gam (CantFindPackage x) = pure (CantFindPackage x)
   full gam (LazyImplicitFunction fc) = pure (LazyImplicitFunction fc)
   full gam (LazyPatternVar fc) = pure (LazyPatternVar fc)
@@ -898,7 +899,8 @@ HasNames Error where
   resolved gam (GenericMsgSol fc x y z) = pure (GenericMsgSol fc x y z)
   resolved gam (TTCError x) = pure (TTCError x)
   resolved gam (FileErr x y) = pure (FileErr x y)
-  resolved gam (SystemError x y) = pure (SystemError x y)
+  resolved gam (NonZeroExitCode x y) = pure (NonZeroExitCode x y)
+  resolved gam (SystemError x) = pure (SystemError x)
   resolved gam (CantFindPackage x) = pure (CantFindPackage x)
   resolved gam (LazyImplicitFunction fc) = pure (LazyImplicitFunction fc)
   resolved gam (LazyPatternVar fc) = pure (LazyPatternVar fc)
@@ -2183,7 +2185,7 @@ setSourceDir mdir = update Ctxt { options->dirs->source_dir := mdir }
 export
 setWorkingDir : {auto c : Ref Ctxt Defs} -> String -> Core ()
 setWorkingDir dir
-    = do coreLift_ $ changeDir dir
+    = do changeDir dir
          cdir <- currentDir
          update Ctxt { options->dirs->working_dir := cdir }
 
@@ -2205,7 +2207,7 @@ withCtxt = wrapRef Ctxt resetCtxt
   where
     resetCtxt : Defs -> Core ()
     resetCtxt defs = do let dir = defs.options.dirs.working_dir
-                        coreLift_ $ changeDir dir
+                        changeDir dir
 
 export
 setPrefix : {auto c : Ref Ctxt Defs} -> String -> Core ()

@@ -619,7 +619,7 @@ compileExprInc makeitso c s tmpDir outputDir tm outfile
          let outSoFile = appDirRel </> outfile <.> "so"
          let outSsAbs = cwd </> outputDir </> outSsFile
          let outSoAbs = cwd </> outputDir </> outSoFile
-         chez <- coreLift $ findChez
+         chez <- coreLift findChez
          compileToSSInc c mods libs appDirGen tm outSsAbs
          let outShRel = outputDir </> outfile
          if isWindows

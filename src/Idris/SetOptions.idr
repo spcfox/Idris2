@@ -228,8 +228,7 @@ dirOption dirs Prefix
 findIpkg : {auto c : Ref Ctxt Defs} -> Core (List String)
 findIpkg =
   do srcdir <- currentDir
-     Right fs <- coreLift $ listDir srcdir
-       | Left err => pure []
+     fs <- handleFileError srcdir $ listDir srcdir
      pure $ filter (".ipkg" `isSuffixOf`) fs
 
 -- keep only those Strings, of which `x` is a prefix
