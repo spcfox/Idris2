@@ -67,8 +67,7 @@ executeExpr c s tmpDir tm =
   do out <- compileExpr c s tmpDir tmpDir tm "_tmp_node.js"
      node <- coreLift findNode
     --  system ["\"\{node}\"", out]
-     let quoted_node = "\"" ++ node ++ "\""
-     system $ quoted_node ++ " " ++ out
+     system $ "\"\{node}\" out"
 
 ||| Codegen wrapper for Node implementation.
 export
