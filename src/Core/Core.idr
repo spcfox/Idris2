@@ -669,7 +669,7 @@ record Core t where
   constructor MkCore
   runCore : IO (Either Error t)
 
-export
+export %inline
 coreRun : Core a -> (Error -> IO b) -> (a -> IO b) -> IO b
 coreRun (MkCore act) err ok = either err ok !act
 
