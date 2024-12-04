@@ -726,11 +726,7 @@ coreLift_ op = ignore (coreLift op)
 -- Monad (specialised)
 export %inline
 (>>=) : Core a -> (a -> Core b) -> Core b
-(>>=) (MkCore act) f
-    = MkCore (act >>=
-                   \case
-                     Left err => pure $ Left err
-                     Right val => runCore $ f val)
+core >>= f = MkCore $ coreRun core (pure . Left) (runCore . f)
 
 export %inline
 (>>) : Core () -> Core a -> Core a
