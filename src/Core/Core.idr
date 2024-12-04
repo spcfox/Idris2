@@ -675,7 +675,7 @@ coreRun (MkCore act) err ok = either err ok !act
 
 export
 coreFail : Error -> Core a
-coreFail e = MkCore (pure (Left e))
+coreFail = MkCore . pure . Left
 
 export
 wrapError : (Error -> Error) -> Core a -> Core a
@@ -685,8 +685,7 @@ wrapError fe (MkCore prog) = MkCore $ mapFst fe <$> prog
 export
 %inline
 coreLift : IO a -> Core a
-coreLift op = MkCore (do op' <- op
-                         pure (Right op'))
+coreLift = MkCore . map Right
 
 {- Monad, Applicative, Traversable are specialised by hand for Core.
 In theory, this shouldn't be necessary, but it turns out that Idris 1 doesn't
