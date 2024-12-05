@@ -1041,7 +1041,9 @@ handleExitCode cmd (ExitFailure status) = throw $ NonZeroExitCode cmd status
 
 export
 system : String -> Core ExitCode
-system = map (cast @{ToExitCode}) . coreLift . system
+system cmd = do
+  coreLift $ putStrLn "!!! Execute command: \{cmd}"
+  map (cast @{ToExitCode}) $ coreLift $ system cmd
 
 ||| Execute a shell command. Throws `NonZeroExitCode` if the command returns
 ||| non-zero exit code.
