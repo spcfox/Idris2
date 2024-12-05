@@ -669,9 +669,13 @@ record Core t where
   constructor MkCore
   runCore : IO (Either Error t)
 
+either' : (f : a -> c) -> (g : b -> c) -> (e : Either a b) -> c
+either' l r (Left x) = l x
+either' l r (Right x) = r x
+
 export
 coreRun : Core a -> (Error -> IO b) -> (a -> IO b) -> IO b
-coreRun (MkCore act) err ok = either err ok !act
+coreRun (MkCore act) err ok = either' err ok !act
 
 export
 coreFail : Error -> Core a
