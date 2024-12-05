@@ -730,7 +730,7 @@ coreLift_ op = ignore (coreLift op)
 -- Monad (specialised)
 export %inline
 (>>=) : Core a -> (a -> Core b) -> Core b
-core >>= f = MkCore $ coreRun core (pure . Left) (runCore . f)
+(MkCore act) >>= f = MkCore $ act >>= either' (pure . Left) (runCore . f)
 
 export %inline
 (>>) : Core () -> Core a -> Core a
