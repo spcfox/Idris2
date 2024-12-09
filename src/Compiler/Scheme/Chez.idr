@@ -648,7 +648,8 @@ executeExpr :
   Ref Ctxt Defs ->
   Ref Syn SyntaxInfo ->
   (tmpDir : String) -> ClosedTerm -> Core ExitCode
-executeExpr c s tmpDir tm = system !(compileExpr False c s tmpDir tmpDir tm "_tmpchez")
+executeExpr c s tmpDir tm =
+  system $ escapeArg !(compileExpr False c s tmpDir tmpDir tm "_tmpchez")
 
 incCompile :
   Ref Ctxt Defs ->

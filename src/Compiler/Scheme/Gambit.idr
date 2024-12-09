@@ -407,7 +407,8 @@ executeExpr :
   Ref Ctxt Defs ->
   Ref Syn SyntaxInfo ->
   (tmpDir : String) -> ClosedTerm -> Core ExitCode
-executeExpr c s tmpDir tm = system !(compileExpr c s tmpDir tmpDir tm "_tmpgambit") -- TODO: on windows, should add exe extension
+executeExpr c s tmpDir tm =
+  system $ escapeArg !(compileExpr c s tmpDir tmpDir tm "_tmpgambit") -- TODO: on windows, should add exe extension
 
 export
 codegenGambit : Codegen
