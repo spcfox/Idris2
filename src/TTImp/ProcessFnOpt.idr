@@ -28,8 +28,7 @@ throwIfHasFlag fc ndef fl msg = throwIf fc !(hasFlag fc ndef fl) msg
 
 %inline
 throwIfHasTotality : {auto c : Ref Ctxt Defs} -> FC -> Name -> String -> Core ()
-throwIfHasTotality fc ndef msg =
-  throwIf fc !(anyM (hasFlag fc ndef . SetTotal) [Total, CoveringOnly, PartialOK]) msg
+throwIfHasTotality fc ndef msg = throwIf fc !(hasSetTotal fc ndef) msg
 
 export
 processFnOpt : {auto c : Ref Ctxt Defs} ->
@@ -71,7 +70,7 @@ processFnOpt fc _ ndef (ForeignExport _)
 processFnOpt fc _ ndef Invertible
     = setFlag fc ndef Invertible
 processFnOpt fc _ ndef (Totality tot)
-    = do throwIfHasTotality fc ndef $ "Multiple totality modifiers"
+    = do throwIfHasTotality fc ndef "Multiple totality modifiers"
          setFlag fc ndef (SetTotal tot)
 processFnOpt fc _ ndef Macro
     = setFlag fc ndef Macro
