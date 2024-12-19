@@ -296,7 +296,7 @@ data ExitCode : Type where
 
 export
 Cast Int ExitCode where
-  cast code with (code == 0) proof prf
+  cast code with (code == 0) proof 0 prf
     _ | True = ExitSuccess
     _ | False = ExitFailure code @{rewrite prf in Oh}
 
