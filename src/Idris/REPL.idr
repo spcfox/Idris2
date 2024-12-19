@@ -1260,6 +1260,7 @@ mutual
   displayResult NoFileLoaded = printResult (reflow "No file can be reloaded")
   displayResult (CurrentDirectory dir)
     = printResult (reflow "Current working directory is" <++> dquotes (pretty0 dir))
+  displayResult CompilationFailed = printResult (reflow "Compilation failed")
   displayResult (Compiled f) = printResult ("File" <++> pretty0 f <++> "written")
   displayResult (ProofFound x) = printResult (prettyBy Syntax x)
   displayResult (Missed cases) = printResult $ vsep (handleMissing <$> cases)
