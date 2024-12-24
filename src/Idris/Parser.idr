@@ -185,16 +185,10 @@ iOperator
   <|> Backticked <$> (symbol "`" *> name <* symbol "`")
 
 data ArgType
-    = UnnamedExpArg PTerm
-    | UnnamedAutoArg PTerm
-    | NamedArg Name PTerm
-    | WithArg PTerm
-
-argTerm : ArgType -> PTerm
-argTerm (UnnamedExpArg t) = t
-argTerm (UnnamedAutoArg t) = t
-argTerm (NamedArg _ t) = t
-argTerm (WithArg t) = t
+    = UnnamedExpArg FC PTerm
+    | UnnamedAutoArg FC PTerm
+    | NamedArg FC Name PTerm
+    | WithArg FC PTerm
 
 export
 debugString : OriginDesc -> Rule PTerm
@@ -248,21 +242,20 @@ mutual
                     List ArgType ->
                     PTerm
       applyExpImp start end f [] = f
-      applyExpImp start end f (UnnamedExpArg exp :: args)
+      applyExpImp start end f (UnnamedExpArg _ exp :: args)
           = applyExpImp start end (PApp (MkFC fname start end) f exp) args
-      applyExpImp start end f (UnnamedAutoArg imp :: args)
+      applyExpImp start end f (UnnamedAutoArg _ imp :: args)
           = applyExpImp start end (PAutoApp (MkFC fname start end) f imp) args
-      applyExpImp start end f (NamedArg n imp :: args)
-          = let fc = MkFC fname start end in
-            applyExpImp start end (PNamedApp fc f n imp) args
-      applyExpImp start end f (WithArg exp :: args)
+      applyExpImp start end f (NamedArg _ n imp :: args)
+          = applyExpImp start end (PNamedApp (MkFC fname start end) f n imp) args
+      applyExpImp start end f (WithArg _ exp :: args)
           = applyExpImp start end (PWithApp (MkFC fname start end) f exp) args
 
   argExpr : ParseOpts -> OriginDesc -> IndentInfo -> Rule (List ArgType)
   argExpr q fname indents
       = do continue indents
-           arg <- simpleExpr fname indents
-           pure $ singleton $ UnnamedExpArg $ case arg of
+           arg <- fcBounds $ simpleExpr fname indents
+           pure $ singleton $ UnnamedExpArg arg.fc $ case arg.val of
                 PHole loc _ n => PHole loc True n
                 t => t
     <|> do continue indents
@@ -270,23 +263,25 @@ mutual
     <|> if withOK q
            then do continue indents
                    decoratedSymbol fname "|"
-                   arg <- expr ({withOK := False} q) fname indents
-                   pure [WithArg arg]
+                   arg <- fcBounds $ expr ({withOK := False} q) fname indents
+                   pure [WithArg arg.fc arg.val]
            else fail "| not allowed here"
     where
       underscore : FC -> ArgType
-      underscore fc = NamedArg (UN Underscore) (PImplicit fc)
+      underscore fc = NamedArg fc (UN Underscore) $ PImplicit fc
 
       braceArgs : OriginDesc -> IndentInfo -> Rule (List ArgType)
       braceArgs fname indents
         = do start <- bounds (decoratedSymbol fname "{")
              commit
-             list <- sepBy (decoratedSymbol fname ",")
-                      $ do x <- bounds (UN . Basic <$> decoratedSimpleNamedArg fname)
-                           let fc = boundToFC fname x
-                           option (NamedArg x.val $ PRef fc x.val)
-                            $ do tm <- decoratedSymbol fname "=" *> typeExpr pdef fname indents
-                                 pure (NamedArg x.val tm)
+             list <- sepBy (decoratedSymbol fname ",") $
+                      do arg <- fcBounds @{fname} $
+                           do x <- fcBounds @{fname} $ UN . Basic <$> decoratedSimpleNamedArg fname
+                              tm <- option (PRef x.fc x.val)
+                                (decoratedSymbol fname "=" *> typeExpr pdef fname indents)
+                              pure (x.val, tm)
+                         (n, tm) <- pure arg.val
+                         pure (NamedArg arg.fc n tm)
              matchAny <- option [] (if isCons list then
                                        do decoratedSymbol fname ","
                                           x <- bounds (decoratedSymbol fname "_")
@@ -299,11 +294,12 @@ mutual
                               else matchAny
              pure $ matchAny ++ list
 
-        <|> do decoratedSymbol fname "@{"
-               commit
-               tm <- typeExpr pdef fname indents
-               decoratedSymbol fname "}"
-               pure [UnnamedAutoArg tm]
+        <|> do tm <- fcBounds @{fname} $ do decoratedSymbol fname "@{"
+                                            commit
+                                            tm <- typeExpr pdef fname indents
+                                            decoratedSymbol fname "}"
+                                            pure tm
+               pure [UnnamedAutoArg tm.fc tm.val]
 
   with_ : OriginDesc -> IndentInfo -> Rule PTerm
   with_ fname indents
@@ -1308,11 +1304,11 @@ mkTyConType fname fc (x :: xs)
      PPi bfc top Explicit Nothing (PType (virtualiseFC fc))
      $ mkTyConType fname fc xs
 
-mkDataConType : PTerm -> List (WithFC ArgType) -> Maybe PTerm
+mkDataConType : PTerm -> List ArgType -> Maybe PTerm
 mkDataConType ret [] = Just ret
-mkDataConType ret (MkFCVal fc (UnnamedExpArg x) :: xs)
+mkDataConType ret (UnnamedExpArg fc x :: xs)
     = PPi fc top Explicit Nothing x <$> mkDataConType ret xs
-mkDataConType ret (MkFCVal fc (UnnamedAutoArg x) :: xs)
+mkDataConType ret (UnnamedAutoArg fc x :: xs)
     = PPi fc top AutoImplicit Nothing x <$> mkDataConType ret xs
 mkDataConType _ _ -- with and named applications not allowed in simple ADTs
     = Nothing
@@ -1321,8 +1317,8 @@ simpleCon : OriginDesc -> PTerm -> IndentInfo -> Rule PTypeDecl
 simpleCon fname ret indents
     = do b <- bounds (do cdoc   <- optDocumentation fname
                          cname  <- fcBounds $ decoratedDataConstructorName fname
-                         params <- the _ $ many (fcBounds $ argExpr plhs fname indents)
-                         let conType = mkDataConType ret (concat (map distribFC params))
+                         params <- the _ $ many $ argExpr plhs fname indents
+                         let conType = mkDataConType ret $ concat params
                          fromMaybe (fatalError "Named arguments not allowed in ADT constructors")
                                    (pure . MkPTy (singleton ("", cname)) cdoc <$> conType)
                          )
@@ -1755,10 +1751,10 @@ ifaceDecl fname indents
 
 pArg : OriginDesc -> IndentInfo -> Rule (List PArg)
 pArg fname indents = argExpr plhs fname indents >>= traverseList (\case
-  UnnamedExpArg t  => pure $ Explicit EmptyFC t
-  UnnamedAutoArg t => pure $ Auto EmptyFC t
-  NamedArg n t     => pure $ Named EmptyFC n t
-  WithArg t        => fatalError "Unexpected with argument")
+  UnnamedExpArg fc t  => pure $ Explicit fc t
+  UnnamedAutoArg fc t => pure $ Auto fc t
+  NamedArg fc n t     => pure $ Named fc n t
+  WithArg fc t        => fatalError "Unexpected with argument")
 
 implDecl : OriginDesc -> IndentInfo -> Rule PDecl
 implDecl fname indents
