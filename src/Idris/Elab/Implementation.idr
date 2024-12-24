@@ -35,7 +35,7 @@ replaceSep = pack . map toForward . unpack
     toForward x = x
 
 export
-mkImplName : FC -> Name -> List RawImp -> Name
+mkImplName : FC -> Name -> List Arg -> Name
 mkImplName fc n ps
     = DN (show n ++ " implementation at " ++ replaceSep (show fc))
          (UN $ Basic ("__Impl_" ++ show n ++ "_" ++
@@ -53,7 +53,7 @@ bindImpls ((fc, r, n, p, ty) :: rest) sc
     = IPi fc r p (Just n) ty (bindImpls rest sc)
 
 addDefaults : FC -> Name ->
-              (params : List (Name, RawImp)) -> -- parameters have been specialised, use them!
+              (params : List (Name, Arg)) -> -- parameters have been specialised, use them!
               (allMethods : List Name) ->
               (defaults : List (Name, List ImpClause)) ->
               List ImpDecl ->
@@ -84,7 +84,7 @@ addDefaults fc impName params allms defs body
                     -- be substituted for the actual parameters because they are going
                     -- to be referring to unbound variables otherwise.
                     -- (See test idris2/interface018 for an example!)
-                    let mupdates = params ++ map specialiseMeth allms
+                    let mupdates = map (map unArg) params ++ map specialiseMeth allms
                         cs' = map (substNamesClause [] mupdates) cs in
                         extendBody ms ns
                              (IDef fc n (map (substLocClause fc) cs') :: body)
@@ -123,7 +123,7 @@ elabImplementation : {vars : _} ->
                      (implicits : List (FC, RigCount, Name, PiInfo RawImp, RawImp)) ->
                      (constraints : List (Maybe Name, RawImp)) ->
                      Name ->
-                     (ps : List RawImp) ->
+                     (ps : List Arg) ->
                      (namedimpl : Bool) ->
                      (implName : Name) ->
                      (nusing : List Name) ->
@@ -151,7 +151,7 @@ elabImplementation {vars} ifc vis opts_in pass env nest is cons iname ps named i
          Just conty <- lookupTyExact (iconstructor cdata) (gamma defs)
               | Nothing => undefinedName vfc (iconstructor cdata)
 
-         let impsp = nub (concatMap findIBinds ps ++
+         let impsp = nub (concatMap (findIBinds . unArg) ps ++
                           concatMap findIBinds (map snd cons))
 
          logTerm "elab.implementation" 3 ("Found interface " ++ show cn) ity
@@ -423,7 +423,7 @@ elabImplementation {vars} ifc vis opts_in pass env nest is cons iname ps named i
                                 (map (\n => (n, Implicit vfc False)) imppnames)
                                 mty_in
              let mty_params
-                   = substNames vars (zip pnames ps) mty_iparams
+                   = substNames vars (zip pnames $ map unArg ps) mty_iparams
              log "elab.implementation" 5 $ "Substitute implicits " ++ show imppnames ++
                      " parameters " ++ show (zip pnames ps) ++
                      " "  ++ show mty_in ++ " is " ++

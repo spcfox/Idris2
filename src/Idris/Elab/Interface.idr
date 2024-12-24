@@ -92,13 +92,19 @@ sigToDecl sig = MkDeclaration
 -- TODO: Check all the parts of the body are legal
 -- TODO: Deal with default superclass implementations
 
-mkDataTy : FC -> List (Name, (RigCount, RawImp)) -> RawImp
+mkDataTy : FC -> List (Name, RigCount, PiInfo RawImp, RawImp) -> RawImp
 mkDataTy fc [] = IType fc
-mkDataTy fc ((n, (_, ty)) :: ps)
-    = IPi fc top Explicit (Just n) ty (mkDataTy fc ps)
+mkDataTy fc ((n, _, p, ty) :: ps)
+    = IPi fc top p (Just n) ty (mkDataTy fc ps)
 
-jname : (Name, (RigCount, RawImp)) -> (Maybe Name, RigCount, RawImp)
-jname (n, rig, t) = (Just n, rig, t)
+jname : (Name, RigCount, PiInfo RawImp, RawImp) ->
+        (Maybe Name, RigCount, RawImp)
+jname (n, rig, _, t) = (Just n, rig, t)
+
+toArg : FC -> (Name, RigCount, PiInfo RawImp, RawImp) -> Arg
+toArg fc (n, _, p, _) = case p of
+  Explicit => Explicit fc (IVar EmptyFC n)
+  _        => Named fc n  (IVar EmptyFC n)
 
 mkTy : FC -> PiInfo RawImp ->
        List (Maybe Name, RigCount, RawImp) -> RawImp -> RawImp
@@ -110,17 +116,17 @@ mkIfaceData : {vars : _} ->
               {auto c : Ref Ctxt Defs} ->
               FC -> WithDefault Visibility Private -> Env Term vars ->
               List (Maybe Name, RigCount, RawImp) ->
-              Name -> Name -> List (Name, (RigCount, RawImp)) ->
+              Name -> Name -> List (Name, RigCount, PiInfo RawImp, RawImp) ->
               List Name -> List (Name, RigCount, RawImp) -> Core ImpDecl
 mkIfaceData {vars} ifc def_vis env constraints n conName ps dets meths
     = let opts = if isNil dets
                     then [NoHints, UniqueSearch]
                     else [NoHints, UniqueSearch, SearchBy dets]
           pNames = map fst ps
-          retty = apply (IVar vfc n) (map (IVar EmptyFC) pNames)
-          conty = mkTy vfc Implicit (map jname ps) $
+          retty = apply (IVar vfc n) $ toArg vfc <$> ps
+          conty = mkTy vfc Implicit     (map jname ps) $
                   mkTy vfc AutoImplicit (map bhere constraints) $
-                  mkTy vfc Explicit (map bname meths) retty
+                  mkTy vfc Explicit     (map bname meths) retty
           con = MkImpTy vfc (NoFC conName) !(bindTypeNames ifc [] (pNames ++ map fst meths ++ vars) conty)
           bound = pNames ++ map fst meths ++ vars in
 
@@ -143,7 +149,7 @@ mkIfaceData {vars} ifc def_vis env constraints n conName ps dets meths
 getMethDecl : {vars : _} ->
               {auto c : Ref Ctxt Defs} ->
               Env Term vars -> NestedNames vars ->
-              (params : List (Name, (RigCount, RawImp))) ->
+              (params : List (Name, RigCount, PiInfo RawImp, RawImp)) ->
               (mnames : List Name) ->
               (RigCount, nm, RawImp) ->
               Core (nm, RigCount, RawImp)
@@ -174,12 +180,11 @@ getMethToplevel : {vars : _} ->
                   Name -> Name ->
                   (constraints : List (Maybe Name)) ->
                   (allmeths : List Name) ->
-                  (params : List (Name, (RigCount, RawImp))) ->
+                  (params : List (Name, RigCount, PiInfo RawImp, RawImp)) ->
                   Signature ->
                   Core (List ImpDecl)
 getMethToplevel {vars} env vis iname cname constraints allmeths params sig
-    = do let paramNames = map fst params
-         let ity = apply (IVar vfc iname) (map (IVar EmptyFC) paramNames)
+    = do let ity = apply (IVar vfc iname) $ toArg vfc <$> params
          -- Make the constraint application explicit for any method names
          -- which appear in other method types
          let ty_constr =
@@ -210,9 +215,9 @@ getMethToplevel {vars} env vis iname cname constraints allmeths params sig
 
     -- Bind the type parameters given explicitly - there might be information
     -- in there that we can't infer after all
-    bindPs : List (Name, (RigCount, RawImp)) -> RawImp -> RawImp
+    bindPs : List (Name, RigCount, PiInfo RawImp, RawImp) -> RawImp -> RawImp
     bindPs [] ty = ty
-    bindPs ((n, rig, pty) :: ps) ty
+    bindPs ((n, rig, _, pty) :: ps) ty
         = IPi (getFC pty) rig Implicit (Just n) pty (bindPs ps ty)
 
     applyCon : Name -> (Name, RawImp)
@@ -246,11 +251,10 @@ getConstraintHint : {vars : _} ->
                     Name -> Name ->
                     (constraints : List Name) ->
                     (allmeths : List Name) ->
-                    (params : List (Name, RigCount, RawImp)) ->
+                    (params : List (Name, RigCount, PiInfo RawImp, RawImp)) ->
                     (Name, RawImp) -> Core (Name, List ImpDecl)
 getConstraintHint {vars} fc env vis iname cname constraints meths params (cn, con)
-    = do let pNames = map fst params
-         let ity = apply (IVar fc iname) (map (IVar fc) pNames)
+    = do let ity = apply (IVar fc iname) $ toArg fc <$> params
          let fty = mkTy fc Implicit (map jname params) $
                    mkTy fc Explicit [(Nothing, top, ity)] con
          ty_imp <- bindTypeNames fc [] (meths ++ vars) fty
@@ -332,7 +336,7 @@ elabInterface : {vars : _} ->
                 Env Term vars -> NestedNames vars ->
                 (constraints : List (Maybe Name, RawImp)) ->
                 Name ->
-                (params : List (Name, (RigCount, RawImp))) ->
+                (params : List (Name, RigCount, PiInfo RawImp, RawImp)) ->
                 (dets : List Name) ->
                 (conName : Maybe (String, Name)) ->
                 List ImpDecl ->
@@ -468,9 +472,9 @@ elabInterface {vars} ifc def_vis env nest constraints iname params dets mcon bod
 
         -- Bind the type parameters given explicitly - there might be information
         -- in there that we can't infer after all
-        bindPs : List (Name, (RigCount, RawImp)) -> RawImp -> RawImp
+        bindPs : List (Name, RigCount, PiInfo RawImp, RawImp) -> RawImp -> RawImp
         bindPs [] ty = ty
-        bindPs ((n, (rig, pty)) :: ps) ty
+        bindPs ((n, rig, _, pty) :: ps) ty
           = IPi (getFC pty) rig Implicit (Just n) pty (bindPs ps ty)
 
         applyParams : RawImp -> List Name -> RawImp

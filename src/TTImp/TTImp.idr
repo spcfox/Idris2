@@ -926,11 +926,40 @@ namespace ImpDecl
   getFC (IBuiltin fc _ _) = fc
 
 public export
-data Arg' nm
-   = Explicit FC (RawImp' nm)
-   | Auto     FC (RawImp' nm)
-   | Named    FC Name (RawImp' nm)
-%name Arg' arg
+data Argument a
+   = Explicit FC a
+   | Auto     FC a
+   | Named    FC Name a
+%name Argument arg
+
+export
+isExplicit : Argument a -> Maybe (FC, a)
+isExplicit (Explicit fc t) = Just (fc, t)
+isExplicit _ = Nothing
+
+export
+unArg : Argument a -> a
+unArg (Explicit _ t) = t
+unArg (Auto _ t)     = t
+unArg (Named _ _ t)  = t
+
+export
+Functor Argument where
+  map f (Explicit fc t) = Explicit fc $ f t
+  map f (Auto fc t)     = Auto fc     $ f t
+  map f (Named fc n t)  = Named fc n  $ f t
+
+export
+Foldable Argument where
+  foldr f acc = flip f acc . unArg
+
+export
+Traversable Argument where
+  traverse f t = (<$ t) <$> f (unArg t)
+
+public export
+Arg' : Type -> Type
+Arg' = Argument . RawImp'
 
 public export
 Arg : Type
@@ -939,17 +968,6 @@ Arg = Arg' Name
 public export
 IArg : Type
 IArg = Arg' KindedName
-
-export
-isExplicit : Arg' nm -> Maybe (FC, RawImp' nm)
-isExplicit (Explicit fc t) = Just (fc, t)
-isExplicit _ = Nothing
-
-export
-unIArg : Arg' nm -> RawImp' nm
-unIArg (Explicit _ t) = t
-unIArg (Auto _ t) = t
-unIArg (Named _ _ t) = t
 
 export
 covering

@@ -570,6 +570,14 @@ mutual
     operators : List1 OpStr
 
   public export
+  PArg' : Type -> Type
+  PArg' = Argument . PTerm'
+
+  public export
+  PArg : Type
+  PArg = PArg' Name
+
+  public export
   PDecl : Type
   PDecl = PDecl' Name
 
@@ -588,7 +596,7 @@ mutual
                     (constraints : List (Maybe Name, PTerm' nm)) ->
                     Name ->
                     (doc : String) ->
-                    (params : List (BasicMultiBinder' nm)) ->
+                    (params : List (PBinder' nm)) ->
                     (det : List Name) ->
                     (conName : Maybe (String, Name)) ->
                     List (PDecl' nm) ->
@@ -597,7 +605,7 @@ mutual
                          (implicits : List (FC, RigCount, Name, PiInfo (PTerm' nm), PTerm' nm)) ->
                          (constraints : List (Maybe Name, PTerm' nm)) ->
                          Name ->
-                         (params : List (PTerm' nm)) ->
+                         (params : List (PArg' nm)) ->
                          (implName : Maybe Name) ->
                          (nusing : List Name) ->
                          Maybe (List (PDecl' nm)) ->

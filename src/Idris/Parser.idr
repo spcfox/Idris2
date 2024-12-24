@@ -274,24 +274,24 @@ mutual
       braceArgs : OriginDesc -> IndentInfo -> Rule (List ArgType)
       braceArgs fname indents
         = do start <- bounds (decoratedSymbol fname "{")
-             mustWork $ do
-               list <- sepBy (decoratedSymbol fname ",")
-                        $ do x <- bounds (UN . Basic <$> decoratedSimpleNamedArg fname)
-                             let fc = boundToFC fname x
-                             option (NamedArg x.val $ PRef fc x.val)
-                              $ do tm <- decoratedSymbol fname "=" *> typeExpr pdef fname indents
-                                   pure (NamedArg x.val tm)
-               matchAny <- option [] (if isCons list then
-                                         do decoratedSymbol fname ","
-                                            x <- bounds (decoratedSymbol fname "_")
-                                            pure [underscore (boundToFC fname x)]
-                                      else fail "non-empty list required")
-               end <- bounds (decoratedSymbol fname "}")
-               matchAny <- do let fc = boundToFC fname (mergeBounds start end)
-                              pure $ if isNil list
-                                then [underscore fc]
-                                else matchAny
-               pure $ matchAny ++ list
+             commit
+             list <- sepBy (decoratedSymbol fname ",")
+                      $ do x <- bounds (UN . Basic <$> decoratedSimpleNamedArg fname)
+                           let fc = boundToFC fname x
+                           option (NamedArg x.val $ PRef fc x.val)
+                            $ do tm <- decoratedSymbol fname "=" *> typeExpr pdef fname indents
+                                 pure (NamedArg x.val tm)
+             matchAny <- option [] (if isCons list then
+                                       do decoratedSymbol fname ","
+                                          x <- bounds (decoratedSymbol fname "_")
+                                          pure [underscore (boundToFC fname x)]
+                                    else fail "non-empty list required")
+             end <- bounds (decoratedSymbol fname "}")
+             matchAny <- do let fc = boundToFC fname (mergeBounds start end)
+                            pure $ if isNil list
+                              then [underscore fc]
+                              else matchAny
+             pure $ matchAny ++ list
 
         <|> do decoratedSymbol fname "@{"
                commit
@@ -1750,11 +1750,33 @@ fieldDecl indents
 
 parameters {auto fname : OriginDesc} {auto indents : IndentInfo}
 
-  ifaceParam : Rule BasicMultiBinder
-  ifaceParam
-      = parens fname basicMultiBinder
-    <|> do n <- fcBounds (decorate fname Bound name)
-           pure (MkBasicMultiBinder erased (singleton n) (PInfer n.fc))
+  -- A Single binder with multiple names
+  typedArg : Rule PBinder
+  typedArg
+      = do params <- parens fname $ pibindListName fname indents
+           pure $ MkPBinder Explicit params
+    <|> do decoratedSymbol fname "{"
+           commit
+           info <-
+                    (pure  AutoImplicit <* decoratedKeyword fname "auto"
+                <|> (decoratedKeyword fname "default" *> DefImplicit <$> simpleExpr fname indents)
+                <|> pure      Implicit)
+           params <- pibindListName fname indents
+           decoratedSymbol fname "}"
+           pure $ MkPBinder info params
+
+  ||| Parameter, can be either a typed binder or a name
+  ||| BNF:
+  ||| param := typedArg | name
+  param : RigCount -> Rule PBinder
+  param rig
+      = typedArg
+    <|> do n <- fcBounds (decoratedSimpleBinderUName fname)
+           pure (MkFullBinder Explicit rig n $ PInfer n.fc)
+
+  ||| Interface parameter without a specified type is erased
+  ifaceParam : Rule PBinder
+  ifaceParam = param erased
 
   ifaceDecl : Rule PDeclNoFC
   ifaceDecl
@@ -1765,13 +1787,22 @@ parameters {auto fname : OriginDesc} {auto indents : IndentInfo}
             commit
             cons   <- constraints fname indents
             n      <- decorate fname Typ name
-            params <- many ifaceParam
+            params <- many (continue indents >> ifaceParam)
             det    <- option [] $ decoratedSymbol fname "|" *> sepBy (decoratedSymbol fname ",") (decorate fname Bound name)
             decoratedKeyword fname "where"
             dc <- optional (recordConstructor fname)
             body <- blockAfter col (topDecl fname)
             pure (PInterface
                          vis cons n doc params det dc (collectDefs body))
+
+  pArg :  Rule (List PArg)
+  pArg = argExpr plhs fname indents >>= traverseList toPArg
+    where
+      toPArg : ArgType -> EmptyRule PArg
+      toPArg $ UnnamedExpArg t  = pure $ Explicit EmptyFC t
+      toPArg $ UnnamedAutoArg t = pure $ Auto EmptyFC t
+      toPArg $ NamedArg n t     = pure $ Named EmptyFC n t
+      toPArg $ WithArg t        = fail "Unexpected with argument"
 
   implDecl : Rule PDeclNoFC
   implDecl
@@ -1787,7 +1818,7 @@ parameters {auto fname : OriginDesc} {auto indents : IndentInfo}
            impls  <- implBinds fname indents (isJust iname)
            cons   <- constraints fname indents
            n      <- decorate fname Typ name
-           params <- many (continue indents *> simpleExpr fname indents)
+           params <- concat <$> many pArg
            nusing <- option [] $ decoratedKeyword fname "using"
                               *> forget <$> some (decorate fname Function name)
            body <- optional $ decoratedKeyword fname "where" *> blockAfter col (topDecl fname)
@@ -1807,30 +1838,9 @@ parameters {auto fname : OriginDesc} {auto indents : IndentInfo}
                            doc fname indents
            pure $ MkPClaim rig vis opts cls
 
-
-  -- A Single binder with multiple names
-  typedArg : Rule PBinder
-  typedArg
-      = do params <- parens fname $ pibindListName fname indents
-           pure $ MkPBinder Explicit params
-    <|> do decoratedSymbol fname "{"
-           commit
-           info <-
-                    (pure  AutoImplicit <* decoratedKeyword fname "auto"
-                <|> (decoratedKeyword fname "default" *> DefImplicit <$> simpleExpr fname indents)
-                <|> pure      Implicit)
-           params <- pibindListName fname indents
-           decoratedSymbol fname "}"
-           pure $ MkPBinder info params
-
-  ||| Record parameter, can be either a typed binder or a name
-  ||| BNF:
-  ||| recordParam := typedArg | name
+  ||| Interface parameter without a specified type is unrestricted
   recordParam : Rule PBinder
-  recordParam
-      = typedArg
-    <|> do n <- fcBounds (decoratedSimpleBinderUName fname)
-           pure (MkFullBinder Explicit top n $ PInfer n.fc)
+  recordParam = param top
 
   -- A record without a where is a forward declaration
   recordBody : String -> WithDefault Visibility Private ->
