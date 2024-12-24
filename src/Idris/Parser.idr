@@ -262,9 +262,9 @@ mutual
   argExpr q fname indents
       = do continue indents
            arg <- simpleExpr fname indents
-           the (EmptyRule _) $ case arg of
-                PHole loc _ n => pure [UnnamedExpArg (PHole loc True n)]
-                t => pure [UnnamedExpArg t]
+           pure $ singleton $ UnnamedExpArg $ case arg of
+                PHole loc _ n => PHole loc True n
+                t => t
     <|> do continue indents
            braceArgs fname indents
     <|> if withOK q
@@ -962,7 +962,7 @@ mutual
            pure (PDoBlock (virtualiseFC $ boundToFC fname b) Nothing (concat b.val))
     <|> do nsdo <- bounds namespacedIdent
            -- TODO: need to attach metadata correctly here
-           the (EmptyRule PTerm) $ case nsdo.val of
+           the _ $ case nsdo.val of
                 (ns, "do") =>
                    do commit
                       actions <- Core.bounds (block (doAct fname))
@@ -1205,15 +1205,15 @@ tyDecls declName predoc fname indents
                                   [| (optDocumentation fname, fcBounds declName) |]
                   b <- bounds $ decoratedSymbol fname ":"
                   mustWorkBecause b.bounds "Expected a type declaration" $ do
-                    ty <- the (Rule PTerm) (typeExpr pdef fname indents)
+                    ty <- typeExpr pdef fname indents
                     pure $ MkPTy docns predoc ty
          atEnd indents
          pure $ bs.withFC
 
 withFlags : OriginDesc -> EmptyRule (List WithFlag)
 withFlags fname
-    = (do decoratedPragma fname "syntactic"
-          (Syntactic ::) <$> withFlags fname)
+    = do decoratedPragma fname "syntactic"
+         (Syntactic ::) <$> withFlags fname
   <|> pure []
 
 
@@ -1321,10 +1321,8 @@ simpleCon : OriginDesc -> PTerm -> IndentInfo -> Rule PTypeDecl
 simpleCon fname ret indents
     = do b <- bounds (do cdoc   <- optDocumentation fname
                          cname  <- fcBounds $ decoratedDataConstructorName fname
-                         params <- the (EmptyRule $ List $ WithFC $ List ArgType)
-                                     $ many (fcBounds $ argExpr plhs fname indents)
-                         let conType = the (Maybe PTerm) (mkDataConType ret
-                                                            (concat (map distribFC params)))
+                         params <- the _ $ many (fcBounds $ argExpr plhs fname indents)
+                         let conType = mkDataConType ret (concat (map distribFC params))
                          fromMaybe (fatalError "Named arguments not allowed in ADT constructors")
                                    (pure . MkPTy (singleton ("", cname)) cdoc <$> conType)
                          )
@@ -1681,21 +1679,18 @@ defImplicitField fname indents = do
   t <- simpleExpr fname indents
   pure (DefImplicit t)
 
-constraints : OriginDesc -> IndentInfo -> EmptyRule (List (Maybe Name, PTerm))
-constraints fname indents
+constraint : OriginDesc -> IndentInfo -> Rule (Maybe Name, PTerm)
+constraint fname indents
     = do tm <- appExpr pdef fname indents
          decoratedSymbol fname "=>"
-         more <- constraints fname indents
-         pure ((Nothing, tm) :: more)
+         pure (Nothing, tm)
   <|> do decoratedSymbol fname "("
          n <- decorate fname Bound name
          decoratedSymbol fname ":"
          tm <- typeExpr pdef fname indents
          decoratedSymbol fname ")"
          decoratedSymbol fname "=>"
-         more <- constraints fname indents
-         pure ((Just n, tm) :: more)
-  <|> pure []
+         pure (Just n, tm)
 
 implBinds : OriginDesc -> IndentInfo -> (namedImpl : Bool) -> EmptyRule (List (FC, RigCount, Name, PiInfo PTerm, PTerm))
 implBinds fname indents namedImpl = concatMap (map adjust) <$> go where
@@ -1708,16 +1703,14 @@ implBinds fname indents namedImpl = concatMap (map adjust) <$> go where
   isDefaultImplicit _               = False
 
   go : EmptyRule (List (List (RigCount, WithBounds Name, PiInfo PTerm, PTerm)))
-  go = do decoratedSymbol fname "{"
-          piInfo <- bounds $ option Implicit $ defImplicitField fname indents
-          when (not namedImpl && isDefaultImplicit piInfo.val) $
-            fatalLoc piInfo.bounds "Default implicits are allowed only for named implementations"
-          ns <- map @{Compose} (\(rc, wb, n) => (rc, wb, piInfo.val, n)) $ pibindListName fname indents
-          commitSymbol fname "}"
-          commitSymbol fname "->"
-          more <- go
-          pure (ns :: more)
-    <|> pure []
+  go = many $ do decoratedSymbol fname "{"
+                 piInfo <- bounds $ option Implicit $ defImplicitField fname indents
+                 when (not namedImpl && isDefaultImplicit piInfo.val) $
+                   fatalLoc piInfo.bounds "Default implicits are allowed only for named implementations"
+                 ns <- map @{Compose} (\(rc, wb, n) => (rc, wb, piInfo.val, n)) $ pibindListName fname indents
+                 commitSymbol fname "}"
+                 commitSymbol fname "->"
+                 pure ns
 
 typedArg : OriginDesc -> IndentInfo -> Rule (List (Name, RigCount, PiInfo PTerm, PTerm))
 typedArg fname indents
@@ -1748,7 +1741,7 @@ ifaceDecl fname indents
                          col   <- column
                          decoratedKeyword fname "interface"
                          commit
-                         cons   <- constraints fname indents
+                         cons   <- many $ constraint fname indents
                          n      <- decorate fname Typ name
                          paramss <- many (continue indents >> ifaceParam fname indents)
                          let params = concat paramss
@@ -1779,7 +1772,7 @@ implDecl fname indents
                                            *> decorate fname Function name
                                            <* decoratedSymbol fname "]"
                          impls  <- implBinds fname indents (isJust iname)
-                         cons   <- constraints fname indents
+                         cons   <- many $ constraint fname indents
                          n      <- decorate fname Typ name
                          params <- concat <$> many (pArg fname indents)
                          nusing <- option [] $ decoratedKeyword fname "using"

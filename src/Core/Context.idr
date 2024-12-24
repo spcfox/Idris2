@@ -2281,7 +2281,7 @@ isLazyActive
 
 export
 isUnboundImplicits : {auto c : Ref Ctxt Defs} ->
-                  Core Bool
+                     Core Bool
 isUnboundImplicits
     = do defs <- get Ctxt
          pure (unboundImplicits (elabDirectives (options defs)))

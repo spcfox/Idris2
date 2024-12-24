@@ -93,9 +93,8 @@ sigToDecl sig = MkDeclaration
 -- TODO: Deal with default superclass implementations
 
 mkDataTy : FC -> List (Name, RigCount, PiInfo RawImp, RawImp) -> RawImp
-mkDataTy fc [] = IType fc
-mkDataTy fc ((n, _, p, ty) :: ps)
-    = IPi fc top p (Just n) ty (mkDataTy fc ps)
+mkDataTy fc = flip foldr (IType fc) $
+  \(n, _, p, ty) => IPi fc top p (Just n) ty
 
 jname : (Name, RigCount, PiInfo RawImp, RawImp) ->
         (Maybe Name, RigCount, RawImp)
@@ -127,8 +126,8 @@ mkIfaceData {vars} ifc def_vis env constraints n conName ps dets meths
           conty = mkTy vfc Implicit     (map jname ps) $
                   mkTy vfc AutoImplicit (map bhere constraints) $
                   mkTy vfc Explicit     (map bname meths) retty
-          con = MkImpTy vfc (NoFC conName) !(bindTypeNames ifc [] (pNames ++ map fst meths ++ vars) conty)
-          bound = pNames ++ map fst meths ++ vars in
+          bound = pNames ++ map fst meths ++ vars
+          con = MkImpTy vfc (NoFC conName) !(bindTypeNames ifc [] bound conty) in
 
           pure $ IData vfc def_vis Nothing {- ?? -}
                $ MkImpData vfc n
@@ -231,9 +230,8 @@ getMethToplevel {vars} env vis iname cname constraints allmeths params sig
     getExplicitArgs i tm = []
 
     mkLam : List Name -> RawImp -> RawImp
-    mkLam [] tm = tm
-    mkLam (x :: xs) tm
-       = ILam EmptyFC top Explicit (Just x) (Implicit vfc False) (mkLam xs tm)
+    mkLam = flip $ foldr $
+      \x => ILam EmptyFC top Explicit (Just x) (Implicit vfc False)
 
     bindName : Name -> String
     bindName (UN n) = "__bind_" ++ displayUserName n
@@ -281,9 +279,7 @@ getConstraintHint {vars} fc env vis iname cname constraints meths params (cn, co
     constName n = UN (Basic $ bindName n)
 
     impsBind : RawImp -> List String -> RawImp
-    impsBind fn [] = fn
-    impsBind fn (n :: ns)
-        = impsBind (IAutoApp fc fn (IBindVar fc n)) ns
+    impsBind = foldl $ \fn => IAutoApp fc fn . IBindVar fc
 
 
 getDefault : ImpDecl -> Maybe (FC, List FnOpt, Name, List ImpClause)
