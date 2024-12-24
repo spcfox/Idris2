@@ -5,23 +5,11 @@ import Idris.Syntax.Builtin
 
 %default total
 
-public export
-data Arg' nm
-   = Explicit FC (PTerm' nm)
-   | Auto     FC (PTerm' nm)
-   | Named    FC Name (PTerm' nm)
-
 export
-unArg : Arg' nm -> PTerm' nm
-unArg (Explicit _ t) = t
-unArg (Auto _ t) = t
-unArg (Named _ _ t) = t
-
-export
-getFnArgs : (Name -> nm) -> PTerm' nm -> (PTerm' nm, List (Arg' nm))
+getFnArgs : (Name -> nm) -> PTerm' nm -> (PTerm' nm, List (PArg' nm))
 getFnArgs embed fts = go fts [] where
 
-  go : PTerm' nm -> List (Arg' nm) -> (PTerm' nm, List (Arg' nm))
+  go : PTerm' nm -> List (PArg' nm) -> (PTerm' nm, List (PArg' nm))
   go (PApp fc f t) = go f . (Explicit fc t ::)
   go (PAutoApp fc f t) = go f . (Auto fc t ::)
   go (PNamedApp fc f n t) = go f . (Named fc n t ::)

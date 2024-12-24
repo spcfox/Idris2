@@ -8,7 +8,7 @@ import public Core.Normalise
 import public Core.Options
 import public Core.TT
 
-import TTImp.TTImp
+import public TTImp.TTImp
 
 import Data.List
 import Data.Maybe
