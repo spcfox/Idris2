@@ -987,10 +987,10 @@ getFnArgs tm args = (tm, args)
 namespace Arg
   export
   apply : RawImp' nm -> List (Arg' nm) -> RawImp' nm
-  apply f (Explicit fc a :: args) = apply (IApp fc f a) args
-  apply f (Auto fc a :: args) = apply (IAutoApp fc f a) args
-  apply f (Named fc n a :: args) = apply (INamedApp fc f n a) args
-  apply f [] = f
+  apply = foldl $ \f => \case
+    Explicit fc a => IApp fc f a
+    Auto fc a     => IAutoApp fc f a
+    Named fc n a  => INamedApp fc f n a
 
 export
 apply : RawImp' nm -> List (RawImp' nm) -> RawImp' nm

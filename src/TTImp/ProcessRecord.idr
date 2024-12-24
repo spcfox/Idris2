@@ -118,7 +118,7 @@ elabRecord {vars} eopts fc env nest newns def_vis mbtot tn_in params0 opts conNa
         ||| Apply argument to list of explicit or implicit named arguments
         apply : RawImp -> List (Name, RawImp, PiInfo RawImp) -> RawImp
         apply f [] = f
-        apply f ((n, arg, Explicit) :: xs) = apply (IApp         (getFC f) f          arg) xs
+        apply f ((n, arg, Explicit) :: xs) = apply (IApp      (getFC f) f   arg) xs
         apply f ((n, arg, _       ) :: xs) = apply (INamedApp (getFC f) f n arg) xs
 
     paramNames : List ImpParameter -> List Name
