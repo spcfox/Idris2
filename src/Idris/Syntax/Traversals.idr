@@ -206,6 +206,9 @@ mapPTermM f = goPTerm where
       PWithUnambigNames fc ns <$> goPTerm rhs
       >>= f
 
+    goPArg : PArg' nm -> Core (PArg' nm)
+    goPArg = traverse @{%search} @{CORE} goPTerm
+
     goPFieldUpdate : PFieldUpdate' nm -> Core (PFieldUpdate' nm)
     goPFieldUpdate (PSetField p t)    = PSetField p <$> goPTerm t
     goPFieldUpdate (PSetFieldApp p t) = PSetFieldApp p <$> goPTerm t
@@ -273,7 +276,7 @@ mapPTermM f = goPTerm where
       PInterface fc v <$> goPairedPTerms mnts
                       <*> pure n
                       <*> pure doc
-                      <*> go3TupledPTerms nrts
+                      <*> go4TupledPTerms nrts
                       <*> pure ns
                       <*> pure mn
                       <*> goPDecls ps
@@ -281,7 +284,7 @@ mapPTermM f = goPTerm where
       PImplementation fc v opts p <$> goImplicits is
                                   <*> goPairedPTerms cs
                                   <*> pure n
-                                  <*> goPTerms ts
+                                  <*> goPArgs ts
                                   <*> pure mn
                                   <*> pure ns
                                   <*> goMPDecls mps
@@ -337,6 +340,10 @@ mapPTermM f = goPTerm where
     goPTerms []        = pure []
     goPTerms (t :: ts) = (::) <$> goPTerm t <*> goPTerms ts
 
+    goPArgs : List (PArg' nm) -> Core (List (PArg' nm))
+    goPArgs []        = pure []
+    goPArgs (t :: ts) = (::) <$> goPArg t <*> goPArgs ts
+
     goPairedPTerms : List (x, PTerm' nm) -> Core (List (x, PTerm' nm))
     goPairedPTerms []             = pure []
     goPairedPTerms ((a, t) :: ts) =
@@ -348,12 +355,6 @@ mapPTermM f = goPTerm where
     goPairedSnocPTerms (ts :< (a, t)) =
        (:<) <$> goPairedSnocPTerms ts
             <*> MkPair a <$> goPTerm t
-
-    go3TupledPTerms : List (x, y, PTerm' nm) -> Core (List (x, y, PTerm' nm))
-    go3TupledPTerms [] = pure []
-    go3TupledPTerms ((a, b, t) :: ts) =
-      (::) . (\ c => (a, b, c)) <$> goPTerm t
-                                <*> go3TupledPTerms ts
 
     goImplicits : List (x, y, z, PiInfo (PTerm' nm), PTerm' nm) ->
                       Core (List (x, y, z, PiInfo (PTerm' nm), PTerm' nm))
@@ -513,6 +514,9 @@ mapPTerm f = goPTerm where
     goPTerm (PWithUnambigNames fc ns rhs)
       = f $ PWithUnambigNames fc ns (goPTerm rhs)
 
+    goPArg : PArg' nm -> PArg' nm
+    goPArg = map goPTerm
+
     goPFieldUpdate : PFieldUpdate' nm -> PFieldUpdate' nm
     goPFieldUpdate (PSetField p t)    = PSetField p $ goPTerm t
     goPFieldUpdate (PSetFieldApp p t) = PSetFieldApp p $ goPTerm t
@@ -556,10 +560,10 @@ mapPTerm f = goPTerm where
     goPDecl (PUsing fc mnts ps)
       = PUsing fc (goPairedPTerms mnts) (goPDecl <$> ps)
     goPDecl (PInterface fc v mnts n doc nrts ns mn ps)
-      = PInterface fc v (goPairedPTerms mnts) n doc (go3TupledPTerms nrts) ns mn (goPDecl <$> ps)
+      = PInterface fc v (goPairedPTerms mnts) n doc (go4TupledPTerms nrts) ns mn (goPDecl <$> ps)
     goPDecl (PImplementation fc v opts p is cs n ts mn ns mps)
       = PImplementation fc v opts p (goImplicits is) (goPairedPTerms cs)
-           n (goPTerm <$> ts) mn ns (map (goPDecl <$>) mps)
+           n (goPArg <$> ts) mn ns (map (goPDecl <$>) mps)
     goPDecl (PRecord fc doc v tot (MkPRecord n nts opts mn fs))
       = PRecord fc doc v tot
           (MkPRecord n (go4TupledPTerms nts) opts mn (map (mapFC goRecordField) fs))
@@ -607,10 +611,6 @@ mapPTerm f = goPTerm where
     goPairedSnocPTerms : SnocList (x, PTerm' nm) -> SnocList (x, PTerm' nm)
     goPairedSnocPTerms [<] = [<]
     goPairedSnocPTerms (ts :< (a, t)) = goPairedSnocPTerms ts :< (a, goPTerm t)
-
-    go3TupledPTerms : List (x, y, PTerm' nm) -> List (x, y, PTerm' nm)
-    go3TupledPTerms [] = []
-    go3TupledPTerms ((a, b, t) :: ts) = (a, b, goPTerm t) :: go3TupledPTerms ts
 
     goImplicits : List (x, y, z, PiInfo (PTerm' nm), PTerm' nm) -> List (x, y, z, PiInfo (PTerm' nm), PTerm' nm)
     goImplicits [] = []

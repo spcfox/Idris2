@@ -206,6 +206,17 @@ export %inline
 pure : (val : ty) -> Grammar state tok False ty
 pure = Empty
 
+||| Sequence of zero or more grammars. If any consume, the sequence is
+||| guaranteed to consume.
+export
+traverseList : {c : _} -> (a -> Grammar state tok c b) ->
+               (xs : List a) -> Grammar state tok (c && not (null xs)) (List b)
+traverseList _ [] = rewrite andFalseFalse c in pure []
+traverseList f (x :: xs) = do
+  rewrite andTrueNeutral c
+  rewrite sym $ orSameAndRightNeutral c _
+  [| f x :: traverseList f xs |]
+
 ||| Check whether the next token satisfies a predicate
 export %inline
 nextIs : String -> (tok -> Bool) -> Grammar state tok False tok

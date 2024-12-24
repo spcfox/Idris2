@@ -280,24 +280,24 @@ mutual
       braceArgs : OriginDesc -> IndentInfo -> Rule (List ArgType)
       braceArgs fname indents
         = do start <- bounds (decoratedSymbol fname "{")
-             mustWork $ do
-               list <- sepBy (decoratedSymbol fname ",")
-                        $ do x <- bounds (UN . Basic <$> decoratedSimpleNamedArg fname)
-                             let fc = boundToFC fname x
-                             option (NamedArg x.val $ PRef fc x.val)
-                              $ do tm <- decoratedSymbol fname "=" *> typeExpr pdef fname indents
-                                   pure (NamedArg x.val tm)
-               matchAny <- option [] (if isCons list then
-                                         do decoratedSymbol fname ","
-                                            x <- bounds (decoratedSymbol fname "_")
-                                            pure [underscore (boundToFC fname x)]
-                                      else fail "non-empty list required")
-               end <- bounds (decoratedSymbol fname "}")
-               matchAny <- do let fc = boundToFC fname (mergeBounds start end)
-                              pure $ if isNil list
-                                then [underscore fc]
-                                else matchAny
-               pure $ matchAny ++ list
+             commit
+             list <- sepBy (decoratedSymbol fname ",")
+                      $ do x <- bounds (UN . Basic <$> decoratedSimpleNamedArg fname)
+                           let fc = boundToFC fname x
+                           option (NamedArg x.val $ PRef fc x.val)
+                            $ do tm <- decoratedSymbol fname "=" *> typeExpr pdef fname indents
+                                 pure (NamedArg x.val tm)
+             matchAny <- option [] (if isCons list then
+                                       do decoratedSymbol fname ","
+                                          x <- bounds (decoratedSymbol fname "_")
+                                          pure [underscore (boundToFC fname x)]
+                                    else fail "non-empty list required")
+             end <- bounds (decoratedSymbol fname "}")
+             matchAny <- do let fc = boundToFC fname (mergeBounds start end)
+                            pure $ if isNil list
+                              then [underscore fc]
+                              else matchAny
+             pure $ matchAny ++ list
 
         <|> do decoratedSymbol fname "@{"
                commit
@@ -1719,17 +1719,27 @@ implBinds fname indents namedImpl = concatMap (map adjust) <$> go where
           pure (ns :: more)
     <|> pure []
 
-ifaceParam : OriginDesc -> IndentInfo -> Rule (List Name, (RigCount, PTerm))
-ifaceParam fname indents
-    = do decoratedSymbol fname "("
-         rig <- multiplicity fname
-         ns <- sepBy1 (decoratedSymbol fname ",") (decorate fname Bound name)
-         decoratedSymbol fname ":"
-         tm <- typeExpr pdef fname indents
-         decoratedSymbol fname ")"
-         pure (forget ns, (rig, tm))
-  <|> do n <- bounds (decorate fname Bound name)
-         pure ([n.val], (erased, PInfer (boundToFC fname n)))
+typedArg : OriginDesc -> IndentInfo -> Rule (List (Name, RigCount, PiInfo PTerm, PTerm))
+typedArg fname indents
+    = do params <- parens fname $ pibindListName fname indents
+         pure $ map (\(c, n, tm) => (n.val, c, Explicit, tm)) params
+  <|> do decoratedSymbol fname "{"
+         commit
+         info <- pure AutoImplicit <* decoratedKeyword fname "auto"
+             <|> (decoratedKeyword fname "default" *> DefImplicit <$> simpleExpr fname indents)
+             <|> pure Implicit
+         params <- pibindListName fname indents
+         decoratedSymbol fname "}"
+         pure $ map (\(c, n, tm) => (n.val, c, info, tm)) params
+
+param : RigCount -> OriginDesc -> IndentInfo -> Rule (List (Name, RigCount, PiInfo PTerm,  PTerm))
+param rig fname indents
+    = typedArg fname indents
+  <|> do n <- bounds (UN . Basic <$> decoratedSimpleBinderName fname)
+         pure [(n.val, rig, Explicit, PInfer (boundToFC fname n))]
+
+ifaceParam : OriginDesc -> IndentInfo -> Rule (List (Name, RigCount, PiInfo PTerm, PTerm))
+ifaceParam = param erased
 
 ifaceDecl : OriginDesc -> IndentInfo -> Rule PDecl
 ifaceDecl fname indents
@@ -1740,8 +1750,8 @@ ifaceDecl fname indents
                          commit
                          cons   <- constraints fname indents
                          n      <- decorate fname Typ name
-                         paramss <- many (ifaceParam fname indents)
-                         let params = concatMap (\ (ns, rt) => map (\ n => (n, rt)) ns) paramss
+                         paramss <- many (continue indents >> ifaceParam fname indents)
+                         let params = concat paramss
                          det    <- option [] $ decoratedSymbol fname "|" *> sepBy (decoratedSymbol fname ",") (decorate fname Bound name)
                          decoratedKeyword fname "where"
                          dc <- optional (recordConstructor fname)
@@ -1749,6 +1759,13 @@ ifaceDecl fname indents
                          pure (\fc : FC => PInterface fc
                                       vis cons n doc params det dc (collectDefs body)))
          pure (b.val (boundToFC fname b))
+
+pArg : OriginDesc -> IndentInfo -> Rule (List PArg)
+pArg fname indents = argExpr plhs fname indents >>= traverseList (\case
+  UnnamedExpArg t  => pure $ Explicit EmptyFC t
+  UnnamedAutoArg t => pure $ Auto EmptyFC t
+  NamedArg n t     => pure $ Named EmptyFC n t
+  WithArg t        => fatalError "Unexpected with argument")
 
 implDecl : OriginDesc -> IndentInfo -> Rule PDecl
 implDecl fname indents
@@ -1764,7 +1781,7 @@ implDecl fname indents
                          impls  <- implBinds fname indents (isJust iname)
                          cons   <- constraints fname indents
                          n      <- decorate fname Typ name
-                         params <- many (continue indents *> simpleExpr fname indents)
+                         params <- concat <$> many (pArg fname indents)
                          nusing <- option [] $ decoratedKeyword fname "using"
                                             *> forget <$> some (decorate fname Function name)
                          body <- optional $ decoratedKeyword fname "where" *> blockAfter col (topDecl fname)
@@ -1816,25 +1833,8 @@ fieldDecl fname indents
                     pure (MkRecordField doc rig p (forget ns) ty))
              pure b.withFC
 
-typedArg : OriginDesc -> IndentInfo -> Rule (List (Name, RigCount, PiInfo PTerm, PTerm))
-typedArg fname indents
-    = do params <- parens fname $ pibindListName fname indents
-         pure $ map (\(c, n, tm) => (n.val, c, Explicit, tm)) params
-  <|> do decoratedSymbol fname "{"
-         commit
-         info <-
-                 (pure  AutoImplicit <* decoratedKeyword fname "auto"
-              <|> (decoratedKeyword fname "default" *> DefImplicit <$> simpleExpr fname indents)
-              <|> pure      Implicit)
-         params <- pibindListName fname indents
-         decoratedSymbol fname "}"
-         pure $ map (\(c, n, tm) => (n.val, c, info, tm)) params
-
 recordParam : OriginDesc -> IndentInfo -> Rule (List (Name, RigCount, PiInfo PTerm,  PTerm))
-recordParam fname indents
-    = typedArg fname indents
-  <|> do n <- bounds (UN . Basic <$> decoratedSimpleBinderName fname)
-         pure [(n.val, top, Explicit, PInfer (boundToFC fname n))]
+recordParam = param top
 
 -- A record without a where is a forward declaration
 recordBody : OriginDesc -> IndentInfo ->
