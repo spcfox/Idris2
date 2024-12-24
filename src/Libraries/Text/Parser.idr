@@ -1,6 +1,7 @@
 module Libraries.Text.Parser
 
 import Data.Bool
+import Data.Maybe
 import Data.Nat
 import public Data.List1
 
@@ -16,9 +17,7 @@ match : (Eq k, TokenKind k) =>
         (kind : k) ->
         Grammar state (Token k) True (TokType kind)
 match k = terminal "Unrecognised input" $
-    \t => if t.kind == k
-             then Just $ tokValue k t.text
-             else Nothing
+    \t => toMaybe (t.kind == k) $ tokValue k t.text
 
 ||| Optionally parse a thing, with a default value if the grammar doesn't
 ||| match. May match the empty input.
@@ -26,8 +25,8 @@ export
 option : {c : Bool} ->
          (def : a) -> (p : Grammar state tok c a) ->
          Grammar state tok False a
-option {c = False} def p = p <|> pure def
-option {c = True} def p = p <|> pure def
+option def p = rewrite sym (andFalseFalse c) in
+                       p <|> pure def
 
 ||| Optionally parse a thing.
 ||| To provide a default value, use `option` instead.
