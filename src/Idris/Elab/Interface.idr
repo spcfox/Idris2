@@ -119,9 +119,10 @@ mkIfaceData : {vars : _} ->
               Name -> Name -> List (Name, RigCount, PiInfo RawImp, RawImp) ->
               List Name -> List (Name, RigCount, RawImp) -> Core ImpDecl
 mkIfaceData {vars} ifc def_vis env constraints n conName ps dets meths
-    = let opts = if isNil dets
-                    then [NoHints, UniqueSearch]
-                    else [NoHints, UniqueSearch, SearchBy dets]
+    = let dets' = if isNil dets
+                     then getExplicitArgs ps
+                     else dets
+          opts = [NoHints, UniqueSearch, SearchBy dets']
           pNames = map fst ps
           retty = apply (IVar vfc n) $ toArg vfc <$> ps
           conty = mkTy vfc Implicit     (map jname ps) $
@@ -143,6 +144,11 @@ mkIfaceData {vars} ifc def_vis env constraints n conName ps dets meths
 
     bhere : (Maybe Name, RigCount, RawImp) -> (Maybe Name, RigCount, RawImp)
     bhere (n, c, t) = (n, c, IBindHere (getFC t) (PI erased) t)
+
+    getExplicitArgs : List (Name, RigCount, PiInfo RawImp, RawImp) -> List Name
+    getExplicitArgs = mapMaybe $ \(n, _, p, _) => case p of
+      Explicit => Just n
+      _        => Nothing
 
 -- Get the implicit arguments for a method declaration or constraint hint
 -- to allow us to build the data declaration
