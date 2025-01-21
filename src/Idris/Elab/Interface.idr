@@ -438,7 +438,7 @@ elabInterface {vars} ifc def_vis env nest constraints iname params dets mcon bod
                           Just d => pure (d.count, d.type)
                           Nothing => throw (GenericMsg dfc ("No method named " ++ show n ++ " in interface " ++ show iname))
 
-             let ity = apply (IVar vdfc iname) (map (IVar vdfc) paramNames)
+             let ity = apply (IVar vdfc iname) $ toArg vdfc <$> params
 
              -- Substitute the method names with their top level function
              -- name, so they don't get implicitly bound in the name
