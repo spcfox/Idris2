@@ -29,8 +29,8 @@ genEq typeName = do
         let nArgs = countArgs ty
         let xs = map (\i => "x_" ++ show i) $ take nArgs [1..]
         let ys = map (\i => "y_" ++ show i) $ take nArgs [1..]
-        let px = foldl (IApp pos) (IVar pos constr) $ map (IBindVar pos) xs
-        let py = foldl (IApp pos) (IVar pos constr) $ map (IBindVar pos) ys
+        let px = foldl (IApp pos) (IVar pos constr) $ map (IBindVar pos . UN . Basic) xs
+        let py = foldl (IApp pos) (IVar pos constr) $ map (IBindVar pos . UN . Basic) ys
         pure $ PatClause pos `(MkPair ~(px) ~(py))
              $ foldl and `(True) $ zipWith compareEq xs ys
       finalClause : Clause
