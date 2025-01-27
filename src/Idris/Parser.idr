@@ -1140,6 +1140,9 @@ mutual
     <|> do decoratedPragma fname "tcinline"
            commit
            pure $ IFnOpt TCInline
+    <|> do decoratedPragma fname "lhsinline"
+           commit
+           pure $ IFnOpt LHSInline
     <|> do decoratedPragma fname "extern"
            pure $ IFnOpt ExternFn
     <|> do decoratedPragma fname "macro"

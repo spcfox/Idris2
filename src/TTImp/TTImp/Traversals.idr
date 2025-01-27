@@ -35,6 +35,7 @@ parameters (f : RawImp' nm -> RawImp' nm)
   mapFnOpt NoInline = NoInline
   mapFnOpt Deprecate = Deprecate
   mapFnOpt TCInline = TCInline
+  mapFnOpt LHSInline = LHSInline
   mapFnOpt (Hint b) = Hint b
   mapFnOpt (GlobalHint b) = GlobalHint b
   mapFnOpt ExternFn = ExternFn

@@ -235,6 +235,7 @@ mutual
        ||| Mark a function as deprecated.
        Deprecate : FnOpt' nm
        TCInline : FnOpt' nm
+       LHSInline : FnOpt' nm
        -- Flag means the hint is a direct hint, not a function which might
        -- find the result (e.g. chasing parent interface dictionaries)
        Hint : Bool -> FnOpt' nm
@@ -274,6 +275,7 @@ mutual
     show NoInline = "%noinline"
     show Deprecate = "%deprecate"
     show TCInline = "%tcinline"
+    show LHSInline = "%lhsinline"
     show (Hint t) = "%hint " ++ show t
     show (GlobalHint t) = "%globalhint " ++ show t
     show ExternFn = "%extern"
@@ -292,6 +294,7 @@ mutual
     NoInline == NoInline = True
     Deprecate == Deprecate = True
     TCInline == TCInline = True
+    LHSInline == LHSInline = True
     (Hint x) == (Hint y) = x == y
     (GlobalHint x) == (GlobalHint y) = x == y
     ExternFn == ExternFn = True

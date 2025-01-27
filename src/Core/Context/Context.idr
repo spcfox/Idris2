@@ -212,6 +212,7 @@ data DefFlag
          -- of a hack to make sure interface dictionaries are properly inlined
          -- (otherwise they look potentially non terminating) so use with
          -- care!
+    | LHSInline
     | SetTotal TotalReq
     | BlockedHint -- a hint, but blocked for the moment (so don't use)
     | Macro
@@ -239,6 +240,7 @@ Eq DefFlag where
     (==) Invertible Invertible = True
     (==) Overloadable Overloadable = True
     (==) TCInline TCInline = True
+    (==) LHSInline LHSInline = True
     (==) (SetTotal x) (SetTotal y) = x == y
     (==) BlockedHint BlockedHint = True
     (==) Macro Macro = True
@@ -256,6 +258,7 @@ Show DefFlag where
   show Invertible = "invertible"
   show Overloadable = "overloadable"
   show TCInline = "tcinline"
+  show LHSInline = "lhsinline"
   show (SetTotal x) = show x
   show BlockedHint = "blockedhint"
   show Macro = "macro"

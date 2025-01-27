@@ -122,6 +122,7 @@ mutual
     map f NoInline = NoInline
     map f Deprecate = Deprecate
     map f TCInline = TCInline
+    map f LHSInline = LHSInline
     map f (Hint b) = Hint b
     map f (GlobalHint b) = GlobalHint b
     map f ExternFn = ExternFn

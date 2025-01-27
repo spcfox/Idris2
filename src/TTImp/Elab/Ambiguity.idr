@@ -147,8 +147,10 @@ expandAmbigName mode nest env orig args (IVar fc x) exp
              then alternativeFirstSuccess $ reverse $
                     allSplits args <&> \(macroArgs, extArgs) =>
                       (IRunElab fc False $ ICoerced fc $ IVar fc n `buildAlt` macroArgs) `buildAlt` extArgs
-             else wrapDot prim est mode n (map (snd . snd) args)
-                    (definition def) (buildAlt (IVar fc n) args)
+             else do
+               let expr = buildAlt (IVar fc n) args
+               if not (notLHS mode) && (Context.LHSInline `elem` flags def) then expr else
+                 wrapDot prim est mode n (map (snd . snd) args) (definition def) expr
       where
         -- All splits of the original list starting from the (empty, full) finishing with (full, empty)
         allSplits : (l : List a) -> Vect (S $ length l) (List a, List a)

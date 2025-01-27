@@ -46,6 +46,8 @@ processFnOpt fc _ ndef Deprecate
     = setFlag fc ndef Deprecate
 processFnOpt fc _ ndef TCInline
     = setFlag fc ndef TCInline
+processFnOpt fc _ ndef LHSInline
+    = setFlag fc ndef LHSInline
 processFnOpt fc True ndef (Hint d)
     = do defs <- get Ctxt
          Just ty <- lookupTyExact ndef (gamma defs)

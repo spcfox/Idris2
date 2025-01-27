@@ -1055,6 +1055,7 @@ TTC DefFlag where
   toBuf b Invertible = tag 3
   toBuf b Overloadable = tag 4
   toBuf b TCInline = tag 5
+  toBuf b LHSInline = tag 14
   toBuf b (SetTotal x) = do tag 6; toBuf b x
   toBuf b BlockedHint = tag 7
   toBuf b Macro = tag 8
@@ -1077,6 +1078,7 @@ TTC DefFlag where
              11 => do ci <- fromBuf b; pure (ConType ci)
              12 => do x <- fromBuf b; pure (Identity x)
              13 => pure NoInline
+             14 => pure LHSInline
              15 => pure Deprecate
              _ => corrupt "DefFlag"
 
