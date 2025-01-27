@@ -88,12 +88,12 @@ doBind ns (IPi fc rig p mn aty retty)
     = let ns' = case mn of
                      Just (UN (Basic n)) => filter (\x => fst x /= n) ns
                      _ => ns in
-          IPi fc rig p mn (doBind ns' aty) (doBind ns' retty)
+          IPi fc rig p mn (doBind ns aty) (doBind ns' retty)
 doBind ns (ILam fc rig p mn aty sc)
     = let ns' = case mn of
                      Just (UN (Basic n)) => filter (\x => fst x /= n) ns
                      _ => ns in
-          ILam fc rig p mn (doBind ns' aty) (doBind ns' sc)
+          ILam fc rig p mn (doBind ns aty) (doBind ns' sc)
 doBind ns (IApp fc fn av)
     = IApp fc (doBind ns fn) (doBind ns av)
 doBind ns (IAutoApp fc fn av)
