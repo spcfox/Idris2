@@ -38,7 +38,9 @@ renameIBinds rs us (IPi fc c p n ty sc)
 renameIBinds rs us (ILam fc c p n ty sc)
     = pure $ ILam fc c p n !(renameIBinds rs us ty) !(renameIBinds rs us sc)
 renameIBinds rs us (ILet fc lfc rig nm ty val sc)
-    = pure $ ILet fc lfc rig nm ty val !(renameIBinds rs us sc)
+    = pure $ ILet fc lfc rig nm !(renameIBinds rs us ty)
+                                !(renameIBinds rs us val)
+                                !(renameIBinds rs us sc)
 renameIBinds rs us (IApp fc fn arg)
     = pure $ IApp fc !(renameIBinds rs us fn) !(renameIBinds rs us arg)
 renameIBinds rs us (IAutoApp fc fn arg)
@@ -100,7 +102,7 @@ doBind ns (ILet fc lfc rig nm ty val sc) =
     let ns' = case nm of
                      UN (Basic n) => filter (\x => fst x /= n) ns
                      _ => ns in
-    ILet fc lfc rig nm ty val (doBind ns' sc)
+    ILet fc lfc rig nm (doBind ns ty) (doBind ns val) (doBind ns' sc)
 doBind ns (IApp fc fn av)
     = IApp fc (doBind ns fn) (doBind ns av)
 doBind ns (IAutoApp fc fn av)

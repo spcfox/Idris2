@@ -2,3 +2,4 @@
 
 check InType.idr
 check AfterLet.idr
+check InLet.idr
