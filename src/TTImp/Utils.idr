@@ -98,6 +98,8 @@ findBindableNames arg env used (IAutoApp fc fn av)
     = findBindableNames False env used fn ++ findBindableNames True env used av
 findBindableNames arg env used (IWithApp fc fn av)
     = findBindableNames False env used fn ++ findBindableNames True env used av
+findBindableNames arg env used (ILet fc lfc rig nm ty val sc)
+    = findBindableNames True env used sc
 findBindableNames arg env used (IAs fc _ _ (UN (Basic n)) pat)
     = (n, genUniqueStr used n) :: findBindableNames arg env used pat
 findBindableNames arg env used (IAs fc _ _ n pat)
