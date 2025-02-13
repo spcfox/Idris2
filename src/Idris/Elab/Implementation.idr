@@ -238,7 +238,7 @@ elabImplementation {vars} ifc vis opts_in pass env nest is cons iname ps named i
 
                -- 2. Elaborate top level function types for this interface
                defs <- get Ctxt
-               fns <- topMethTypes [] impName methImps (nameRoot <$> impsp)
+               fns <- topMethTypes [] impName methImps (show <$> impsp)
                                       (implParams cdata) (params cdata)
                                       (map name (methods cdata))
                                       (methods cdata)
@@ -410,7 +410,7 @@ elabImplementation {vars} ifc vis opts_in pass env nest is cons iname ps named i
              -- parameters
              let upds' = !(traverse (applyCon impName) allmeths)
              let mty_in = substNames vars upds' meth.type
-             let implicits = mapMaybe isBasic $ mapMaybe (map snd . isUN) $ findImplicits mty_in
+             let implicits = show <$> findImplicits mty_in
              let (upds, mty_in) = runState Prelude.Nil (renameIBinds impsp implicits mty_in)
              -- Finally update the method type so that implicits from the
              -- parameters are passed through to any earlier methods which
@@ -433,7 +433,7 @@ elabImplementation {vars} ifc vis opts_in pass env nest is cons iname ps named i
              let mbase = bindImps methImps $
                          bindConstraints vfc AutoImplicit cons $
                          mty_params
-             let ibound = nameRoot <$> findImplicits mbase
+             let ibound = show <$> findImplicits mbase
 
              mty <- bindTypeNamesUsed ifc ibound vars mbase
 

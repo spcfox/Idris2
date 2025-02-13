@@ -126,7 +126,7 @@ trySplit loc lhsraw lhs rhs n
     valid _ = Nothing
 
     fixNames : RawImp -> RawImp
-    fixNames (IVar loc' n@(UN (Basic _))) = IBindVar loc' n
+    fixNames (IVar loc' n@(UN _)) = IBindVar loc' n
     fixNames (IVar loc' (MN _ _)) = Implicit loc' True
     fixNames (IApp loc' f a) = IApp loc' (fixNames f) (fixNames a)
     fixNames (IAutoApp loc' f a) = IAutoApp loc' (fixNames f) (fixNames a)
