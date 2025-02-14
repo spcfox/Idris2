@@ -30,7 +30,7 @@ Now create a file containing
     import Idris.Syntax
 
     compile :
-      Ref Ctxt Defs -> Ref Syn SyntaxInfo ->
+      Ref Ctxt Defs -> ReadOnlyRef Syn SyntaxInfo ->
       (tmpDir : String) -> (execDir : String) ->
       ClosedTerm -> (outfile : String) -> Core (Maybe String)
     compile syn defs tmp dir term file
@@ -38,7 +38,7 @@ Now create a file containing
            pure Nothing
 
     execute :
-      Ref Ctxt Defs -> Ref Syn SyntaxInfo ->
+      Ref Ctxt Defs -> ReadOnlyRef Syn SyntaxInfo ->
       (execDir : String) -> ClosedTerm -> Core ()
     execute defs syn dir term = do coreLift $ putStrLn "Maybe in an hour."
 

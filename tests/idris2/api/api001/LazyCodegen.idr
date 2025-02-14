@@ -9,7 +9,7 @@ import Idris.Syntax
 
 compile :
   Ref Ctxt Defs ->
-  Ref Syn SyntaxInfo ->
+  ReadOnlyRef Syn SyntaxInfo ->
   (tmpDir : String) -> (execDir : String) ->
   ClosedTerm -> (outfile : String) -> Core (Maybe String)
 compile defs syn tmp dir term file
@@ -18,7 +18,7 @@ compile defs syn tmp dir term file
 
 execute :
   Ref Ctxt Defs ->
-  Ref Syn SyntaxInfo ->
+  ReadOnlyRef Syn SyntaxInfo ->
   (execDir : String) -> ClosedTerm -> Core ()
 execute defs syn dir term = do coreLift $ putStrLn "Maybe in an hour."
 
