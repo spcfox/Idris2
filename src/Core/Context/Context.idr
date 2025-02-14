@@ -27,23 +27,18 @@ data Ref : (l : label) -> Type -> Type where
      [search l]
      MkRef : IORef a -> Ref x a
 
+export
+data ReadOnlyRef : (l : label) -> Type -> Type where
+    [search l]
+    MkReadOnlyRef : IORef a -> ReadOnlyRef x a
+
+export %hint %inline
+toReadOnly : Ref x a -> ReadOnlyRef x a
+toReadOnly (MkRef ref) = MkReadOnlyRef ref
+
 export %inline
-getRef : (x : label) -> {auto ref : Ref x a} -> IO a
-getRef x {ref = MkRef io} = readIORef io
-
-namespace ReadOnly
-  export
-  data ReadOnlyRef : (l : label) -> Type -> Type where
-      [search l]
-      MkReadOnlyRef : Ref x a -> ReadOnlyRef x a
-
-  export %hint %inline
-  toReadOnly : Ref x a -> ReadOnlyRef x a
-  toReadOnly = MkReadOnlyRef
-
-  export %inline
-  getRef : (x : label) -> {auto ref : ReadOnlyRef x a} -> IO a
-  getRef x {ref = MkReadOnlyRef ref} = Context.getRef x
+getIO : (x : label) -> {auto ref : ReadOnlyRef x a} -> IO a
+getIO x {ref = MkReadOnlyRef ref} = readIORef ref
 
 public export
 data HoleInfo
