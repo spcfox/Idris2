@@ -23,10 +23,8 @@ import Libraries.Data.WithDefault
 
 export
 fuzzySearch : {auto c : Ref Ctxt Defs}
-           -> {auto u : Ref UST UState}
-           -> {auto s : Ref Syn SyntaxInfo}
-           -> {auto m : Ref MD Metadata}
-           -> {auto o : Ref ROpts REPLOpts}
+           -> {auto s : ReadOnlyRef Syn SyntaxInfo}
+           -> {auto o : ReadOnlyRef ROpts REPLOpts}
            -> PTerm
            -> Core REPLResult
 fuzzySearch expr = do

@@ -15,7 +15,7 @@ import Libraries.Data.WithDefault
 
 public export
 interface Reify a where
-  reify : {auto c : Ref Ctxt Defs} ->
+  reify : {auto c : ReadOnlyRef Ctxt Defs} ->
           {vars : _} ->
           Defs -> NF vars -> Core a
 
@@ -71,7 +71,7 @@ reflectionttimp : String -> Name
 reflectionttimp n = NS reflectionTTImpNS (UN $ Basic n)
 
 export
-cantReify : Ref Ctxt Defs => {vars : _} -> NF vars -> String -> Core a
+cantReify : ReadOnlyRef Ctxt Defs => {vars : _} -> NF vars -> String -> Core a
 cantReify val ty = do
   logNF "reflection.reify" 10 "Can't reify as \{ty}" (mkEnv emptyFC vars) val
   throw (GenericMsg (getLoc val) ("Can't reify as " ++ ty))

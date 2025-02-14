@@ -903,9 +903,14 @@ newRef x val
     = do ref <- coreLift (newIORef val)
          pure (MkRef ref)
 
+-- export %inline
+-- get : (x : label) -> {auto ref : Ref x a} -> Core a
+-- get x = coreLift $ getRef x
+
+-- namespace ReadOnly
 export %inline
-get : (x : label) -> {auto ref : Ref x a} -> Core a
-get x {ref = MkRef io} = coreLift (readIORef io)
+get : (x : label) -> {auto ref : ReadOnlyRef x a} -> Core a
+get x = coreLift $ getRef x
 
 export %inline
 put : (x : label) -> {auto ref : Ref x a} -> a -> Core ()

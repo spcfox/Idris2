@@ -27,7 +27,7 @@ parameters
   {auto s : Ref Syn SyntaxInfo}
   {auto m : Ref MD Metadata}
   {auto u : Ref UST UState}
-  {auto r : Ref ROpts REPLOpts}
+  {auto r : ReadOnlyRef ROpts REPLOpts}
   (hidx : Int)
   (hole : Name)
   (env : Env Term lhsCtxt)

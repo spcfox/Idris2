@@ -42,7 +42,7 @@ parseTask line =
          in Nothing
 
 ||| Name completion receives the prefix of the name to be completed
-nameCompletion : {auto c : Ref Ctxt Defs} ->
+nameCompletion : {auto c : ReadOnlyRef Ctxt Defs} ->
                  (pref : String) -> Core (List String)
 nameCompletion pref = do
   log "ide-mode.completion" 30 $ "Looking at name completions for \{show pref}"
@@ -74,7 +74,7 @@ oneOfCompletion pref candidates = do
 ||| %def         -> %default
 ||| %default to  -> %default total
 ||| %logging "id -> %logging "ide-mode.(...)" with all the valid topics!
-pragmaCompletion : {auto c : Ref Ctxt Defs} ->
+pragmaCompletion : {auto c : ReadOnlyRef Ctxt Defs} ->
                    (prag : Maybe KwPragma) -> (pref : String) ->
                    Core (Maybe (String, List String))
 pragmaCompletion Nothing pref = pure $ do
@@ -109,7 +109,7 @@ pragmaCompletion (Just kw) pref = go (pragmaArgs kw) (break isSpace pref) where
 ||| 1. the ignored prefix
 ||| 2. the list of possible completions
 export
-completion : {auto c : Ref Ctxt Defs} ->
+completion : {auto c : ReadOnlyRef Ctxt Defs} ->
              (line : String) -> Core (Maybe (String, List String))
 completion line = do
   let Just (ctxt, task) = parseTask line

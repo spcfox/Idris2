@@ -14,13 +14,13 @@ import Libraries.Data.NameMap
 
 %default covering
 
-isAssertTotal : Ref Ctxt Defs => NHead{} -> Core Bool
+isAssertTotal : ReadOnlyRef Ctxt Defs => NHead{} -> Core Bool
 isAssertTotal (NRef _ fn_in) =
   do fn <- getFullName fn_in
      pure (fn == NS builtinNS (UN $ Basic "assert_total"))
 isAssertTotal _ = pure False
 
-nameIn : {auto c : Ref Ctxt Defs} ->
+nameIn : {auto c : ReadOnlyRef Ctxt Defs} ->
          Defs -> List Name -> NF [] -> Core Bool
 nameIn defs tyns (NBind fc x b sc)
     = if !(nameIn defs tyns !(evalClosure defs (binderType b)))
@@ -47,10 +47,10 @@ nameIn defs tyns _ = pure False
 
 -- Check an argument type doesn't contain a negative occurrence of any of
 -- the given type names
-posArg  : {auto c : Ref Ctxt Defs} ->
+posArg  : {auto c : ReadOnlyRef Ctxt Defs} ->
           Defs -> List Name -> NF [] -> Core Terminating
 
-posArgs : {auto c : Ref Ctxt Defs} ->
+posArgs : {auto c : ReadOnlyRef Ctxt Defs} ->
           Defs -> List Name -> List (Closure []) -> Core Terminating
 posArgs defs tyn [] = pure IsTerminating
 posArgs defs tyn (x :: xs)
@@ -107,7 +107,7 @@ posArg defs tyn nf
   = do logNF "totality.positivity" 50 "Reached the catchall" [] nf
        pure IsTerminating
 
-checkPosArgs : {auto c : Ref Ctxt Defs} ->
+checkPosArgs : {auto c : ReadOnlyRef Ctxt Defs} ->
                Defs -> List Name -> NF [] -> Core Terminating
 checkPosArgs defs tyns (NBind fc x (Pi _ _ e ty) sc)
     = case !(posArg defs tyns !(evalClosure defs ty)) of
@@ -120,7 +120,7 @@ checkPosArgs defs tyns nf
   = do logNF "totality.positivity" 50 "Giving up on non-Pi type" [] nf
        pure IsTerminating
 
-checkCon : {auto c : Ref Ctxt Defs} ->
+checkCon : {auto c : ReadOnlyRef Ctxt Defs} ->
            Defs -> List Name -> Name -> Core Terminating
 checkCon defs tyns cn
     = case !(lookupTyExact cn (gamma defs)) of
@@ -135,7 +135,7 @@ checkCon defs tyns cn
                  checkPosArgs defs tyns tyNF
             bad => pure bad
 
-checkData : {auto c : Ref Ctxt Defs} ->
+checkData : {auto c : ReadOnlyRef Ctxt Defs} ->
             Defs -> List Name -> List Name -> Core Terminating
 checkData defs tyns [] = pure IsTerminating
 checkData defs tyns (c :: cs)

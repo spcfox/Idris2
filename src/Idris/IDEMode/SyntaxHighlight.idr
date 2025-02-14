@@ -17,8 +17,8 @@ import Libraries.Data.PosMap
 
 ||| Output some data using current dialog index
 export
-printOutput : {auto c : Ref Ctxt Defs} ->
-              {auto o : Ref ROpts REPLOpts} ->
+printOutput : {auto c : ReadOnlyRef Ctxt Defs} ->
+              {auto o : ReadOnlyRef ROpts REPLOpts} ->
               SourceHighlight -> Core ()
 printOutput highlight
   =  do opts <- get ROpts
@@ -27,22 +27,22 @@ printOutput highlight
           IDEMode i _ f =>
             send f (Intermediate (HighlightSource [highlight]) i)
 
-outputHighlight : {auto c : Ref Ctxt Defs} ->
-                  {auto opts : Ref ROpts REPLOpts} ->
+outputHighlight : {auto c : ReadOnlyRef Ctxt Defs} ->
+                  {auto opts : ReadOnlyRef ROpts REPLOpts} ->
                   Highlight -> Core ()
 outputHighlight hl =
   printOutput $ Full hl
 
 lwOutputHighlight :
-  {auto c : Ref Ctxt Defs} ->
-  {auto opts : Ref ROpts REPLOpts} ->
+  {auto c : ReadOnlyRef Ctxt Defs} ->
+  {auto opts : ReadOnlyRef ROpts REPLOpts} ->
   (FileName, NonEmptyFC, Decoration) -> Core ()
 lwOutputHighlight (fname, nfc, decor) =
   printOutput $ Lw $ MkLwHighlight {location = cast (fname, nfc), decor}
 
-outputNameSyntax : {auto c : Ref Ctxt Defs} ->
-                   {auto s : Ref Syn SyntaxInfo} ->
-                   {auto opts : Ref ROpts REPLOpts} ->
+outputNameSyntax : {auto c : ReadOnlyRef Ctxt Defs} ->
+                   {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                   {auto opts : ReadOnlyRef ROpts REPLOpts} ->
                    (FileName, NonEmptyFC, Decoration, Name) -> Core ()
 outputNameSyntax (fname, nfc, decor, nm) = do
       defs <- get Ctxt
@@ -63,10 +63,10 @@ outputNameSyntax (fname, nfc, decor, nm) = do
          }
 
 export
-outputSyntaxHighlighting : {auto c : Ref Ctxt Defs} ->
-                           {auto m : Ref MD Metadata} ->
-                           {auto s : Ref Syn SyntaxInfo} ->
-                           {auto opts : Ref ROpts REPLOpts} ->
+outputSyntaxHighlighting : {auto c : ReadOnlyRef Ctxt Defs} ->
+                           {auto m : ReadOnlyRef MD Metadata} ->
+                           {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                           {auto opts : ReadOnlyRef ROpts REPLOpts} ->
                            String ->
                            REPLResult ->
                            Core REPLResult

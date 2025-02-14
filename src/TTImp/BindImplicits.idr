@@ -123,7 +123,7 @@ doBind ns (IUpdate fc updates tm)
 doBind ns tm = tm
 
 export
-bindNames : {auto c : Ref Ctxt Defs} ->
+bindNames : {auto c : ReadOnlyRef Ctxt Defs} ->
             (arg : Bool) -> RawImp -> Core (List Name, RawImp)
 bindNames arg tm
     = if !isUnboundImplicits

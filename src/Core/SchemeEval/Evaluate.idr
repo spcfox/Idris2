@@ -44,7 +44,7 @@ mutual
        SErased  : FC -> WhyErased (SNF vars) -> SNF vars
        SType    : FC -> Name -> SNF vars
 
-getAllNames : {auto c : Ref Ctxt Defs} ->
+getAllNames : {auto c : ReadOnlyRef Ctxt Defs} ->
               NameMap () -> List Name -> Core (NameMap ())
 getAllNames done [] = pure done
 getAllNames done (x :: xs)
@@ -146,7 +146,7 @@ mutual
   -- We don't use decodeObj because then we have to traverse the term twice.
   -- Instead, decode the ForeignObj directly, which is uglier but faster.
   quoteVector : Ref Sym Integer =>
-                Ref Ctxt Defs =>
+                ReadOnlyRef Ctxt Defs =>
                 SchVars (outer ++ vars) ->
                 Integer -> List ForeignObj ->
                 Core (Term (outer ++ vars))
@@ -274,7 +274,7 @@ mutual
   quoteVector _ _ _ = invalid
 
   quotePiInfo : Ref Sym Integer =>
-                Ref Ctxt Defs =>
+                ReadOnlyRef Ctxt Defs =>
                 SchVars (outer ++ vars) ->
                 ForeignObj ->
                 Core (PiInfo (Term (outer ++ vars)))
@@ -304,7 +304,7 @@ mutual
            else pure Placeholder
 
   quoteBinder : Ref Sym Integer =>
-                Ref Ctxt Defs =>
+                ReadOnlyRef Ctxt Defs =>
                 SchVars (outer ++ vars) ->
                 (forall ty . FC -> RigCount -> PiInfo ty -> ty -> Binder ty) ->
                 ForeignObj -> -- body of binder, represented as a function
@@ -325,7 +325,7 @@ mutual
                       sc')
 
   quotePLet : Ref Sym Integer =>
-              Ref Ctxt Defs =>
+              ReadOnlyRef Ctxt Defs =>
               SchVars (outer ++ vars) ->
               ForeignObj -> -- body of binder, represented as a function
               RigCount ->
@@ -345,7 +345,7 @@ mutual
                       sc')
 
   quote' : Ref Sym Integer =>
-           Ref Ctxt Defs =>
+           ReadOnlyRef Ctxt Defs =>
            SchVars (outer ++ vars) -> ForeignObj ->
            Core (Term (outer ++ vars))
   quote' svs obj
@@ -382,14 +382,14 @@ mutual
 -- in between. This is what we want if we're just looking for a normal
 -- form immediately (so, evaluating under binders)
 export
-quoteObj : {auto c : Ref Ctxt Defs} ->
+quoteObj : {auto c : ReadOnlyRef Ctxt Defs} ->
            SObj vars -> Core (Term vars)
 quoteObj (MkSObj val schEnv)
     = do i <- newRef Sym 0
          quote' {outer = []} schEnv val
 
 mutual
-  snfVector : Ref Ctxt Defs =>
+  snfVector : ReadOnlyRef Ctxt Defs =>
               SchVars vars ->
               Integer -> List ForeignObj ->
               Core (SNF vars)
@@ -515,7 +515,7 @@ mutual
            else invalidS
   snfVector _ _ _ = invalidS
 
-  snfPiInfo : Ref Ctxt Defs =>
+  snfPiInfo : ReadOnlyRef Ctxt Defs =>
               SchVars vars ->
               ForeignObj ->
               Core (PiInfo (SNF vars))
@@ -531,7 +531,7 @@ mutual
                            pure (DefImplicit t')
            else pure Explicit
 
-  snfBinder : Ref Ctxt Defs =>
+  snfBinder : ReadOnlyRef Ctxt Defs =>
               SchVars vars ->
               (forall ty . FC -> RigCount -> PiInfo ty -> ty -> Binder ty) ->
               ForeignObj -> -- body of binder, represented as a function
@@ -548,7 +548,7 @@ mutual
                                   let sc = unsafeApply proc arg
                                   snf' svs sc))
 
-  snfPLet : Ref Ctxt Defs =>
+  snfPLet : ReadOnlyRef Ctxt Defs =>
             SchVars vars ->
             ForeignObj -> -- body of binder, represented as a function
             RigCount ->
@@ -564,7 +564,7 @@ mutual
                                   let sc = unsafeApply proc arg
                                   snf' svs sc))
 
-  snf' : Ref Ctxt Defs =>
+  snf' : ReadOnlyRef Ctxt Defs =>
          SchVars vars -> ForeignObj ->
          Core (SNF vars)
   snf' svs obj
@@ -598,6 +598,6 @@ mutual
                else unsafeVectorRef obj i :: readVector len (i + 1) obj
 
 export
-toSNF : Ref Ctxt Defs =>
+toSNF : ReadOnlyRef Ctxt Defs =>
         SObj vars -> Core (SNF vars)
 toSNF (MkSObj val schEnv) = snf' schEnv val

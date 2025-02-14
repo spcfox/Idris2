@@ -21,7 +21,7 @@ import Data.List
 -- Constants (fromInteger/fromString etc) won't be supported, because in general
 -- they involve resoling interfaces - they'll just become unmatchable patterns.
 
-match : {auto c : Ref Ctxt Defs} ->
+match : {auto c : ReadOnlyRef Ctxt Defs} ->
         NF [] -> (Name, Int, ClosedTerm) -> Core Bool
 match nty (n, i, rty)
     = do defs <- get Ctxt
@@ -42,7 +42,7 @@ match nty (n, i, rty)
              sameRet nf sc'
     sameRet _ _ = pure False
 
-dropNoMatch : {auto c : Ref Ctxt Defs} ->
+dropNoMatch : {auto c : ReadOnlyRef Ctxt Defs} ->
               Maybe (NF []) -> List (Name, Int, GlobalDef) ->
               Core (List (Name, Int, GlobalDef))
 dropNoMatch Nothing ts = pure ts
@@ -64,7 +64,7 @@ badClause fn exps autos named
                ++ show (fn, exps, autos, named)))
 
 mutual
-  processArgs : {auto c : Ref Ctxt Defs} ->
+  processArgs : {auto c : ReadOnlyRef Ctxt Defs} ->
                 {auto q : Ref QVar Int} ->
                 Term [] -> NF [] ->
                 (expargs : List RawImp) ->
@@ -118,7 +118,7 @@ mutual
   processArgs fn ty exps autos named
      = badClause fn exps autos named
 
-  buildApp : {auto c : Ref Ctxt Defs} ->
+  buildApp : {auto c : ReadOnlyRef Ctxt Defs} ->
              {auto q : Ref QVar Int} ->
              FC -> Name -> Maybe (Closure []) ->
              (expargs : List RawImp) ->
@@ -147,7 +147,7 @@ mutual
                         _ => Func
            processArgs (Ref fc head (Resolved i)) tynf exps autos named
 
-  mkTerm : {auto c : Ref Ctxt Defs} ->
+  mkTerm : {auto c : ReadOnlyRef Ctxt Defs} ->
            {auto q : Ref QVar Int} ->
            RawImp -> Maybe (Closure []) ->
            (expargs : List RawImp) ->
@@ -176,7 +176,7 @@ mutual
 -- account the impossible clauses
 export
 getImpossibleTerm : {vars : _} ->
-                    {auto c : Ref Ctxt Defs} ->
+                    {auto c : ReadOnlyRef Ctxt Defs} ->
                     Env Term vars -> NestedNames vars -> RawImp -> Core ClosedTerm
 getImpossibleTerm env nest tm
     = do q <- newRef QVar (the Int 0)

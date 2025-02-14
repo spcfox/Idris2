@@ -19,15 +19,15 @@ getRetTy defs ty
              "Can only add hints for concrete return types")
 
 %inline
-throwIf : {auto c : Ref Ctxt Defs} -> FC -> Bool -> String -> Core ()
+throwIf : {auto c : ReadOnlyRef Ctxt Defs} -> FC -> Bool -> String -> Core ()
 throwIf fc cond msg = when cond $ throw (GenericMsg fc msg)
 
 %inline
-throwIfHasFlag : {auto c : Ref Ctxt Defs} -> FC -> Name -> DefFlag -> String -> Core ()
+throwIfHasFlag : {auto c : ReadOnlyRef Ctxt Defs} -> FC -> Name -> DefFlag -> String -> Core ()
 throwIfHasFlag fc ndef fl msg = throwIf fc !(hasFlag fc ndef fl) msg
 
 %inline
-throwIfHasTotality : {auto c : Ref Ctxt Defs} -> FC -> Name -> String -> Core ()
+throwIfHasTotality : {auto c : ReadOnlyRef Ctxt Defs} -> FC -> Name -> String -> Core ()
 throwIfHasTotality fc ndef msg = throwIf fc !(hasSetTotal fc ndef) msg
 
 export

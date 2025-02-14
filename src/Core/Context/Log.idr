@@ -27,14 +27,14 @@ logString' lvl =
             (verbosity lvl)
 
 export
-logging' : {auto c : Ref Ctxt Defs} ->
+logging' : {auto c : ReadOnlyRef Ctxt Defs} ->
            LogLevel -> Core Bool
 logging' lvl = do
     opts <- getSession
     pure $ verbosity lvl == 0 || (logEnabled opts && keepLog lvl (logLevel opts))
 
 export
-unverifiedLogging : {auto c : Ref Ctxt Defs} ->
+unverifiedLogging : {auto c : ReadOnlyRef Ctxt Defs} ->
                     String -> Nat -> Core Bool
 unverifiedLogging str Z = pure True
 unverifiedLogging str n = do
@@ -43,7 +43,7 @@ unverifiedLogging str n = do
 
 %inline
 export
-logging : {auto c : Ref Ctxt Defs} ->
+logging : {auto c : ReadOnlyRef Ctxt Defs} ->
           (s : String) -> {auto 0 _ : KnownTopic s} ->
           Nat -> Core Bool
 logging str n = unverifiedLogging str n
@@ -51,7 +51,7 @@ logging str n = unverifiedLogging str n
 ||| Log message with a term, translating back to human readable names first.
 export
 logTerm : {vars : _} ->
-          {auto c : Ref Ctxt Defs} ->
+          {auto c : ReadOnlyRef Ctxt Defs} ->
           (s : String) ->
           {auto 0 _ : KnownTopic s} ->
           Nat -> Lazy String -> Term vars -> Core ()
@@ -61,7 +61,7 @@ logTerm str n msg tm
              logString str n $ msg ++ ": " ++ show tm'
 
 export
-log' : {auto c : Ref Ctxt Defs} ->
+log' : {auto c : ReadOnlyRef Ctxt Defs} ->
        LogLevel -> Lazy String -> Core ()
 log' lvl msg
     = when !(logging' lvl)
@@ -76,7 +76,7 @@ log' lvl msg
 ||| This will enfore that additional computation happends only when needed.
 ||| `do` before `pure` in this case ensures the correct bounds.
 export
-log : {auto c : Ref Ctxt Defs} ->
+log : {auto c : ReadOnlyRef Ctxt Defs} ->
       (s : String) ->
       {auto 0 _ : KnownTopic s} ->
       Nat -> Lazy String -> Core ()
@@ -85,7 +85,7 @@ log str n msg
         $ logString str n msg
 
 export
-unverifiedLogC : {auto c : Ref Ctxt Defs} ->
+unverifiedLogC : {auto c : ReadOnlyRef Ctxt Defs} ->
                  (s : String) ->
                  Nat -> Core String -> Core ()
 unverifiedLogC str n cmsg
@@ -95,7 +95,7 @@ unverifiedLogC str n cmsg
 
 %inline
 export
-logC : {auto c : Ref Ctxt Defs} ->
+logC : {auto c : ReadOnlyRef Ctxt Defs} ->
        (s : String) ->
        {auto 0 _ : KnownTopic s} ->
        Nat -> Core String -> Core ()
@@ -132,7 +132,7 @@ logTimeOver nsecs str act
     addZeros str = pack str
 
 export
-logTimeWhen : {auto c : Ref Ctxt Defs} ->
+logTimeWhen : {auto c : ReadOnlyRef Ctxt Defs} ->
               Bool -> Nat -> Lazy String -> Core a -> Core a
 logTimeWhen p lvl str act
     = if p
@@ -191,7 +191,7 @@ logTimeRecord key act
                 => logTimeRecord' key act
 
 export
-showTimeRecord : {auto c : Ref Ctxt Defs} ->
+showTimeRecord : {auto c : ReadOnlyRef Ctxt Defs} ->
                  Core ()
 showTimeRecord
     = do defs <- get Ctxt
@@ -212,7 +212,7 @@ showTimeRecord
                                "s"
 
 export
-logTime : {auto c : Ref Ctxt Defs} ->
+logTime : {auto c : ReadOnlyRef Ctxt Defs} ->
           Nat -> Lazy String -> Core a -> Core a
 logTime lvl str act
     = do opts <- getSession

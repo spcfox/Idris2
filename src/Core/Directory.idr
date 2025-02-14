@@ -26,13 +26,13 @@ import System.Directory
 -- Package directories
 
 export
-pkgGlobalDirectory : {auto c : Ref Ctxt Defs} -> Core String
+pkgGlobalDirectory : {auto c : ReadOnlyRef Ctxt Defs} -> Core String
 pkgGlobalDirectory =
   do d <- getDirs
      pure (prefix_dir d </> "idris2-" ++ showVersion False version)
 
 export
-pkgLocalDirectory : {auto c : Ref Ctxt Defs} -> Core String
+pkgLocalDirectory : {auto c : ReadOnlyRef Ctxt Defs} -> Core String
 pkgLocalDirectory =
   do d <- getDirs
      Just srcdir <- coreLift currentDir
@@ -43,29 +43,29 @@ pkgLocalDirectory =
 -- TTC directories
 
 export
-ttcBuildDirectory : {auto c : Ref Ctxt Defs} -> Core String
+ttcBuildDirectory : {auto c : ReadOnlyRef Ctxt Defs} -> Core String
 ttcBuildDirectory =
   do d <- getDirs
      pure (build_dir d </> "ttc" </> show ttcVersion)
 
 export
-libInstallDirectory : {auto c : Ref Ctxt Defs} -> String -> Core String
+libInstallDirectory : {auto c : ReadOnlyRef Ctxt Defs} -> String -> Core String
 libInstallDirectory lib =
   do gbdir <- pkgGlobalDirectory
      pure (gbdir </> lib)
 
 export
-ttcInstallDirectory : {auto c : Ref Ctxt Defs} -> String -> Core String
+ttcInstallDirectory : {auto c : ReadOnlyRef Ctxt Defs} -> String -> Core String
 ttcInstallDirectory lib =
   do libDir <- libInstallDirectory lib
      pure (libDir </> show ttcVersion)
 
 export
-srcInstallDirectory : {auto c : Ref Ctxt Defs} -> String -> Core String
+srcInstallDirectory : {auto c : ReadOnlyRef Ctxt Defs} -> String -> Core String
 srcInstallDirectory = libInstallDirectory
 
 export
-extraSearchDirectories : {auto c : Ref Ctxt Defs} -> Core (List String)
+extraSearchDirectories : {auto c : ReadOnlyRef Ctxt Defs} -> Core (List String)
 extraSearchDirectories =
   do d <- getDirs
      pure (map (</> show ttcVersion) (extra_dirs d ++ package_dirs d))
@@ -141,7 +141,7 @@ splitIdrisFileName fname
 -- Return the name of the first file available in the list
 -- Used in LSP.
 export
-firstAvailable : {auto c : Ref Ctxt Defs} ->
+firstAvailable : {auto c : ReadOnlyRef Ctxt Defs} ->
                  List String -> Core (Maybe String)
 firstAvailable [] = pure Nothing
 firstAvailable (f :: fs)
@@ -153,7 +153,7 @@ firstAvailable (f :: fs)
 
 export
 covering
-findDataFile : {auto c : Ref Ctxt Defs} ->
+findDataFile : {auto c : ReadOnlyRef Ctxt Defs} ->
                String -> Core String
 findDataFile fname
     = do d <- getDirs
@@ -165,7 +165,7 @@ findDataFile fname
 
 export
 covering
-readDataFile : {auto c : Ref Ctxt Defs} ->
+readDataFile : {auto c : ReadOnlyRef Ctxt Defs} ->
                String -> Core String
 readDataFile fname
     = do f <- findDataFile fname
@@ -177,7 +177,7 @@ readDataFile fname
 ||| library directories, and in the lib/ subdirectory of all the 'extra import'
 ||| directories and the package directory roots.
 export
-findLibraryFile : {auto c : Ref Ctxt Defs} ->
+findLibraryFile : {auto c : ReadOnlyRef Ctxt Defs} ->
                   String -> Core String
 findLibraryFile fname
     = do d <- getDirs
@@ -195,7 +195,7 @@ findLibraryFile fname
 -- Given a namespace, return the full path to the checked module,
 -- looking first in the build directory then in the extra_dirs
 export
-nsToPath : {auto c : Ref Ctxt Defs} ->
+nsToPath : {auto c : ReadOnlyRef Ctxt Defs} ->
            FC -> ModuleIdent -> Core (Either Error String)
 nsToPath loc ns
     = do bdir <- ttcBuildDirectory
@@ -209,7 +209,7 @@ nsToPath loc ns
 -- Given a namespace, return the path to the source module relative
 -- to the working directory, if the module exists.
 export
-nsToSource : {auto c : Ref Ctxt Defs} ->
+nsToSource : {auto c : ReadOnlyRef Ctxt Defs} ->
              FC -> ModuleIdent -> Core String
 nsToSource loc ns
     = do d <- getDirs
@@ -244,7 +244,7 @@ corePathToNS wdir sdir fname = do
   maybe (throw err) pure (mbPathToNS wdir sdir fname)
 
 export
-ctxtPathToNS : {auto c : Ref Ctxt Defs} -> String -> Core ModuleIdent
+ctxtPathToNS : {auto c : ReadOnlyRef Ctxt Defs} -> String -> Core ModuleIdent
 ctxtPathToNS fname = do
   defs <- get Ctxt
   let wdir = defs.options.dirs.working_dir
@@ -276,7 +276,7 @@ mkdirAll dir = if parse dir == emptyPath
 -- corresponding ttc file
 export
 covering
-makeBuildDirectory : {auto c : Ref Ctxt Defs} ->
+makeBuildDirectory : {auto c : ReadOnlyRef Ctxt Defs} ->
                      ModuleIdent -> Core ()
 makeBuildDirectory ns
     = do bdir <- ttcBuildDirectory
@@ -296,7 +296,7 @@ ensureDirectoryExists dir
 
 -- Given a source file, return the name of the ttc file to generate
 export
-getTTCFileName : {auto c : Ref Ctxt Defs} ->
+getTTCFileName : {auto c : ReadOnlyRef Ctxt Defs} ->
                  String -> String -> Core String
 getTTCFileName inp ext
     = do -- Get its namespace from the file relative to the working directory
@@ -309,7 +309,7 @@ getTTCFileName inp ext
 -- Given a source file, return the name of the corresponding object file.
 -- As above, but without the build directory
 export
-getObjFileName : {auto c : Ref Ctxt Defs} ->
+getObjFileName : {auto c : ReadOnlyRef Ctxt Defs} ->
                  String -> String -> Core String
 getObjFileName inp ext
     = do -- Get its namespace from the file relative to the working directory
@@ -320,7 +320,7 @@ getObjFileName inp ext
 
 -- Given a root executable name, return the name in the build directory
 export
-getExecFileName : {auto c : Ref Ctxt Defs} -> String -> Core String
+getExecFileName : {auto c : ReadOnlyRef Ctxt Defs} -> String -> Core String
 getExecFileName efile
     = do d <- getDirs
          pure $ build_dir d </> efile

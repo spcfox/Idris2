@@ -34,8 +34,8 @@ import System.File
 ||| messages, an unhandled error is an example of what should
 ||| *not* end up here.
 export
-iputStrLn : {auto c : Ref Ctxt Defs} ->
-            {auto o : Ref ROpts REPLOpts} ->
+iputStrLn : {auto c : ReadOnlyRef Ctxt Defs} ->
+            {auto o : ReadOnlyRef ROpts REPLOpts} ->
             Doc IdrisAnn -> Core ()
 iputStrLn msg
     = do opts <- get ROpts
@@ -63,7 +63,7 @@ doPrint MsgStatusInfo  InfoLvl  = True
 doPrint MsgStatusInfo  ErrorLvl = False
 doPrint MsgStatusInfo  NoneLvl  = False
 
-printWithStatus : {auto o : Ref ROpts REPLOpts} ->
+printWithStatus : {auto o : ReadOnlyRef ROpts REPLOpts} ->
                   (Doc ann -> Core String) ->
                   (Doc ann -> MsgStatus -> Core ())
 printWithStatus render msg status
@@ -77,7 +77,7 @@ printWithStatus render msg status
 
 ||| Print REPL result.
 export
-printResult : {auto o : Ref ROpts REPLOpts} ->
+printResult : {auto o : ReadOnlyRef ROpts REPLOpts} ->
               Doc IdrisAnn -> Core ()
 printResult x = printWithStatus render x MsgStatusNone
  --                                      ^^^^^^^^^^^^^
@@ -85,7 +85,7 @@ printResult x = printWithStatus render x MsgStatusNone
 
 ||| Print REPL result.
 export
-printDocResult : {auto o : Ref ROpts REPLOpts} ->
+printDocResult : {auto o : ReadOnlyRef ROpts REPLOpts} ->
                  Doc IdrisDocAnn -> Core ()
 printDocResult x = printWithStatus (render styleAnn) x MsgStatusNone
  --                                                    ^^^^^^^^^^^^^
@@ -93,7 +93,7 @@ printDocResult x = printWithStatus (render styleAnn) x MsgStatusNone
 
 -- Return that a protocol request failed somehow
 export
-printError : {auto o : Ref ROpts REPLOpts} ->
+printError : {auto o : ReadOnlyRef ROpts REPLOpts} ->
              Doc IdrisAnn -> Core ()
 printError msg = printWithStatus render msg MsgStatusError
 
@@ -101,9 +101,9 @@ DocCreator : Type -> Type
 DocCreator a = a -> Core (Doc IdrisAnn)
 
 export
-emitProblem : {auto c : Ref Ctxt Defs} ->
-            {auto o : Ref ROpts REPLOpts} ->
-            {auto s : Ref Syn SyntaxInfo} ->
+emitProblem : {auto c : ReadOnlyRef Ctxt Defs} ->
+            {auto o : ReadOnlyRef ROpts REPLOpts} ->
+            {auto s : ReadOnlyRef Syn SyntaxInfo} ->
             a -> (DocCreator a) -> (DocCreator a) -> (a -> Maybe FC) -> MsgStatus -> Core ()
 emitProblem a replDocCreator idemodeDocCreator getFC status
     = do opts <- get ROpts
@@ -134,22 +134,22 @@ emitProblem a replDocCreator idemodeDocCreator getFC status
 -- Display an error message from checking a source file
 export
 emitError : {auto c : Ref Ctxt Defs} ->
-            {auto o : Ref ROpts REPLOpts} ->
-            {auto s : Ref Syn SyntaxInfo} ->
+            {auto o : ReadOnlyRef ROpts REPLOpts} ->
+            {auto s : ReadOnlyRef Syn SyntaxInfo} ->
             Error -> Core ()
 emitError e = emitProblem e display perror getErrorLoc MsgStatusError
 
 export
-emitWarning : {auto c : Ref Ctxt Defs} ->
-              {auto o : Ref ROpts REPLOpts} ->
-              {auto s : Ref Syn SyntaxInfo} ->
+emitWarning : {auto c : ReadOnlyRef Ctxt Defs} ->
+              {auto o : ReadOnlyRef ROpts REPLOpts} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
               Warning -> Core ()
 emitWarning w = emitProblem w displayWarning pwarning (Just . getWarningLoc) MsgStatusInfo
 
 export
 emitWarnings : {auto c : Ref Ctxt Defs} ->
-               {auto o : Ref ROpts REPLOpts} ->
-               {auto s : Ref Syn SyntaxInfo} ->
+               {auto o : ReadOnlyRef ROpts REPLOpts} ->
+               {auto s : ReadOnlyRef Syn SyntaxInfo} ->
                Core (List Error)
 emitWarnings
     = do defs <- get Ctxt
@@ -162,8 +162,8 @@ emitWarnings
 
 export
 emitWarningsAndErrors : {auto c : Ref Ctxt Defs} ->
-                        {auto o : Ref ROpts REPLOpts} ->
-                        {auto s : Ref Syn SyntaxInfo} ->
+                        {auto o : ReadOnlyRef ROpts REPLOpts} ->
+                        {auto s : ReadOnlyRef Syn SyntaxInfo} ->
                         List Error -> Core (List Error)
 emitWarningsAndErrors errs = do
   ws <- emitWarnings
@@ -241,9 +241,9 @@ data REPLResult : Type where
   Edited : EditResult -> REPLResult
 
 export
-docsOrSignature : {auto o : Ref ROpts REPLOpts} ->
-                  {auto c : Ref Ctxt Defs} ->
-                  {auto s : Ref Syn SyntaxInfo} ->
+docsOrSignature : {auto o : ReadOnlyRef ROpts REPLOpts} ->
+                  {auto c : ReadOnlyRef Ctxt Defs} ->
+                  {auto s : ReadOnlyRef Syn SyntaxInfo} ->
                   FC -> Name -> Core (Doc IdrisDocAnn)
 docsOrSignature fc n
     = do syn  <- get Syn

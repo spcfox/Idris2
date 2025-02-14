@@ -302,7 +302,7 @@ analyzeDef d@(MkCon _ _ _)     = pure d
 analyzeDef d@(MkForeign _ _ _) = pure d
 analyzeDef d@(MkError _)       = pure d
 
-compileName :  Ref Ctxt Defs
+compileName :  ReadOnlyRef Ctxt Defs
             => Name
             -> Core (Maybe (Name, FC, CDef))
 compileName fn = do
@@ -345,7 +345,7 @@ mutual
   -- with the count of their parent expression, lifting
   -- a child only if it was counted mor often than its parent.
   replaceRef :  Ref ReplaceMap ReplaceMap
-             => Ref Ctxt Defs
+             => ReadOnlyRef Ctxt Defs
              => (parentCount : Integer)
              -> FC
              -> Name
@@ -409,7 +409,7 @@ mutual
 
 
   replaceExp :  Ref ReplaceMap ReplaceMap
-             => Ref Ctxt Defs
+             => ReadOnlyRef Ctxt Defs
              => (parentCount : Integer)
              -> CExp ns
              -> Core (CExp ns)
@@ -447,7 +447,7 @@ mutual
   replaceExp _ c@(CCrash _ _)   = pure c
 
   replaceConAlt :  Ref ReplaceMap ReplaceMap
-                => Ref Ctxt Defs
+                => ReadOnlyRef Ctxt Defs
                 => (parentCount : Integer)
                 -> CConAlt ns
                 -> Core (CConAlt ns)
@@ -455,7 +455,7 @@ mutual
     MkConAlt n c t as <$> replaceExp pc z
 
   replaceConstAlt :  Ref ReplaceMap ReplaceMap
-                  => Ref Ctxt Defs
+                  => ReadOnlyRef Ctxt Defs
                   => (parentCount : Integer)
                   -> CConstAlt ns
                   -> Core (CConstAlt ns)
@@ -463,7 +463,7 @@ mutual
     MkConstAlt c <$> replaceExp pc y
 
 replaceDef :  Ref ReplaceMap ReplaceMap
-           => Ref Ctxt Defs
+           => ReadOnlyRef Ctxt Defs
            => (Name, FC, CDef)
            -> Core (Name, FC, CDef)
 replaceDef (n, fc, MkFun args x) =
@@ -487,7 +487,7 @@ undefinedCount (_, _, C x)  = True
 ||| Runs the CSE alorithm on all provided names and
 ||| the given main expression.
 export
-cse :  Ref Ctxt Defs
+cse :  ReadOnlyRef Ctxt Defs
     => (definitionNames : List Name)
     -> (mainExpr        : CExp ns)
     -> Core (List (Name, FC, CDef), CExp ns)

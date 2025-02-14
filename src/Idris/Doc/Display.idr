@@ -19,8 +19,8 @@ import Idris.Syntax.Views
 %default covering
 
 export
-displayType : {auto c : Ref Ctxt Defs} ->
-              {auto s : Ref Syn SyntaxInfo} ->
+displayType : {auto c : ReadOnlyRef Ctxt Defs} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
               (shortName : Bool) -> Defs -> (Name, Int, GlobalDef) ->
               Core (Doc IdrisSyntax)
 displayType shortName defs (n, i, gdef)
@@ -33,8 +33,8 @@ displayType shortName defs (n, i, gdef)
           (\num => prettyHole defs [] n num (type gdef))
           (isHole gdef)
 export
-displayTerm : {auto c : Ref Ctxt Defs} ->
-              {auto s : Ref Syn SyntaxInfo} ->
+displayTerm : {auto c : ReadOnlyRef Ctxt Defs} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
               Defs -> ClosedTerm ->
               Core (Doc IdrisSyntax)
 displayTerm defs tm
@@ -42,8 +42,8 @@ displayTerm defs tm
        pure (pretty ptm)
 
 export
-displayClause : {auto c : Ref Ctxt Defs} ->
-                {auto s : Ref Syn SyntaxInfo} ->
+displayClause : {auto c : ReadOnlyRef Ctxt Defs} ->
+                {auto s : ReadOnlyRef Syn SyntaxInfo} ->
                 Defs -> (vs ** (Env Term vs, Term vs, Term vs)) ->
                 Core (Doc IdrisSyntax)
 displayClause defs (vs ** (env, lhs, rhs))
@@ -57,8 +57,8 @@ displayClause defs (vs ** (env, lhs, rhs))
     prettyLHS t = pretty t
 
 export
-displayPats : {auto c : Ref Ctxt Defs} ->
-              {auto s : Ref Syn SyntaxInfo} ->
+displayPats : {auto c : ReadOnlyRef Ctxt Defs} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
               (shortName : Bool) -> Defs -> (Name, Int, GlobalDef) ->
               Core (Doc IdrisSyntax)
 displayPats shortName defs (n, idx, gdef)
@@ -70,8 +70,8 @@ displayPats shortName defs (n, idx, gdef)
       _ => pure (pretty0 n <++> reflow "is not a pattern matching definition")
 
 export
-displayImpl : {auto c : Ref Ctxt Defs} ->
-              {auto s : Ref Syn SyntaxInfo} ->
+displayImpl : {auto c : ReadOnlyRef Ctxt Defs} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
               Defs -> (Name, Int, GlobalDef) ->
               Core (Doc IdrisSyntax)
 displayImpl defs (n, idx, gdef)

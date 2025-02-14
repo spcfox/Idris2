@@ -32,8 +32,8 @@ export
 getFnString : {auto c : Ref Ctxt Defs} ->
               {auto m : Ref MD Metadata} ->
               {auto u : Ref UST UState} ->
-              {auto s : Ref Syn SyntaxInfo} ->
-              {auto o : Ref ROpts REPLOpts} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+              {auto o : ReadOnlyRef ROpts REPLOpts} ->
                RawImp -> Core String
 getFnString (IPrimVal _ (Str st)) = pure st
 getFnString tm
@@ -54,8 +54,8 @@ initDef : {vars : _} ->
           {auto c : Ref Ctxt Defs} ->
           {auto m : Ref MD Metadata} ->
           {auto u : Ref UST UState} ->
-          {auto s : Ref Syn SyntaxInfo} ->
-          {auto o : Ref ROpts REPLOpts} ->
+          {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+          {auto o : ReadOnlyRef ROpts REPLOpts} ->
           FC -> Name -> Env Term vars -> Term vars -> List FnOpt -> Core Def
 initDef fc n env ty []
     = do addUserHole False n
@@ -90,7 +90,7 @@ initDef fc n env ty (_ :: opts) = initDef fc n env ty opts
 -- Find the inferrable argument positions in a type. This is useful for
 -- generalising partially evaluated definitions and (potentially) in interactive
 -- editing
-findInferrable : {auto c : Ref Ctxt Defs} ->
+findInferrable : {auto c : ReadOnlyRef Ctxt Defs} ->
                  Defs -> NF [] -> Core (List Nat)
 findInferrable defs ty = fi 0 0 [] [] ty
   where
@@ -139,8 +139,8 @@ processType : {vars : _} ->
               {auto c : Ref Ctxt Defs} ->
               {auto m : Ref MD Metadata} ->
               {auto u : Ref UST UState} ->
-              {auto s : Ref Syn SyntaxInfo} ->
-              {auto o : Ref ROpts REPLOpts} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+              {auto o : ReadOnlyRef ROpts REPLOpts} ->
               List ElabOpt -> NestedNames vars -> Env Term vars ->
               FC -> RigCount -> Visibility ->
               List FnOpt -> ImpTy -> Core ()

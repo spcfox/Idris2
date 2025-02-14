@@ -59,7 +59,7 @@ clibdirs ds = map (\d => "-L" ++ d) ds
 -- cincdirs ds = concat (map (\d => "-I" ++ d ++ " ") ds)
 
 export
-compileCObjectFile : {auto c : Ref Ctxt Defs}
+compileCObjectFile : {auto c : ReadOnlyRef Ctxt Defs}
                   -> {default False asLibrary : Bool}
                   -> (sourceFile : String)
                   -> (objectFile : String)
@@ -89,7 +89,7 @@ compileCObjectFile {asLibrary} sourceFile objectFile =
      pure (Just objectFile)
 
 export
-compileCFile : {auto c : Ref Ctxt Defs}
+compileCFile : {auto c : ReadOnlyRef Ctxt Defs}
             -> {default False asShared : Bool}
             -> (objectFile : String)
             -> (outFile : String)

@@ -72,7 +72,7 @@ unsupportedCallingConvention (Just version) = version < MkVersion (9,5,0) Nothin
 -- If it can't be found, we'll assume it's a system library and that chez
 -- will thus be able to find it.
 export
-findLibs : {auto c : Ref Ctxt Defs} ->
+findLibs : {auto c : ReadOnlyRef Ctxt Defs} ->
            List String -> Core (List (String, String))
 findLibs ds
     = do let libs = mapMaybe (isLib . trim) ds
@@ -205,14 +205,14 @@ cftySpec fc (CFStruct n t) = pure $ "(* " ++ fromString n ++ ")"
 cftySpec fc t = throw (GenericMsg fc ("Can't pass argument of type " ++ show t ++
                          " to foreign function"))
 
-locateLib : {auto c : Ref Ctxt Defs} -> String -> String -> Core String
+locateLib : {auto c : ReadOnlyRef Ctxt Defs} -> String -> String -> Core String
 locateLib appdir clib
     = do (fname, fullname) <- locate clib
          copyLib (appdir </> fname, fullname)
          pure fname
 
 export
-loadLib : {auto c : Ref Ctxt Defs} ->
+loadLib : {auto c : ReadOnlyRef Ctxt Defs} ->
           String -> String -> Core String
 loadLib appdir clib
     = do fname <- locateLib appdir clib
@@ -220,7 +220,7 @@ loadLib appdir clib
                                     ++ escapeStringChez fname
                                     ++ "\")\n"
 
-loadSO : {auto c : Ref Ctxt Defs} ->
+loadSO : {auto c : ReadOnlyRef Ctxt Defs} ->
          String -> String -> Core String
 loadSO appdir "" = pure ""
 loadSO appdir mod
@@ -237,7 +237,7 @@ loadSO appdir mod
          copyLib (appdir </> modfname, fname)
          pure $ "(load \"" ++ escapeStringChez modfname ++ "\")\n"
 
-cCall : {auto c : Ref Ctxt Defs}
+cCall : {auto c : ReadOnlyRef Ctxt Defs}
      -> {auto l : Ref Loaded (List String)}
      -> FC
      -> (cfn : String)
@@ -322,7 +322,7 @@ schemeCall fc sfn argns ret
 -- Use a calling convention to compile a foreign def.
 -- Returns any preamble needed for loading libraries, and the body of the
 -- function call.
-useCC : {auto c : Ref Ctxt Defs} ->
+useCC : {auto c : ReadOnlyRef Ctxt Defs} ->
         {auto l : Ref Loaded (List String)} ->
         FC -> List String -> List (Name, CFType) -> CFType ->
         Maybe Version -> Core (Maybe String, Builder)
@@ -366,7 +366,7 @@ mkStruct (CFIORes t) = mkStruct t
 mkStruct (CFFun a b) = do [| mkStruct a ++ mkStruct b |]
 mkStruct _ = pure ""
 
-schFgnDef : {auto c : Ref Ctxt Defs} ->
+schFgnDef : {auto c : ReadOnlyRef Ctxt Defs} ->
             {auto l : Ref Loaded (List String)} ->
             {auto s : Ref Structs (List String)} ->
             FC -> Name -> NamedDef -> Maybe Version ->
@@ -387,7 +387,7 @@ schFgnDef fc n (MkNmForeign cs args ret) version
 schFgnDef _ _ _ _ = pure (Nothing, "")
 
 export
-getFgnCall : {auto c : Ref Ctxt Defs} ->
+getFgnCall : {auto c : ReadOnlyRef Ctxt Defs} ->
              {auto l : Ref Loaded (List String)} ->
              {auto s : Ref Structs (List String)} ->
              Maybe Version -> (Name, FC, NamedDef) ->
@@ -525,7 +525,7 @@ compileToSS c prof appdir tm outfile
          coreLift_ $ chmodRaw outfile 0o755
 
 ||| Compile a Chez Scheme source file to an executable, daringly with runtime checks off.
-compileToSO : {auto c : Ref Ctxt Defs} ->
+compileToSO : {auto c : ReadOnlyRef Ctxt Defs} ->
               Bool -> -- profiling
               String -> (appDirRel : String) -> (outSsAbs : String) -> Core ()
 compileToSO prof chez appDirRel outSsAbs
@@ -543,7 +543,7 @@ compileToSO prof chez appDirRel outSsAbs
          pure ()
 
 ||| Compile a TT expression to Chez Scheme using incremental module builds
-compileToSSInc : Ref Ctxt Defs ->
+compileToSSInc : ReadOnlyRef Ctxt Defs ->
                  List String -> -- module so files
                  List String -> -- libraries to find and load
                  String -> ClosedTerm -> (outfile : String) -> Core ()
@@ -590,7 +590,7 @@ makeShWindows chez outShRel appdir outAbs progType
 compileExprWhole :
   Bool ->
   Ref Ctxt Defs ->
-  Ref Syn SyntaxInfo ->
+  ReadOnlyRef Syn SyntaxInfo ->
   (tmpDir : String) -> (outputDir : String) ->
   ClosedTerm -> (outfile : String) -> Core (Maybe String)
 compileExprWhole makeitso c s tmpDir outputDir tm outfile
@@ -618,7 +618,7 @@ compileExprWhole makeitso c s tmpDir outputDir tm outfile
 compileExprInc :
   Bool ->
   Ref Ctxt Defs ->
-  Ref Syn SyntaxInfo ->
+  ReadOnlyRef Syn SyntaxInfo ->
   (tmpDir : String) -> (outputDir : String) ->
   ClosedTerm -> (outfile : String) -> Core (Maybe String)
 compileExprInc makeitso c s tmpDir outputDir tm outfile
@@ -637,7 +637,7 @@ compileExprInc makeitso c s tmpDir outputDir tm outfile
          let outSsAbs = cwd </> outputDir </> outSsFile
          let outSoAbs = cwd </> outputDir </> outSoFile
          chez <- coreLift $ findChez
-         compileToSSInc c mods libs appDirGen tm outSsAbs
+         compileToSSInc (toReadOnly c) mods libs appDirGen tm outSsAbs
          let outShRel = outputDir </> outfile
          if isWindows
             then makeShWindows chez outShRel appDirRel outSsFile "--script"
@@ -649,7 +649,7 @@ compileExprInc makeitso c s tmpDir outputDir tm outfile
 compileExpr :
   Bool ->
   Ref Ctxt Defs ->
-  Ref Syn SyntaxInfo ->
+  ReadOnlyRef Syn SyntaxInfo ->
   (tmpDir : String) -> (outputDir : String) ->
   ClosedTerm -> (outfile : String) -> Core (Maybe String)
 compileExpr makeitso c s tmpDir outputDir tm outfile
@@ -662,7 +662,7 @@ compileExpr makeitso c s tmpDir outputDir tm outfile
 ||| This implementation simply runs the usual compiler, saving it to a temp file, then interpreting it.
 executeExpr :
   Ref Ctxt Defs ->
-  Ref Syn SyntaxInfo ->
+  ReadOnlyRef Syn SyntaxInfo ->
   (tmpDir : String) -> ClosedTerm -> Core ()
 executeExpr c s tmpDir tm
     = do Just sh <- compileExpr False c s tmpDir tmpDir tm "_tmpchez"
@@ -671,7 +671,7 @@ executeExpr c s tmpDir tm
 
 incCompile :
   Ref Ctxt Defs ->
-  Ref Syn SyntaxInfo ->
+  ReadOnlyRef Syn SyntaxInfo ->
   (sourceFile : String) -> Core (Maybe (String, List String))
 incCompile c s sourceFile
     = do

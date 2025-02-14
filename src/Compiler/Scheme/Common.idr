@@ -669,7 +669,7 @@ parameters (constants : SortedSet Name)
       = throw (InternalError ("Badly formed external primitive " ++ show prim
                                 ++ " " ++ show args))
 
-  schDef : {auto c : Ref Ctxt Defs} ->
+  schDef : {auto c : ReadOnlyRef Ctxt Defs} ->
            Name -> NamedDef -> Core Builder
 
   schDef n (MkNmFun [] (NmDelay _ _ exp))
@@ -693,7 +693,7 @@ parameters (constants : SortedSet Name)
 -- Convert the name to scheme code
 -- (There may be no code generated, for example if it's a constructor)
 export
-getScheme : {auto c : Ref Ctxt Defs} ->
+getScheme : {auto c : ReadOnlyRef Ctxt Defs} ->
             (constants  : SortedSet Name) ->
             (schExtPrim : Nat -> ExtPrim -> List NamedCExp -> Core Builder) ->
             (schString : String -> Builder) ->

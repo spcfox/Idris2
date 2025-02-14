@@ -33,7 +33,7 @@ findNode = do
 ||| Compile a TT expression to Node
 compileToNode :
   Ref Ctxt Defs ->
-  Ref Syn SyntaxInfo ->
+  ReadOnlyRef Syn SyntaxInfo ->
   ClosedTerm -> Core String
 compileToNode c s tm = do
   js <- compileToES c s Node tm ["node", "javascript"]
@@ -45,7 +45,7 @@ compileToNode c s tm = do
 ||| Node implementation of the `compileExpr` interface.
 compileExpr :
   Ref Ctxt Defs ->
-  Ref Syn SyntaxInfo ->
+  ReadOnlyRef Syn SyntaxInfo ->
   (tmpDir : String) ->
   (outputDir : String) ->
   ClosedTerm ->
@@ -61,7 +61,7 @@ compileExpr c s tmpDir outputDir tm outfile =
 ||| Node implementation of the `executeExpr` interface.
 executeExpr :
   Ref Ctxt Defs ->
-  Ref Syn SyntaxInfo ->
+  ReadOnlyRef Syn SyntaxInfo ->
   (tmpDir : String) -> ClosedTerm -> Core ()
 executeExpr c s tmpDir tm =
   do let outn = tmpDir </> "_tmp_node.js"

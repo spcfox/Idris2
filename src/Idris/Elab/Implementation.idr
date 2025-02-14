@@ -97,7 +97,7 @@ addDefaults fc impName params allms defs body
     dropGot ms (_ :: ds) = dropGot ms ds
 
 getMethImps : {vars : _} ->
-              {auto c : Ref Ctxt Defs} ->
+              {auto c : ReadOnlyRef Ctxt Defs} ->
               Env Term vars -> Term vars ->
               Core (List (Name, RigCount, Maybe RawImp, RawImp))
 getMethImps env (Bind fc x (Pi fc' c Implicit ty) sc)
@@ -115,9 +115,9 @@ export
 elabImplementation : {vars : _} ->
                      {auto c : Ref Ctxt Defs} ->
                      {auto u : Ref UST UState} ->
-                     {auto s : Ref Syn SyntaxInfo} ->
+                     {auto s : ReadOnlyRef Syn SyntaxInfo} ->
                      {auto m : Ref MD Metadata} ->
-                     {auto o : Ref ROpts REPLOpts} ->
+                     {auto o : ReadOnlyRef ROpts REPLOpts} ->
                      FC -> Visibility -> List FnOpt -> Pass ->
                      Env Term vars -> NestedNames vars ->
                      (implicits : List (FC, RigCount, Name, PiInfo RawImp, RawImp)) ->

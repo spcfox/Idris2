@@ -81,10 +81,10 @@ appendDef t = do
   st <- get SortTag
   put SortTag $ {triples $= (:< t)} st
 
-getCalls : Ref SortTag SortST => Name -> Core (List Name)
+getCalls : ReadOnlyRef SortTag SortST => Name -> Core (List Name)
 getCalls n = map (maybe [] Prelude.toList . lookup n . graph) (get SortTag)
 
-getTriple : Ref SortTag SortST => Name -> Core (Maybe (Name,FC,NamedDef))
+getTriple : ReadOnlyRef SortTag SortST => Name -> Core (Maybe (Name,FC,NamedDef))
 getTriple n = map (lookup n . map) (get SortTag)
 
 markProcessed : Ref SortTag SortST => Name -> Core ()
@@ -92,7 +92,7 @@ markProcessed n = do
   st <- get SortTag
   put SortTag $ {processed $= insert n} st
 
-isProcessed : Ref SortTag SortST => Name -> Core Bool
+isProcessed : ReadOnlyRef SortTag SortST => Name -> Core Bool
 isProcessed n = map (contains n . processed) (get SortTag)
 
 checkCrash : Ref SortTag SortST => (Name, FC, NamedDef) -> Core ()

@@ -39,11 +39,11 @@ public export
 record Codegen where
   constructor MkCG
   ||| Compile an Idris 2 expression, saving it to a file.
-  compileExpr : Ref Ctxt Defs -> Ref Syn SyntaxInfo ->
+  compileExpr : Ref Ctxt Defs -> ReadOnlyRef Syn SyntaxInfo ->
                 (tmpDir : String) -> (outputDir : String) ->
                 ClosedTerm -> (outfile : String) -> Core (Maybe String)
   ||| Execute an Idris 2 expression directly.
-  executeExpr : Ref Ctxt Defs -> Ref Syn SyntaxInfo ->
+  executeExpr : Ref Ctxt Defs -> ReadOnlyRef Syn SyntaxInfo ->
                 (tmpDir : String) -> ClosedTerm -> Core ()
   ||| Incrementally compile definitions in the current module (toIR defs)
   ||| if supported
@@ -51,7 +51,7 @@ record Codegen where
   ||| file, if successful, plus any other backend specific data in a list
   ||| of strings. The generated object file should be placed in the same
   ||| directory as the associated TTC.
-  incCompileFile : Maybe (Ref Ctxt Defs -> Ref Syn SyntaxInfo ->
+  incCompileFile : Maybe (Ref Ctxt Defs -> ReadOnlyRef Syn SyntaxInfo ->
                           (sourcefile : String) ->
                           Core (Maybe (String, List String)))
   ||| If incremental compilation is supported, get the output file extension
@@ -104,7 +104,7 @@ record CompileData where
 ||| that executes the `compileExpr` method of the Codegen
 export
 compile : {auto c : Ref Ctxt Defs} ->
-          {auto s : Ref Syn SyntaxInfo} ->
+          {auto s : ReadOnlyRef Syn SyntaxInfo} ->
           Codegen ->
           ClosedTerm -> (outfile : String) -> Core (Maybe String)
 compile {c} {s} cg tm out
@@ -121,7 +121,7 @@ compile {c} {s} cg tm out
 ||| the `executeExpr` method of the given Codegen
 export
 execute : {auto c : Ref Ctxt Defs} ->
-          {auto s : Ref Syn SyntaxInfo} ->
+          {auto s : ReadOnlyRef Syn SyntaxInfo} ->
           Codegen -> ClosedTerm -> Core ()
 execute {c} {s} cg tm
     = do d <- getDirs
@@ -131,7 +131,7 @@ execute {c} {s} cg tm
 
 export
 incCompile : {auto c : Ref Ctxt Defs} ->
-             {auto s : Ref Syn SyntaxInfo} ->
+             {auto s : ReadOnlyRef Syn SyntaxInfo} ->
              Codegen -> String -> Core (Maybe (String, List String))
 incCompile {c} {s} cg src
     = do let Just inc = incCompileFile cg
@@ -199,7 +199,7 @@ warnIfHole n (MkNmError _)
     = coreLift $ putStrLn $ "Warning: compiling hole " ++ show n
 warnIfHole n _ = pure ()
 
-getNamedDef :  {auto c : Ref Ctxt Defs}
+getNamedDef :  {auto c : ReadOnlyRef Ctxt Defs}
             -> (Name,FC,CDef)
             -> Core (Name, FC, NamedDef)
 getNamedDef (n,fc,cdef) =
@@ -235,7 +235,7 @@ dumpIR fn lns
 
 
 export
-nonErased : {auto c : Ref Ctxt Defs} ->
+nonErased : {auto c : ReadOnlyRef Ctxt Defs} ->
             Name -> Core Bool
 nonErased n
     = do defs <- get Ctxt
@@ -411,13 +411,13 @@ getCompileData : {auto c : Ref Ctxt Defs} ->
 getCompileData = getCompileDataWith []
 
 export
-compileTerm : {auto c : Ref Ctxt Defs} ->
+compileTerm : {auto c : ReadOnlyRef Ctxt Defs} ->
               ClosedTerm -> Core (CExp [])
 compileTerm tm_in
     = do tm <- toFullNames tm_in
          fixArityExp !(compileExp tm)
 
-compDef : {auto c : Ref Ctxt Defs} -> Name -> Core (Maybe (Name, FC, CDef))
+compDef : {auto c : ReadOnlyRef Ctxt Defs} -> Name -> Core (Maybe (Name, FC, CDef))
 compDef n = do
   defs <- get Ctxt
   Just def <- lookupCtxtExact n (gamma defs) | Nothing => pure Nothing
@@ -425,7 +425,7 @@ compDef n = do
   pure $ Just (n, location def, cexpr)
 
 export
-getIncCompileData : {auto c : Ref Ctxt Defs} ->
+getIncCompileData : {auto c : ReadOnlyRef Ctxt Defs} ->
                     (doLazyAnnots : Bool) ->
                     UsePhase -> Core CompileData
 getIncCompileData doLazyAnnots phase
@@ -504,7 +504,7 @@ dylib_suffix
            "so"
 
 export
-locate : {auto c : Ref Ctxt Defs} ->
+locate : {auto c : ReadOnlyRef Ctxt Defs} ->
          String -> Core (String, String)
 locate libspec
     = do -- Attempt to turn libspec into an appropriate filename for the system

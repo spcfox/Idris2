@@ -528,14 +528,14 @@ uniqueBasicName defs used n
     next = unNameNum . nextNameNum . nameNum
 
 export
-uniqueHoleName : {auto s : Ref Syn SyntaxInfo} ->
+uniqueHoleName : {auto s : ReadOnlyRef Syn SyntaxInfo} ->
                  Defs -> List String -> String -> Core String
 uniqueHoleName defs used n
     = do syn <- get Syn
          uniqueBasicName defs (used ++ holeNames syn) n
 
 export
-uniqueHoleNames : {auto s : Ref Syn SyntaxInfo} ->
+uniqueHoleNames : {auto s : ReadOnlyRef Syn SyntaxInfo} ->
                   Defs -> Nat -> String -> Core (List String)
 uniqueHoleNames defs = go [] where
 
@@ -560,7 +560,7 @@ unique (str :: next) supply suff usedns
 
 export
 getArgName : {vars : _} ->
-             {auto c : Ref Ctxt Defs} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
              Defs -> Name ->
              List Name -> -- explicitly bound names (possibly coming later),
                           -- so we don't invent a default
@@ -642,7 +642,7 @@ getArgName defs x bound allvars ty
 
 export
 getArgNames : {vars : _} ->
-              {auto c : Ref Ctxt Defs} ->
+              {auto c : ReadOnlyRef Ctxt Defs} ->
               Defs -> List Name -> List Name -> Env Term vars -> NF vars ->
               Core (List String)
 getArgNames defs bound allvars env (NBind fc x (Pi _ _ p ty) sc)

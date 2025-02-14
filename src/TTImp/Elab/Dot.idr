@@ -19,9 +19,7 @@ import TTImp.TTImp
 export
 registerDot : {vars : _} ->
               {auto c : Ref Ctxt Defs} ->
-              {auto m : Ref MD Metadata} ->
               {auto u : Ref UST UState} ->
-              {auto e : Ref EST (EState vars)} ->
               RigCount -> Env Term vars ->
               FC -> DotReason ->
               Term vars -> Glued vars ->
@@ -42,8 +40,8 @@ checkDot : {vars : _} ->
            {auto m : Ref MD Metadata} ->
            {auto u : Ref UST UState} ->
            {auto e : Ref EST (EState vars)} ->
-           {auto s : Ref Syn SyntaxInfo} ->
-           {auto o : Ref ROpts REPLOpts} ->
+           {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+           {auto o : ReadOnlyRef ROpts REPLOpts} ->
            RigCount -> ElabInfo ->
            NestedNames vars -> Env Term vars ->
            FC -> DotReason -> RawImp -> Maybe (Glued vars) ->

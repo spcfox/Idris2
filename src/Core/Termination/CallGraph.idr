@@ -71,7 +71,7 @@ delazy defs tm = tm
 
 mutual
   findSC : {vars : _} ->
-           {auto c : Ref Ctxt Defs} ->
+           {auto c : ReadOnlyRef Ctxt Defs} ->
            Defs -> Env Term vars -> Guardedness ->
            List (Term vars) -> -- LHS args
            Term vars -> -- RHS
@@ -266,7 +266,7 @@ mutual
 
   -- This way, we can build case blocks directly into the size change graph
   -- rather than treating the definitions separately.
-  getCasePats : {auto c : Ref Ctxt Defs} ->
+  getCasePats : {auto c : ReadOnlyRef Ctxt Defs} ->
                 {vars : _} ->
                 Defs -> Name -> List (Term vars) ->
                 List (Term vars) ->
@@ -345,7 +345,7 @@ mutual
                (_ ** (env', map (updatePat patMatch) pats, rhs))
 
   findSCcall : {vars : _} ->
-               {auto c : Ref Ctxt Defs} ->
+               {auto c : ReadOnlyRef Ctxt Defs} ->
                Defs -> Env Term vars -> Guardedness ->
                List (Term vars) ->
                FC -> Name -> List (Term vars) ->
@@ -370,7 +370,7 @@ mutual
                            fc]
                            ++ concat scs))
 
-  findInCase : {auto c : Ref Ctxt Defs} ->
+  findInCase : {auto c : ReadOnlyRef Ctxt Defs} ->
                Defs -> Guardedness ->
                (vs ** (Env Term vs, List (Term vs), Term vs)) ->
                Core (List SCCall)
@@ -382,7 +382,7 @@ mutual
           rhs <- normaliseOpts tcOnly defs env tm
           findSC defs env g pats (delazy defs rhs)
 
-findCalls : {auto c : Ref Ctxt Defs} ->
+findCalls : {auto c : ReadOnlyRef Ctxt Defs} ->
             Defs -> (vars ** (Env Term vars, Term vars, Term vars)) ->
             Core (List SCCall)
 findCalls defs (_ ** (env, lhs, rhs_in))
@@ -390,7 +390,7 @@ findCalls defs (_ ** (env, lhs, rhs_in))
         rhs <- normaliseOpts tcOnly defs env rhs_in
         findSC defs env Toplevel pargs (delazy defs rhs)
 
-getSC : {auto c : Ref Ctxt Defs} ->
+getSC : {auto c : ReadOnlyRef Ctxt Defs} ->
         Defs -> Def -> Core (List SCCall)
 getSC defs (PMDef _ args _ _ pats)
    = do sc <- traverse (findCalls defs) pats
@@ -398,7 +398,7 @@ getSC defs (PMDef _ args _ _ pats)
 getSC defs _ = pure []
 
 export
-calculateSizeChange : {auto c : Ref Ctxt Defs} ->
+calculateSizeChange : {auto c : ReadOnlyRef Ctxt Defs} ->
                       FC -> Name -> Core (List SCCall)
 calculateSizeChange loc n
     = do logC "totality.termination.sizechange" 5 $ do pure $ "Calculating Size Change: " ++ show !(toFullNames n)

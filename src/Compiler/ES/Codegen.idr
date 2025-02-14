@@ -499,9 +499,9 @@ searchForeign knownBackends decls =
 
 -- given a function name and FFI implementation string,
 -- generate a toplevel function definition.
-makeForeign :  {auto d : Ref Ctxt Defs}
+makeForeign :  {auto d : ReadOnlyRef Ctxt Defs}
             -> {auto c : Ref ESs ESSt}
-            -> {auto nm : Ref NoMangleMap NoMangleMap}
+            -> {auto nm : ReadOnlyRef NoMangleMap NoMangleMap}
             -> (name : Name)
             -> (ffDecl : String)
             -> Core Doc
@@ -534,9 +534,9 @@ makeForeign n x = do
 
 -- given a function name and list of FFI declarations, tries
 -- to extract a declaration for one of the supported backends.
-foreignDecl :  {auto d : Ref Ctxt Defs}
+foreignDecl :  {auto d : ReadOnlyRef Ctxt Defs}
             -> {auto c : Ref ESs ESSt}
-            -> {auto nm : Ref NoMangleMap NoMangleMap}
+            -> {auto nm : ReadOnlyRef NoMangleMap NoMangleMap}
             -> Name
             -> List String
             -> Core Doc
@@ -646,7 +646,7 @@ insertBreak (ErrorWithout _) (pat, exp) = (pat, vcat [exp, "break;"])
 mutual
   -- converts an `Exp` to JS code
   exp :  {auto c : Ref ESs ESSt}
-      -> {auto nm : Ref NoMangleMap NoMangleMap}
+      -> {auto nm : ReadOnlyRef NoMangleMap NoMangleMap}
       -> Exp
       -> Core Doc
   exp (EMinimal x) = pure $ minimal !(get NoMangleMap) x
@@ -674,7 +674,7 @@ mutual
   -- converts a `Stmt e` to JS code.
   stmt :  {e : _}
        -> {auto c : Ref ESs ESSt}
-       -> {auto nm : Ref NoMangleMap NoMangleMap}
+       -> {auto nm : ReadOnlyRef NoMangleMap NoMangleMap}
        -> Stmt e
        -> Core Doc
   stmt (Return y) = (\e => "return" <++> e <+> ";") <$> exp y
@@ -728,10 +728,10 @@ printDoc Compact y = compact y
 printDoc Minimal y = compact y
 
 -- generate code for the given toplevel function.
-def :  {auto c : Ref Ctxt Defs}
-    -> {auto s : Ref Syn SyntaxInfo}
+def :  {auto c : ReadOnlyRef Ctxt Defs}
+    -> {auto s : ReadOnlyRef Syn SyntaxInfo}
     -> {auto e : Ref ESs ESSt}
-    -> {auto nm : Ref NoMangleMap NoMangleMap}
+    -> {auto nm : ReadOnlyRef NoMangleMap NoMangleMap}
     -> Function
     -> Core String
 def (MkFunction n as body) = do
@@ -763,8 +763,8 @@ def (MkFunction n as body) = do
 
 -- generate code for the given foreign function definition
 foreign :  {auto c : Ref ESs ESSt}
-        -> {auto d : Ref Ctxt Defs}
-        -> {auto nm : Ref NoMangleMap NoMangleMap}
+        -> {auto d : ReadOnlyRef Ctxt Defs}
+        -> {auto nm : ReadOnlyRef NoMangleMap NoMangleMap}
         -> (Name,FC,NamedDef)
         -> Core (List String)
 foreign (n, _, MkNmForeign path _ _) = pure . pretty <$> foreignDecl n path
@@ -789,7 +789,7 @@ validJSName name =
 ||| Compiles the given `ClosedTerm` for the list of supported
 ||| backends to JS code.
 export
-compileToES : Ref Ctxt Defs -> Ref Syn SyntaxInfo ->
+compileToES : Ref Ctxt Defs -> ReadOnlyRef Syn SyntaxInfo ->
               (cg : CG) -> ClosedTerm -> List String -> Core String
 compileToES c s cg tm ccTypes = do
   _ <- initNoMangle ccTypes validJSName

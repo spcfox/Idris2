@@ -580,7 +580,7 @@ mapAltType f (UniqueDefault x) = UniqueDefault (f x)
 mapAltType _ u = u
 
 export
-lhsInCurrentNS : {auto c : Ref Ctxt Defs} ->
+lhsInCurrentNS : {auto c : ReadOnlyRef Ctxt Defs} ->
                  NestedNames vars -> RawImp -> Core RawImp
 lhsInCurrentNS nest (IApp loc f a)
     = do f' <- lhsInCurrentNS nest f
@@ -680,7 +680,7 @@ findImplicits tm = []
 -- IBindVar anywhere else in the pattern) so that they will be available on the
 -- rhs
 export
-implicitsAs : {auto c : Ref Ctxt Defs} ->
+implicitsAs : {auto c : ReadOnlyRef Ctxt Defs} ->
               Int -> Defs ->
               (vars : List Name) ->
               RawImp -> Core RawImp
@@ -1003,7 +1003,7 @@ getFn f = f
 
 -- Log message with a RawImp
 export
-logRaw : {auto c : Ref Ctxt Defs} ->
+logRaw : {auto c : ReadOnlyRef Ctxt Defs} ->
          (s : String) ->
          {auto 0 _ : KnownTopic s} ->
          Nat -> Lazy String -> RawImp -> Core ()

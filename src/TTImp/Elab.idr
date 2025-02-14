@@ -59,7 +59,7 @@ getRigNeeded _ = linear
 -- away (since solved holes don't get written to .tti)
 export
 normaliseHoleTypes : {auto c : Ref Ctxt Defs} ->
-                     {auto u : Ref UST UState} ->
+                     {auto u : ReadOnlyRef UST UState} ->
                      Core ()
 normaliseHoleTypes
     = do ust <- get UST
@@ -96,8 +96,8 @@ elabTermSub : {inner, vars : _} ->
               {auto c : Ref Ctxt Defs} ->
               {auto m : Ref MD Metadata} ->
               {auto u : Ref UST UState} ->
-              {auto s : Ref Syn SyntaxInfo} ->
-              {auto o : Ref ROpts REPLOpts} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+              {auto o : ReadOnlyRef ROpts REPLOpts} ->
               Int -> ElabMode -> List ElabOpt ->
               NestedNames vars -> Env Term vars ->
               Env Term inner -> Thin inner vars ->
@@ -215,8 +215,8 @@ elabTerm : {vars : _} ->
            {auto c : Ref Ctxt Defs} ->
            {auto m : Ref MD Metadata} ->
            {auto u : Ref UST UState} ->
-           {auto s : Ref Syn SyntaxInfo} ->
-           {auto o : Ref ROpts REPLOpts} ->
+           {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+           {auto o : ReadOnlyRef ROpts REPLOpts} ->
            Int -> ElabMode -> List ElabOpt ->
            NestedNames vars -> Env Term vars ->
            RawImp -> Maybe (Glued vars) ->
@@ -229,8 +229,8 @@ checkTermSub : {inner, vars : _} ->
                {auto c : Ref Ctxt Defs} ->
                {auto m : Ref MD Metadata} ->
                {auto u : Ref UST UState} ->
-               {auto s : Ref Syn SyntaxInfo} ->
-               {auto o : Ref ROpts REPLOpts} ->
+               {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+               {auto o : ReadOnlyRef ROpts REPLOpts} ->
                Int -> ElabMode -> List ElabOpt ->
                NestedNames vars -> Env Term vars ->
                Env Term inner -> Thin inner vars ->
@@ -283,8 +283,8 @@ checkTerm : {vars : _} ->
             {auto c : Ref Ctxt Defs} ->
             {auto m : Ref MD Metadata} ->
             {auto u : Ref UST UState} ->
-            {auto s : Ref Syn SyntaxInfo} ->
-            {auto o : Ref ROpts REPLOpts} ->
+            {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+            {auto o : ReadOnlyRef ROpts REPLOpts} ->
             Int -> ElabMode -> List ElabOpt ->
             NestedNames vars -> Env Term vars ->
             RawImp -> Glued vars ->

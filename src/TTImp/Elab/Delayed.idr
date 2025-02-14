@@ -108,9 +108,9 @@ delayOnFailure fc rig env exp pred pri elab
 export
 delayElab : {vars : _} ->
             {auto c : Ref Ctxt Defs} ->
-            {auto m : Ref MD Metadata} ->
+            {auto m : ReadOnlyRef MD Metadata} ->
             {auto u : Ref UST UState} ->
-            {auto e : Ref EST (EState vars)} ->
+            {auto e : ReadOnlyRef EST (EState vars)} ->
             FC -> RigCount -> Env Term vars ->
             (expected : Maybe (Glued vars)) ->
             (pri : DelayReason) ->
@@ -157,7 +157,7 @@ ambiguous (WhenUnifying _ _ _ _ _ err) = ambiguous err
 ambiguous _ = False
 
 mutual
-  mismatchNF : {auto c : Ref Ctxt Defs} ->
+  mismatchNF : {auto c : ReadOnlyRef Ctxt Defs} ->
                {vars : _} ->
                Defs -> NF vars -> NF vars -> Core Bool
   mismatchNF defs (NTCon _ xn xt _ xargs) (NTCon _ yn yt _ yargs)
@@ -174,13 +174,13 @@ mutual
       = mismatchNF defs !(evalClosure defs x) !(evalClosure defs y)
   mismatchNF _ _ _ = pure False
 
-  mismatch : {auto c : Ref Ctxt Defs} ->
+  mismatch : {auto c : ReadOnlyRef Ctxt Defs} ->
              {vars : _} ->
              Defs -> (Closure vars, Closure vars) -> Core Bool
   mismatch defs (x, y)
       = mismatchNF defs !(evalClosure defs x) !(evalClosure defs y)
 
-contra : {auto c : Ref Ctxt Defs} ->
+contra : {auto c : ReadOnlyRef Ctxt Defs} ->
          {vars : _} ->
          Defs -> NF vars -> NF vars -> Core Bool
 -- Unlike 'impossibleOK', any mismatch indicates an unrecoverable error
@@ -200,7 +200,7 @@ contra defs x y = pure False
 -- Errors that might be recoverable later if we try again. Generally -
 -- ambiguity errors, type inference errors
 export
-recoverable : {auto c : Ref Ctxt Defs} ->
+recoverable : {auto c : ReadOnlyRef Ctxt Defs} ->
               Error -> Core Bool
 recoverable (CantConvert _ gam env l r)
    = do defs <- get Ctxt

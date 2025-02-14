@@ -14,7 +14,7 @@ record DataCon where
 ||| Given a normalised type, get all the possible constructors for that
 ||| type family, with their type, name, tag, and arity.
 export
-getCons : {auto c : Ref Ctxt Defs} ->
+getCons : {auto c : ReadOnlyRef Ctxt Defs} ->
           {vars : _} ->
           Defs -> NF vars -> Core (List DataCon)
 getCons defs (NTCon _ tn _ _ _)

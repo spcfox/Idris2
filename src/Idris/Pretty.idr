@@ -438,13 +438,12 @@ mutual
         with_ <++> cast (prettyList $ map snd ns) <+> line <+> pretty rhs
 
 export
-render : {auto o : Ref ROpts REPLOpts} -> Doc IdrisAnn -> Core String
+render : {auto o : ReadOnlyRef ROpts REPLOpts} -> Doc IdrisAnn -> Core String
 render = render colorAnn
 
 export
 renderWithDecorations :
-  {auto c : Ref Ctxt Defs} ->
-  {auto o : Ref ROpts REPLOpts} ->
+  {auto o : ReadOnlyRef ROpts REPLOpts} ->
   (ann -> Maybe ann') ->
   Doc ann ->
   Core (String, List (Span ann'))

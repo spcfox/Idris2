@@ -183,7 +183,7 @@ handleRet CFUnit op = op ++ " " ++ mkWorld (schConstructor racketString (UN $ Ba
 handleRet ret op = mkWorld (cToRkt ret op)
 
 cCall : {auto f : Ref Done (List String) } ->
-        {auto c : Ref Ctxt Defs} ->
+        {auto c : ReadOnlyRef Ctxt Defs} ->
         {auto l : Ref Loaded (List String)} ->
         String -> FC -> (cfn : String) -> (clib : String) ->
         List (Name, CFType) -> CFType -> Core (Builder, Builder)
@@ -269,7 +269,7 @@ schemeCall fc sfn argns ret
 -- Returns any preamble needed for loading libraries, and the body of the
 -- function call.
 useCC : {auto f : Ref Done (List String) } ->
-        {auto c : Ref Ctxt Defs} ->
+        {auto c : ReadOnlyRef Ctxt Defs} ->
         {auto l : Ref Loaded (List String)} ->
         String -> FC -> List String -> List (Name, CFType) -> CFType -> Core (Builder, Builder)
 useCC appdir fc ccs args ret
@@ -313,7 +313,7 @@ mkStruct (CFFun a b) = [| mkStruct a ++ mkStruct b |]
 mkStruct _ = pure ""
 
 schFgnDef : {auto f : Ref Done (List String) } ->
-            {auto c : Ref Ctxt Defs} ->
+            {auto c : ReadOnlyRef Ctxt Defs} ->
             {auto l : Ref Loaded (List String)} ->
             {auto s : Ref Structs (List String)} ->
             String -> FC -> Name -> NamedDef -> Core (Builder, Builder)
@@ -332,7 +332,7 @@ schFgnDef appdir fc n (MkNmForeign cs args ret)
 schFgnDef _ _ _ _ = pure ("", "")
 
 getFgnCall : {auto f : Ref Done (List String) } ->
-             {auto c : Ref Ctxt Defs} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
              {auto l : Ref Loaded (List String)} ->
              {auto s : Ref Structs (List String)} ->
              String -> (Name, FC, NamedDef) -> Core (Builder, Builder)
@@ -435,7 +435,7 @@ makeShWindows racket outShRel appdir outAbs
 compileExpr :
   Bool ->
   Ref Ctxt Defs ->
-  Ref Syn SyntaxInfo ->
+  ReadOnlyRef Syn SyntaxInfo ->
   (tmpDir : String) -> (outputDir : String) ->
   ClosedTerm -> (outfile : String) -> Core (Maybe String)
 compileExpr mkexec c s tmpDir outputDir tm outfile
@@ -475,7 +475,7 @@ compileExpr mkexec c s tmpDir outputDir tm outfile
 
 executeExpr :
   Ref Ctxt Defs ->
-  Ref Syn SyntaxInfo ->
+  ReadOnlyRef Syn SyntaxInfo ->
   (tmpDir : String) -> ClosedTerm -> Core ()
 executeExpr c s tmpDir tm
     = do Just sh <- compileExpr False c s tmpDir tmpDir tm "_tmpracket"

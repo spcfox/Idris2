@@ -37,8 +37,8 @@ checkPiInfo : {vars : _} ->
               {auto m : Ref MD Metadata} ->
               {auto u : Ref UST UState} ->
               {auto e : Ref EST (EState vars)} ->
-              {auto s : Ref Syn SyntaxInfo} ->
-              {auto o : Ref ROpts REPLOpts} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+              {auto o : ReadOnlyRef ROpts REPLOpts} ->
               RigCount -> ElabInfo -> NestedNames vars -> Env Term vars ->
               PiInfo RawImp -> (expTy : Maybe (Glued vars)) ->
               Core (PiInfo (Term vars))
@@ -55,8 +55,8 @@ checkPi : {vars : _} ->
           {auto m : Ref MD Metadata} ->
           {auto u : Ref UST UState} ->
           {auto e : Ref EST (EState vars)} ->
-          {auto s : Ref Syn SyntaxInfo} ->
-          {auto o : Ref ROpts REPLOpts} ->
+          {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+          {auto o : ReadOnlyRef ROpts REPLOpts} ->
           RigCount -> ElabInfo ->
           NestedNames vars -> Env Term vars ->
           FC ->
@@ -86,7 +86,7 @@ checkPi rig elabinfo nest env fc rigf info n argTy retTy expTy
     getRig (InLHS _) = rig
     getRig _ = erased
 
-findLamRig : {auto c : Ref Ctxt Defs} ->
+findLamRig : {auto c : ReadOnlyRef Ctxt Defs} ->
              Maybe (Glued vars) -> Core RigCount
 findLamRig Nothing = pure top
 findLamRig (Just expty)
@@ -100,8 +100,8 @@ inferLambda : {vars : _} ->
               {auto m : Ref MD Metadata} ->
               {auto u : Ref UST UState} ->
               {auto e : Ref EST (EState vars)} ->
-              {auto s : Ref Syn SyntaxInfo} ->
-              {auto o : Ref ROpts REPLOpts} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+              {auto o : ReadOnlyRef ROpts REPLOpts} ->
               RigCount -> ElabInfo ->
               NestedNames vars -> Env Term vars ->
               FC ->
@@ -129,7 +129,7 @@ inferLambda rig elabinfo nest env fc rigl info n argTy scope expTy
                   lamty expTy
 
 getTyNF : {vars : _} ->
-          {auto c : Ref Ctxt Defs} ->
+          {auto c : ReadOnlyRef Ctxt Defs} ->
           Env Term vars -> Term vars -> Core (Term vars)
 getTyNF env x@(Bind _ _ _ _) = pure x
 getTyNF env x
@@ -144,8 +144,8 @@ checkLambda : {vars : _} ->
               {auto m : Ref MD Metadata} ->
               {auto u : Ref UST UState} ->
               {auto e : Ref EST (EState vars)} ->
-              {auto s : Ref Syn SyntaxInfo} ->
-              {auto o : Ref ROpts REPLOpts} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+              {auto o : ReadOnlyRef ROpts REPLOpts} ->
               RigCount -> ElabInfo ->
               NestedNames vars -> Env Term vars ->
               FC ->
@@ -212,8 +212,8 @@ checkLet : {vars : _} ->
            {auto m : Ref MD Metadata} ->
            {auto u : Ref UST UState} ->
            {auto e : Ref EST (EState vars)} ->
-           {auto s : Ref Syn SyntaxInfo} ->
-           {auto o : Ref ROpts REPLOpts} ->
+           {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+           {auto o : ReadOnlyRef ROpts REPLOpts} ->
            RigCount -> ElabInfo ->
            NestedNames vars -> Env Term vars ->
            FC -> (lhsFC : FC) -> RigCount -> (n : Name) ->

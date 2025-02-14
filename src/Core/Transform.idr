@@ -107,7 +107,7 @@ apply (t :: ts) tm
 data Upd : Type where
 
 covering
-trans : {auto c : Ref Ctxt Defs} ->
+trans : {auto c : ReadOnlyRef Ctxt Defs} ->
         {auto u : Ref Upd Bool} ->
         Env Term vars -> List (FC, Term vars) -> Term vars ->
         Core (Term vars)
@@ -142,7 +142,7 @@ trans env stk (TForce fc r tm)
 trans env stk tm = pure $ unload stk tm
 
 covering
-transLoop : {auto c : Ref Ctxt Defs} ->
+transLoop : {auto c : ReadOnlyRef Ctxt Defs} ->
             Nat -> Env Term vars -> Term vars -> Core (Term vars)
 transLoop Z env tm = pure tm
 transLoop (S k) env tm
@@ -156,6 +156,6 @@ transLoop (S k) env tm
 
 export
 covering
-applyTransforms : {auto c : Ref Ctxt Defs} ->
+applyTransforms : {auto c : ReadOnlyRef Ctxt Defs} ->
                   Env Term vars -> Term vars -> Core (Term vars)
 applyTransforms env tm = transLoop 5 env tm

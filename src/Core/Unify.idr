@@ -169,7 +169,7 @@ ufail : FC -> String -> Core a
 ufail loc msg = throw (GenericMsg loc msg)
 
 convertError : {vars : _} ->
-               {auto c : Ref Ctxt Defs} ->
+               {auto c : ReadOnlyRef Ctxt Defs} ->
                FC -> Env Term vars -> NF vars -> NF vars -> Core a
 convertError loc env x y
     = do defs <- get Ctxt
@@ -179,7 +179,7 @@ convertError loc env x y
                                     !(quote empty env y))
 
 convertErrorS : {vars : _} ->
-                {auto c : Ref Ctxt Defs} ->
+                {auto c : ReadOnlyRef Ctxt Defs} ->
                 Bool -> FC -> Env Term vars -> NF vars -> NF vars -> Core a
 convertErrorS s loc env x y
     = if s then convertError loc env y x
@@ -187,7 +187,7 @@ convertErrorS s loc env x y
 
 -- Find all the metavariables required by each of the given names.
 -- We'll assume all meta solutions are of the form STerm exp.
-chaseMetas : {auto c : Ref Ctxt Defs} ->
+chaseMetas : {auto c : ReadOnlyRef Ctxt Defs} ->
              List Name -> NameMap () -> Core (List Name)
 chaseMetas [] all = pure (keys all)
 chaseMetas (n :: ns) all
@@ -202,14 +202,14 @@ chaseMetas (n :: ns) all
 
 -- Get all the metavariable names used by the term (recursively, so we
 -- can do the occurs check)
-getMetaNames : {auto c : Ref Ctxt Defs} ->
+getMetaNames : {auto c : ReadOnlyRef Ctxt Defs} ->
                Term vars -> Core (List Name)
 getMetaNames tm
     = let metas = getMetas tm in
           chaseMetas (keys metas) empty
 
 postpone : {vars : _} ->
-           {auto c : Ref Ctxt Defs} ->
+           {auto c : ReadOnlyRef Ctxt Defs} ->
            {auto u : Ref UST UState} ->
            FC -> UnifyInfo -> String ->
            Env Term vars -> NF vars -> NF vars -> Core UnifyResult
@@ -250,7 +250,7 @@ postpone loc mode logstr env x y
                   _ => False
 
 postponeS : {vars : _} ->
-            {auto c : Ref Ctxt Defs} ->
+            {auto c : ReadOnlyRef Ctxt Defs} ->
             {auto u : Ref UST UState} ->
             Bool -> FC -> UnifyInfo -> String -> Env Term vars ->
             NF vars -> NF vars ->
@@ -339,7 +339,7 @@ updateVars vs th = mapMaybe (\ v => shrink v th) vs
    Also, return the list of arguments the metavariable was applied to, to
    make sure we use them in the right order when we build the solution.
 -}
-patternEnv : {auto c : Ref Ctxt Defs} ->
+patternEnv : {auto c : ReadOnlyRef Ctxt Defs} ->
              {auto u : Ref UST UState} ->
              {vars : _} ->
              Env Term vars -> List (Closure vars) ->
@@ -365,7 +365,7 @@ getVarsTm got (Local fc r idx v :: xs)
 getVarsTm _ (_ :: xs) = Nothing
 
 export
-patternEnvTm : {auto c : Ref Ctxt Defs} ->
+patternEnvTm : {auto c : ReadOnlyRef Ctxt Defs} ->
                {auto u : Ref UST UState} ->
                {vars : _} ->
                Env Term vars -> List (Term vars) ->
@@ -383,7 +383,7 @@ patternEnvTm {vars} env args
 -- Check that the metavariable name doesn't occur in the solution.
 -- If it does, normalising might help. If it still does, that's an error.
 occursCheck : {vars : _} ->
-              {auto c : Ref Ctxt Defs} ->
+              {auto c : ReadOnlyRef Ctxt Defs} ->
               FC -> Env Term vars -> UnifyInfo ->
               Name -> Term vars -> Core (Maybe (Term vars))
 occursCheck fc env mode mname tm
@@ -627,7 +627,7 @@ solveIfUndefined env (Erased _ (Dotted metavar)) soln
 solveIfUndefined env metavar soln
     = pure False
 
-isDefInvertible : {auto c : Ref Ctxt Defs} ->
+isDefInvertible : {auto c : ReadOnlyRef Ctxt Defs} ->
                   FC -> Int -> Core Bool
 isDefInvertible fc i
     = do defs <- get Ctxt
@@ -636,7 +636,7 @@ isDefInvertible fc i
          pure (invertible gdef)
 
 mutual
-  unifyIfEq : {auto c : Ref Ctxt Defs} ->
+  unifyIfEq : {auto c : ReadOnlyRef Ctxt Defs} ->
               {auto u : Ref UST UState} ->
               {vars : _} ->
               (postpone : Bool) ->
@@ -652,7 +652,7 @@ mutual
                         else convertError loc env x y
 
   getArgTypes : {vars : _} ->
-                {auto c : Ref Ctxt Defs} ->
+                {auto c : ReadOnlyRef Ctxt Defs} ->
                 Defs -> (fnType : NF vars) -> List (Closure vars) ->
                 Core (Maybe (List (NF vars)))
   getArgTypes defs (NBind _ n (Pi _ _ _ ty) sc) (a :: as)
@@ -783,7 +783,7 @@ mutual
       = postponeS swap loc mode "Postponing hole application" env
                  (NApp loc (NMeta mname mref margs) $ map (EmptyFC,) margs') tm
 
-  postponePatVar : {auto c : Ref Ctxt Defs} ->
+  postponePatVar : {auto c : ReadOnlyRef Ctxt Defs} ->
                    {auto u : Ref UST UState} ->
                    {vars : _} ->
                    (swaporder : Bool) ->
@@ -1124,7 +1124,7 @@ mutual
                   (NBind yfc y by scy)
 
   dumpArg : {vars : _} ->
-            {auto c : Ref Ctxt Defs} ->
+            {auto c : ReadOnlyRef Ctxt Defs} ->
             Env Term vars -> Closure vars -> Core ()
   dumpArg env (MkClosure opts loc lenv tm)
       = do defs <- get Ctxt
@@ -1559,7 +1559,7 @@ giveUpConstraints
 -- (up to conversion)
 export
 checkArgsSame : {auto u : Ref UST UState} ->
-                {auto c : Ref Ctxt Defs} ->
+                {auto c : ReadOnlyRef Ctxt Defs} ->
                 List Int -> Core Bool
 checkArgsSame [] = pure False
 checkArgsSame (x :: xs)

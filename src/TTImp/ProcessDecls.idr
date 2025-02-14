@@ -44,15 +44,14 @@ processFailing :
   {auto c : Ref Ctxt Defs} ->
   {auto m : Ref MD Metadata} ->
   {auto u : Ref UST UState} ->
-  {auto s : Ref Syn SyntaxInfo} ->
-  {auto o : Ref ROpts REPLOpts} ->
+  {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+  {auto o : ReadOnlyRef ROpts REPLOpts} ->
   List ElabOpt ->
   NestedNames vars -> Env Term vars ->
   FC -> Maybe String ->  List ImpDecl -> Core ()
 processFailing eopts nest env fc mmsg decls
     = do -- save the state: the content of a failing block should be discarded
          ust <- get UST
-         syn <- get Syn
          md <- get MD
 
          -- We expect the block to fail and so the definitions introduced
@@ -97,7 +96,6 @@ processFailing eopts nest env fc mmsg decls
          md' <- get MD
          -- Reset the state
          put UST ust
-         put Syn syn
          -- For metadata, we preserve the syntax highlithing information (but none
          -- of the things that may include code that's dropped like types, LHSs, etc.)
          put MD ({ semanticHighlighting := semanticHighlighting md'
@@ -114,8 +112,8 @@ process : {vars : _} ->
           {auto c : Ref Ctxt Defs} ->
           {auto m : Ref MD Metadata} ->
           {auto u : Ref UST UState} ->
-          {auto s : Ref Syn SyntaxInfo} ->
-          {auto o : Ref ROpts REPLOpts} ->
+          {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+          {auto o : ReadOnlyRef ROpts REPLOpts} ->
           List ElabOpt ->
           NestedNames vars -> Env Term vars -> ImpDecl -> Core ()
 process eopts nest env (IClaim (MkFCVal fc (MkIClaimData rig vis opts ty)))
@@ -151,8 +149,8 @@ processDecls : {vars : _} ->
                {auto c : Ref Ctxt Defs} ->
                {auto m : Ref MD Metadata} ->
                {auto u : Ref UST UState} ->
-               {auto s : Ref Syn SyntaxInfo} ->
-               {auto o : Ref ROpts REPLOpts} ->
+               {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+               {auto o : ReadOnlyRef ROpts REPLOpts} ->
                NestedNames vars -> Env Term vars -> List ImpDecl -> Core Bool
 processDecls nest env decls
     = do traverse_ (processDecl [] nest env) decls
@@ -162,8 +160,8 @@ processTTImpDecls : {vars : _} ->
                     {auto c : Ref Ctxt Defs} ->
                     {auto m : Ref MD Metadata} ->
                     {auto u : Ref UST UState} ->
-                    {auto s : Ref Syn SyntaxInfo} ->
-                    {auto o : Ref ROpts REPLOpts} ->
+                    {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                    {auto o : ReadOnlyRef ROpts REPLOpts} ->
                     NestedNames vars -> Env Term vars -> List ImpDecl -> Core Bool
 processTTImpDecls {vars} nest env decls
     = do traverse_ (\d => do d' <- bindNames d
@@ -198,8 +196,8 @@ export
 processTTImpFile : {auto c : Ref Ctxt Defs} ->
                    {auto m : Ref MD Metadata} ->
                    {auto u : Ref UST UState} ->
-                   {auto s : Ref Syn SyntaxInfo} ->
-                   {auto o : Ref ROpts REPLOpts} ->
+                   {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                   {auto o : ReadOnlyRef ROpts REPLOpts} ->
                    String -> Core Bool
 processTTImpFile fname
     = do modIdent <- ctxtPathToNS fname
