@@ -132,25 +132,20 @@ successful : {vars : _} ->
              {auto u : Ref UST UState} ->
              List (Core (Term vars)) ->
              Core (List (Either Error (Term vars, Defs, UState)))
-successful [] = pure []
-successful (elab :: elabs)
-    = do ust <- get UST
-         defs <- branch
-         catch (do -- Run the elaborator
-                   res <- elab
-                   -- Record post-elaborator state
-                   ust' <- get UST
-                   defs' <- get Ctxt
-                   -- Reset to previous state and try the rest
-                   put UST ust
-                   put Ctxt defs
-                   elabs' <- successful elabs
-                   -- Record success, and the state we ended at
-                   pure (Right (res, defs', ust') :: elabs'))
-               (\err => do put UST ust
-                           put Ctxt defs
-                           elabs' <- successful elabs
-                           pure (Left err :: elabs'))
+successful = traverse $ \elab => do
+  ust <- get UST
+  defs <- branch
+  finally (catch (do -- Run the elaborator
+                        res <- elab
+                        -- Record post-elaborator state
+                        ust' <- get UST
+                        defs' <- get Ctxt
+                        -- Record success, and the state we ended at
+                        pure $ Right (res, defs', ust'))
+                    (pure . Left))
+            (do -- Reset to previous state
+                put UST ust
+                put Ctxt defs)
 
 anyOne : {vars : _} ->
          {auto c : Ref Ctxt Defs} ->

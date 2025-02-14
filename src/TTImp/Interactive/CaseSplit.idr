@@ -261,42 +261,40 @@ mkCase {c} {u} fn orig lhs_raw
     = do m <- newRef MD (initMetadata $ Virtual Interactive)
          defs <- get Ctxt
          ust <- get UST
-         catch
-           (do
-               -- Fixes Issue #74. The problem is that if the function is defined in a sub module,
-               -- then the current namespace (accessed by calling getNS) differs from the function
-               -- namespace, therefore it is not considered visible by TTImp.Elab.App.checkVisibleNS
-               -- FIXME: Causes issue #1385
-               setAllPublic True
+         finally (catch
+                   (do
+                       -- Fixes Issue #74. The problem is that if the function is defined in a sub module,
+                       -- then the current namespace (accessed by calling getNS) differs from the function
+                       -- namespace, therefore it is not considered visible by TTImp.Elab.App.checkVisibleNS
+                       -- FIXME: Causes issue #1385
+                       setAllPublic True
 
-               -- Use 'Rig0' since it might be a type level function, or it might
-               -- be an erased name in a case block (which will be bound elsewhere
-               -- once split and turned into a pattern)
-               (lhs, _) <- elabTerm {c} {m} {u}
-                                    fn (InLHS erased) [] (MkNested [])
-                                    [] (IBindHere (getFC lhs_raw) PATTERN lhs_raw)
-                                    Nothing
-               -- Revert all public back to false
-               setAllPublic False
-               put Ctxt defs -- reset the context, we don't want any updates
-               put UST ust
-               lhs' <- map (map rawName) $ unelabNoSugar [] lhs
+                       -- Use 'Rig0' since it might be a type level function, or it might
+                       -- be an erased name in a case block (which will be bound elsewhere
+                       -- once split and turned into a pattern)
+                       (lhs, _) <- elabTerm {c} {m} {u}
+                                            fn (InLHS erased) [] (MkNested [])
+                                            [] (IBindHere (getFC lhs_raw) PATTERN lhs_raw)
+                                            Nothing
+                       -- Revert all public back to false
+                       setAllPublic False
+                       lhs' <- map (map rawName) $ unelabNoSugar [] lhs
 
-               log "interaction.casesplit" 3 $ "Original LHS: " ++ show orig
-               log "interaction.casesplit" 3 $ "New LHS: " ++ show lhs'
+                       log "interaction.casesplit" 3 $ "Original LHS: " ++ show orig
+                       log "interaction.casesplit" 3 $ "New LHS: " ++ show lhs'
 
-               pure (Valid lhs' !(getUpdates defs orig lhs')))
-           (\err =>
-               do put Ctxt defs
-                  put UST ust
-                  case err of
-                       WhenUnifying _ gam env l r err
-                         => do let defs = { gamma := gam } defs
-                               if !(impossibleOK defs !(nf defs env l)
-                                                      !(nf defs env r))
-                                  then pure (Impossible lhs_raw)
-                                  else pure Invalid
-                       _ => pure Invalid)
+                       pure (Valid lhs' !(getUpdates defs orig lhs')))
+                   (\case
+                      WhenUnifying _ gam env l r err
+                        => do let defs = { gamma := gam } defs
+                              if !(impossibleOK defs !(nf defs env l)
+                                                     !(nf defs env r))
+                                 then pure (Impossible lhs_raw)
+                                 else pure Invalid
+                      _ => pure Invalid))
+                 (do -- reset the context, we don't want any updates
+                     put Ctxt defs
+                     put UST ust)
 
 substLets : {vars : _} ->
             Term vars -> Term vars

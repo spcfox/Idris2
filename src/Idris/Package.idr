@@ -484,16 +484,9 @@ withWarnings : Ref Ctxt Defs =>
                Ref Syn SyntaxInfo =>
                Ref ROpts REPLOpts =>
                Core a -> Core a
-withWarnings op = do o <- catch op $ \err =>
-                           do emit
-                              throw err
-                     emit
-                     pure o
-  where
-    emit : Core ()
-    emit = do
-      ignore emitWarnings
-      update Ctxt { warnings := [] }
+withWarnings op = finally op $ do
+  ignore emitWarnings
+  update Ctxt { warnings := [] }
 
 prepareCompilation : {auto c : Ref Ctxt Defs} ->
                      {auto s : Ref Syn SyntaxInfo} ->

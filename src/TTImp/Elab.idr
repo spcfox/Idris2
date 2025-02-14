@@ -244,8 +244,7 @@ checkTermSub defining mode opts nest env env' sub tm ty
          ust <- get UST
          mv <- get MD
          res <-
-            catch {t = Error}
-                  (elabTermSub defining mode opts nest
+            catch (elabTermSub defining mode opts nest
                                env env' sub tm (Just ty))
                   $ \case
                     TryWithImplicits loc benv ns

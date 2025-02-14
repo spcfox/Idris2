@@ -211,12 +211,11 @@ firstSuccess (elab :: elabs)
          catch (do res :: more <- elab
                       | [] => continue ust defs elabs
                    pure (res :: continue ust defs (more :: elabs)))
-               (\err =>
-                    case err of
-                         -- Give up on timeout, or we'll keep trying all the
-                         -- other branches.
-                         Timeout _ => noResult
-                         _ => continue ust defs elabs)
+               (\case
+                  -- Give up on timeout, or we'll keep trying all the
+                  -- other branches.
+                  Timeout _ => noResult
+                  _ => continue ust defs elabs)
   where
     continue : UState -> Defs -> List (Core (Search a)) ->
                Core (Search a)

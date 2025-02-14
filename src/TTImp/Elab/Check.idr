@@ -543,53 +543,46 @@ successful : {vars : _} ->
              List (Maybe Name, Core a) ->
              Core (List (Either (Maybe Name, Error)
                                 (Nat, a, Defs, UState, EState vars, Metadata)))
-successful allowCons [] = pure []
-successful allowCons ((tm, elab) :: elabs)
-    = do ust <- get UST
-         let ncons = if allowCons
-                        then 0
-                        else length (toList (guesses ust))
-         est <- get EST
-         md <- get MD
-         defs <- branch
-         catch (do -- Run the elaborator
-                   logC "elab" 5 $
-                            do tm' <- maybe (pure (UN $ Basic "__"))
-                                             toFullNames tm
-                               pure ("Running " ++ show tm')
-                   res <- elab
-                   -- Record post-elaborator state
-                   ust' <- get UST
-                   let ncons' = if allowCons
-                                   then 0
-                                   else length (toList (guesses ust'))
+successful allowCons = traverse $ \(tm, elab) => do
+    ust <- get UST
+    let ncons = if allowCons
+                  then 0
+                  else length (toList (guesses ust))
+    est <- get EST
+    md <- get MD
+    defs <- branch
+    finally (catch (do -- Run the elaborator
+                       logC "elab" 5 $
+                               do tm' <- maybe (pure (UN $ Basic "__"))
+                                                toFullNames tm
+                                  pure ("Running " ++ show tm')
+                       res <- elab
+                       -- Record post-elaborator state
+                       ust' <- get UST
+                       let ncons' = if allowCons
+                                       then 0
+                                       else length (toList (guesses ust'))
 
-                   est' <- get EST
-                   md' <- get MD
-                   defs' <- get Ctxt
+                       est' <- get EST
+                       md' <- get MD
+                       defs' <- get Ctxt
 
-                   -- Reset to previous state and try the rest
-                   put UST ust
-                   put EST est
-                   put MD md
-                   put Ctxt defs
-                   logC "elab" 5 $
-                            do tm' <- maybe (pure (UN $ Basic "__"))
-                                            toFullNames tm
-                               pure ("Success " ++ show tm' ++
-                                     " (" ++ show ncons' ++ " - "
-                                          ++ show ncons ++ ")")
-                   elabs' <- successful allowCons elabs
-                   -- Record success, and the state we ended at
-                   pure (Right (minus ncons' ncons,
-                                res, defs', ust', est', md') :: elabs'))
-               (\err => do put UST ust
-                           put EST est
-                           put MD md
-                           put Ctxt defs
-                           when (abandon err) $ throw err
-                           elabs' <- successful allowCons elabs
-                           pure (Left (tm, err) :: elabs'))
+                       -- Reset to previous state and try the rest
+                       logC "elab" 5 $
+                               do tm' <- maybe (pure (UN $ Basic "__"))
+                                               toFullNames tm
+                                  pure $ "Success " ++ show tm' ++
+                                         " (" ++ show ncons' ++ " - "
+                                              ++ show ncons ++ ")"
+                       -- Record success, and the state we ended at
+                       pure $ Right (minus ncons' ncons, res, defs', ust', est', md'))
+                   (\err => do when (abandon err) $ throw err
+                               pure $ Left (tm, err)))
+            (do -- Reset to previous state and try the rest
+                put UST ust
+                put EST est
+                put MD md
+                put Ctxt defs)
   where
     -- Some errors, it's not worth trying all the possibilities because
     -- something serious has gone wrong, so just give up immediately.

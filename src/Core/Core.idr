@@ -731,17 +731,16 @@ public export
 interface Catchable m t | m where
     throw : {0 a : Type} -> t -> m a
     catch : m a -> (t -> m a) -> m a
-
+    finally : m a -> m b -> m a
     breakpoint : m a -> m (Either t a)
 
 export
 Catchable Core Error where
-  catch (MkCore prog) h
-      = MkCore ( do p' <- prog
-                    case p' of
-                         Left e => let MkCore he = h e in he
-                         Right val => pure (Right val))
+  catch (MkCore prog) h = MkCore $ prog >>= \case
+    Left e => runCore $ h e
+    Right val => pure $ Right val
   breakpoint (MkCore prog) = MkCore (pure <$> prog)
+  finally (MkCore prog) (MkCore fin) = MkCore $ prog <* fin
   throw = coreFail
 
 -- Prelude.Monad.foldlM hand specialised for Core
@@ -924,13 +923,8 @@ wrapRef : (x : label) -> {auto ref : Ref x a} ->
           Core b
 wrapRef x onClose op
   = do v <- get x
-       o <- catch op $ \err =>
-              do onClose v
-                 put x v
-                 throw err
-       onClose v
-       put x v
-       pure o
+       finally op $ do onClose v
+                       put x v
 
 export
 cond : List (Lazy Bool, Lazy a) -> Lazy a -> a
