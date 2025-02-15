@@ -642,6 +642,10 @@ export %inline
 (<$) = (<$>) . const
 
 export %inline
+($>) : Core a -> b -> Core b
+($>) = flip (<$)
+
+export %inline
 ignore : Core a -> Core ()
 ignore = map (\ _ => ())
 
@@ -748,8 +752,12 @@ export %inline
 (<|>) f g = f `catch` const g
 
 export %inline
+option : a -> Core a -> Core a
+option def = (<|> pure def)
+
+export %inline
 try : Core () -> Core ()
-try = (<|> pure ())
+try = option ()
 
 -- Prelude.Monad.foldlM hand specialised for Core
 export

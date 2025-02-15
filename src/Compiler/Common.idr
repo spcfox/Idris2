@@ -524,10 +524,9 @@ locate libspec
                                       fn ++ "." ++ ver ++ ".dylib")]
                                 (fn ++ "." ++ dylib_suffix ++ "." ++ ver)
 
-         fullname <- findLibraryFile fname
-                 <|> -- assume a system library so not
-                     -- in our library path
-                     pure fname
+         fullname <- option fname $ findLibraryFile fname
+                         -- ^ assume a system library so not
+                         --   in our library path
          pure (fname, fullname)
 
 export

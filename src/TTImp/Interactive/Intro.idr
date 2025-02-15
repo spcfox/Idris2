@@ -57,14 +57,14 @@ parameters
       new_hole_names <- uniqueHoleNames defs nargs (nameRoot hole)
       let new_holes = PHole replFC True <$> new_hole_names
       let pcons = papply replFC (PRef replFC cons) new_holes
-      res <- do -- We're desugaring it to the corresponding TTImp
+      res <- option Nothing $ do
+                -- We're desugaring it to the corresponding TTImp
                 icons <- desugar AnyExpr lhsCtxt pcons
                 ccons <- checkTerm hidx {-is this correct?-} InExpr [] (MkNested []) env icons gty
                 newdefs <- get Ctxt
                 ncons <- normaliseHoles newdefs env ccons
                 icons <- unelab env ncons
                 pure (Just icons)
-            <|> pure Nothing
       put Ctxt defs -- reset the context, we don't want any updates
       put UST ust
       pure res

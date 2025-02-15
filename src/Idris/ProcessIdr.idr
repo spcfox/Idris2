@@ -53,14 +53,14 @@ export
 missingIncremental : {auto c : Ref Ctxt Defs} ->
                    String -> Core Bool
 missingIncremental ttcFile
-  = do s <- getSession
-       if s.codegen `elem` s.incrementalCGs
-         then do
-           incData <- readIncData ttcFile
-           pure $ isNothing $ lookup s.codegen incData
-         else
-           pure False
-   <|> pure False
+  = option False $ do
+      s <- getSession
+      if s.codegen `elem` s.incrementalCGs
+        then do
+          incData <- readIncData ttcFile
+          pure $ isNothing $ lookup s.codegen incData
+        else
+          pure False
 
 processDecls : {auto c : Ref Ctxt Defs} ->
                {auto u : Ref UST UState} ->

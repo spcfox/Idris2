@@ -328,7 +328,9 @@ mkSpecDef {vars} fc gdef pename sargs fn stk
     identityFlag [] k = pure k
     identityFlag ((pos, mode) :: sargs) k
       = k <$ guard (k < pos)
-      <|> (case mode of { Static _ => (`minus` 1); Dynamic => id }) <$> identityFlag sargs k
+      <|> identityFlag sargs k <&> case mode of
+                                    Static _ => (`minus` 1)
+                                    Dynamic => id
 
 
     propagateFlags : List DefFlag -> List DefFlag

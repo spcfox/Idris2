@@ -214,7 +214,7 @@ stMain cgs opts
                                   pure res
 
                  doRepl <- catch (postOptions result opts)
-                                 (\err => emitError err *> pure False)
+                                 (\err => emitError err $> False)
                  if doRepl then
                    if ide || ideSocket then
                      if not ideSocket

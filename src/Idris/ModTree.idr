@@ -142,19 +142,19 @@ getBuildMods loc done fname
 checkTotalReq : {auto c : Ref Ctxt Defs} ->
                 String -> String -> TotalReq -> Core Bool
 checkTotalReq sourceFile ttcFile expected
-  = do log "totality.requirement" 20 $
-         "Reading totalReq from " ++ ttcFile
-       Just got <- readTotalReq ttcFile
-         | Nothing => pure False
-       log "totality.requirement" 20 $ unwords
-         [ "Got", show got, "and expected", show expected ++ ":"
-         , "we", ifThenElse (got < expected) "should" "shouldn't"
-         , "rebuild" ]
-       -- if what we got (i.e. what we used when we checked the file the
-       -- first time around) was strictly less stringent than what we
-       -- expect now then we need to rebuild.
-       pure (got < expected)
-   <|> pure False
+  = option False $ do
+      log "totality.requirement" 20 $
+        "Reading totalReq from " ++ ttcFile
+      Just got <- readTotalReq ttcFile
+        | Nothing => pure False
+      log "totality.requirement" 20 $ unwords
+        [ "Got", show got, "and expected", show expected ++ ":"
+        , "we", ifThenElse (got < expected) "should" "shouldn't"
+        , "rebuild" ]
+      -- if what we got (i.e. what we used when we checked the file the
+      -- first time around) was strictly less stringent than what we
+      -- expect now then we need to rebuild.
+      pure (got < expected)
 
 needsBuildingTime : {auto c : Ref Ctxt Defs} ->
                     (sourceFile : String) -> (ttcFile : String) ->
@@ -165,10 +165,10 @@ needsBuildingTime sourceFile ttcFile depFiles
 needsBuildingDepHash : {auto c : Ref Ctxt Defs} ->
                  String -> Core Bool
 needsBuildingDepHash depFileName
-  = do defs                   <- get Ctxt
-       depTTCFileName         <- getTTCFileName depFileName "ttc"
-       not <$> unchangedHash defs.options.hashFn depTTCFileName depFileName
-   <|> pure False
+  = option False $ do
+      defs           <- get Ctxt
+      depTTCFileName <- getTTCFileName depFileName "ttc"
+      not <$> unchangedHash defs.options.hashFn depTTCFileName depFileName
 
 ||| Build from source if any of the dependencies, or the associated source file,
 ||| have been modified from the stored hashes.
