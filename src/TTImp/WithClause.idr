@@ -119,8 +119,8 @@ mutual
              Core (List (String, RawImp))
   matchAny fc lhs [] = matchFail fc
   matchAny fc lhs ((x, y) :: ms)
-      = catch (getMatch lhs x y)
-              (\err => matchAny fc lhs ms)
+      = getMatch lhs x y
+    <|> matchAny fc lhs ms
 
   matchAll : {auto m : Ref MD Metadata} ->
              {auto c : Ref Ctxt Defs} ->

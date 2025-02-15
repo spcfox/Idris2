@@ -122,7 +122,7 @@ emitProblem a replDocCreator idemodeDocCreator getFC status
                                 -- recover the file name relative to the working directory.
                                 -- (This is what idris2-mode expects)
                                 let fc = MkFC (PhysicalIdrSrc ident) startPos endPos
-                                catch (nsToSource fc ident) (const $ pure "(File-Not-Found)")
+                                nsToSource fc ident <|> pure "(File-Not-Found)"
                               PhysicalPkgSrc fname =>
                                 pure fname
                               Virtual Interactive =>
@@ -274,11 +274,9 @@ equivTypes ty1 ty2 =
      True <- pure (!(getArity defs [] ty1) == !(getArity defs [] ty2))
        | False => pure False
      _ <- newRef UST initUState
-     b <- catch
-           (do res <- unify inTerm EmptyFC [] ty1 ty2
-               case res of
-                 (MkUnifyResult [] _ [] NoLazy) => pure True
-                 _ => pure False)
-           (\err => pure False)
+     b <- do MkUnifyResult [] _ [] NoLazy <- unify inTerm EmptyFC [] ty1 ty2
+               | _ => pure False
+             pure True
+      <|> pure False
      when b $ logTerm "typesearch.equiv" 20 "Accepted: " ty1
      pure b

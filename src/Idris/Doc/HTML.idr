@@ -41,7 +41,7 @@ packageInternal : {auto c : Ref Ctxt Defs} ->
                   Name -> Core Bool
 packageInternal (NS ns _) =
   do let mi = nsAsModuleIdent ns
-     catch ((const True) <$> nsToSource emptyFC mi) (\_ => pure False)
+     True <$ nsToSource emptyFC mi <|> pure False
 packageInternal _ = pure False
 
 addLink : {auto c : Ref Ctxt Defs} ->

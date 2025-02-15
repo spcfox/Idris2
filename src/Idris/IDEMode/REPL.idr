@@ -423,14 +423,13 @@ displayIDEResult outf i (NameLocList dat)
       let wdir = defs.options.dirs.working_dir
       let pkg_dirs = filter (/= ".") (defs.options.dirs.extra_dirs ++ defs.options.dirs.package_dirs)
       let exts = listOfExtensionsStr
-      Just fname <- catch
-          (Just . (wdir </>) <$> nsToSource replFC modIdent) -- Try local source first
-          -- if not found, try looking for the file amongst the loaded packages.
-          (const $ firstAvailable $ do
-            pkg_dir <- pkg_dirs
-            let pkg_dir_abs = ifThenElse (isRelative pkg_dir) (wdir </> pkg_dir) pkg_dir
-            ext <- exts
-            pure (pkg_dir_abs </> ModuleIdent.toPath modIdent <.> ext))
+      Just fname <- Just . (wdir </>) <$> nsToSource replFC modIdent -- Try local source first
+                <|> -- if not found, try looking for the file amongst the loaded packages.
+                    firstAvailable (do
+                      pkg_dir <- pkg_dirs
+                      let pkg_dir_abs = ifThenElse (isRelative pkg_dir) (wdir </> pkg_dir) pkg_dir
+                      ext <- exts
+                      pure (pkg_dir_abs </> ModuleIdent.toPath modIdent <.> ext))
         | _ => pure "(File-Not-Found)"
       pure fname
     sexpOriginDesc (PhysicalPkgSrc fname) = pure fname

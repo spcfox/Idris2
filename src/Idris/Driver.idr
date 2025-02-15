@@ -82,8 +82,8 @@ updateEnv
          -- added by the user with IDRIS2_PACKAGE_PATH)
          addPackageSearchPath !pkgGlobalDirectory
          -- These might fail while bootstrapping
-         catch (addPkgDir "prelude" anyBounds) (const (pure ()))
-         catch (addPkgDir "base" anyBounds) (const (pure ()))
+         try $ addPkgDir "prelude" anyBounds
+         try $ addPkgDir "base" anyBounds
          addDataDir (prefix_dir (dirs (options defs)) </>
                         ("idris2-" ++ showVersion False version) </> "support")
          addLibDir (prefix_dir (dirs (options defs)) </>

@@ -53,14 +53,14 @@ export
 missingIncremental : {auto c : Ref Ctxt Defs} ->
                    String -> Core Bool
 missingIncremental ttcFile
-  = catch (do s <- getSession
-              if s.codegen `elem` s.incrementalCGs
-                then do
-                  incData <- readIncData ttcFile
-                  pure $ isNothing $ lookup s.codegen incData
-                else
-                  pure False)
-          (\error => pure False)
+  = do s <- getSession
+       if s.codegen `elem` s.incrementalCGs
+         then do
+           incData <- readIncData ttcFile
+           pure $ isNothing $ lookup s.codegen incData
+         else
+           pure False
+   <|> pure False
 
 processDecls : {auto c : Ref Ctxt Defs} ->
                {auto u : Ref UST UState} ->
@@ -406,7 +406,7 @@ processMod sourceFileName ttcFileName msg sourcecode origin
                 -- file hasn't changed, no need to rebuild.
                 update Ctxt { importHashes := importInterfaceHashes }
                 pure (Just errs))
-          (\err => pure (Just [err]))
+          (pure . Just . singleton)
 
 -- Process a file. Returns any errors, rather than throwing them, because there
 -- might be lots of errors collected across a whole file.
@@ -450,4 +450,4 @@ process msgPrefix buildMsg sourceFileName ident
                            writeToTTM ttmFileName
                            pure []
                       else do pure errs)
-               (\err => pure [err])
+               (pure . singleton)

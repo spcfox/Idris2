@@ -427,9 +427,8 @@ inferAndElab emode itm env
        -- foreign argument lists. TODO: once the new FFI is fully
        -- up and running we won't need this. Also, if we add
        -- 'with' disambiguation we can use that instead.
-       catch (do hide replFC (NS primIONS (UN $ Basic "::"))
-                 hide replFC (NS primIONS (UN $ Basic "Nil")))
-             (\err => pure ())
+       try $ do hide replFC (NS primIONS (UN $ Basic "::"))
+                hide replFC (NS primIONS (UN $ Basic "Nil"))
        (tm , gty) <- elabTerm inidx emode [] (MkNested []) env ttimpWithIt Nothing
        ty <- getTerm gty
        pure (tm `WithType` ty)
@@ -960,7 +959,7 @@ process (Load f)
 process (ImportMod m)
     = do catch (do addImport (MkImport emptyFC False m (miAsNamespace m))
                    pure $ ModuleLoaded (show m))
-               (\err => pure $ ErrorLoadingModule (show m) err)
+               (pure . ErrorLoadingModule (show m))
 process (CD dir)
     = do setWorkingDir dir
          workDir <- getWorkingDir
@@ -1096,7 +1095,7 @@ process (ImportPackage package) = do
     let ns = concat $ intersperse "." sp
     let ns' = mkNamespace ns
     catch (do addImport (MkImport emptyFC False (nsAsModuleIdent ns') ns'); pure Nothing)
-          (\err => pure (Just err))
+          (pure . Just)
   let errs' = catMaybes errs
   res <- case errs' of
     [] => pure "Done"
@@ -1128,8 +1127,7 @@ processCatch cmd
                            put Syn s'
                            put ROpts o'
                            msg <- display err
-                           pure $ REPLError msg
-                           )
+                           pure $ REPLError msg)
 
 parseEmptyCmd : EmptyRule (Maybe REPLCmd)
 parseEmptyCmd = eoi *> (pure Nothing)

@@ -743,6 +743,14 @@ Catchable Core Error where
   finally (MkCore prog) (MkCore fin) = MkCore $ prog <* fin
   throw = coreFail
 
+export %inline
+(<|>) : Core a -> Core a -> Core a
+(<|>) f g = f `catch` const g
+
+export %inline
+try : Core () -> Core ()
+try = (<|> pure ())
+
 -- Prelude.Monad.foldlM hand specialised for Core
 export
 foldlC : Foldable t => (a -> b -> Core a) -> a -> t b -> Core a
