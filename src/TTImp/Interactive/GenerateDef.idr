@@ -40,8 +40,8 @@ fnName lhs (DN s _) = s
 fnName lhs n = nameRoot n
 
 -- Make the hole on the RHS have a unique name
-uniqueRHS : {auto c : Ref Ctxt Defs} ->
-            {auto s : Ref Syn SyntaxInfo} ->
+uniqueRHS : {auto c : ReadOnlyRef Ctxt Defs} ->
+            {auto s : ReadOnlyRef Syn SyntaxInfo} ->
             ImpClause -> Core ImpClause
 uniqueRHS (PatClause fc lhs rhs)
     = pure $ PatClause fc lhs !(mkUniqueName rhs)
@@ -57,8 +57,8 @@ uniqueRHS c = pure c
 expandClause : {auto c : Ref Ctxt Defs} ->
                {auto m : Ref MD Metadata} ->
                {auto u : Ref UST UState} ->
-               {auto s : Ref Syn SyntaxInfo} ->
-               {auto o : Ref ROpts REPLOpts} ->
+               {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+               {auto o : ReadOnlyRef ROpts REPLOpts} ->
                FC -> SearchOpts -> Int -> ImpClause ->
                Core (Search (List ImpClause))
 expandClause loc opts n c
@@ -110,8 +110,8 @@ splittableNames _ = []
 
 trySplit : {auto c : Ref Ctxt Defs} ->
            {auto u : Ref UST UState} ->
-           {auto s : Ref Syn SyntaxInfo} ->
-           {auto o : Ref ROpts REPLOpts} ->
+           {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+           {auto o : ReadOnlyRef ROpts REPLOpts} ->
            FC -> RawImp -> ClosedTerm -> RawImp -> Name ->
            Core (Name, List ImpClause)
 trySplit loc lhsraw lhs rhs n
@@ -150,8 +150,8 @@ trySplit loc lhsraw lhs rhs n
 generateSplits : {auto m : Ref MD Metadata} ->
                  {auto c : Ref Ctxt Defs} ->
                  {auto u : Ref UST UState} ->
-                 {auto s : Ref Syn SyntaxInfo} ->
-                 {auto o : Ref ROpts REPLOpts} ->
+                 {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                 {auto o : ReadOnlyRef ROpts REPLOpts} ->
                  FC -> SearchOpts -> Int -> ImpClause ->
                  Core (List (Name, List ImpClause))
 generateSplits loc opts fn (ImpossibleClause fc lhs) = pure []
@@ -178,8 +178,8 @@ mutual
   tryAllSplits : {auto c : Ref Ctxt Defs} ->
                  {auto m : Ref MD Metadata} ->
                  {auto u : Ref UST UState} ->
-                 {auto s : Ref Syn SyntaxInfo} ->
-                 {auto o : Ref ROpts REPLOpts} ->
+                 {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                 {auto o : ReadOnlyRef ROpts REPLOpts} ->
                  FC -> SearchOpts -> Int ->
                  List (Name, List ImpClause) ->
                  Core (Search (List ImpClause))
@@ -195,8 +195,8 @@ mutual
   mkSplits : {auto c : Ref Ctxt Defs} ->
              {auto m : Ref MD Metadata} ->
              {auto u : Ref UST UState} ->
-             {auto s : Ref Syn SyntaxInfo} ->
-             {auto o : Ref ROpts REPLOpts} ->
+             {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+             {auto o : ReadOnlyRef ROpts REPLOpts} ->
              FC -> SearchOpts -> Int -> ImpClause ->
              Core (Search (List ImpClause))
   -- If the clause works, use it. Otherwise, split on one of the splittable
@@ -215,8 +215,8 @@ export
 makeDefFromType : {auto c : Ref Ctxt Defs} ->
                   {auto m : Ref MD Metadata} ->
                   {auto u : Ref UST UState} ->
-                  {auto s : Ref Syn SyntaxInfo} ->
-                  {auto o : Ref ROpts REPLOpts} ->
+                  {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                  {auto o : ReadOnlyRef ROpts REPLOpts} ->
                   FC ->
                   SearchOpts ->
                   Name -> -- function name to generate
@@ -251,8 +251,8 @@ export
 makeDef : {auto c : Ref Ctxt Defs} ->
           {auto m : Ref MD Metadata} ->
           {auto u : Ref UST UState} ->
-          {auto s : Ref Syn SyntaxInfo} ->
-          {auto o : Ref ROpts REPLOpts} ->
+          {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+          {auto o : ReadOnlyRef ROpts REPLOpts} ->
           (NonEmptyFC -> (Name, Nat, ClosedTerm) -> Bool) ->
           Name -> Core (Search (FC, List ImpClause))
 makeDef p n
@@ -300,8 +300,8 @@ export
 makeDefSort : {auto c : Ref Ctxt Defs} ->
               {auto m : Ref MD Metadata} ->
               {auto u : Ref UST UState} ->
-              {auto s : Ref Syn SyntaxInfo} ->
-              {auto o : Ref ROpts REPLOpts} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+              {auto o : ReadOnlyRef ROpts REPLOpts} ->
               (NonEmptyFC -> (Name, Nat, ClosedTerm) -> Bool) ->
               Nat -> (List ImpClause -> List ImpClause -> Ordering) ->
               Name -> Core (Search (FC, List ImpClause))
@@ -312,8 +312,8 @@ export
 makeDefN : {auto c : Ref Ctxt Defs} ->
            {auto m : Ref MD Metadata} ->
            {auto u : Ref UST UState} ->
-           {auto s : Ref Syn SyntaxInfo} ->
-           {auto o : Ref ROpts REPLOpts} ->
+           {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+           {auto o : ReadOnlyRef ROpts REPLOpts} ->
            (NonEmptyFC -> (Name, Nat, ClosedTerm) -> Bool) ->
            Nat -> Name -> Core (List (FC, List ImpClause))
 makeDefN p max n

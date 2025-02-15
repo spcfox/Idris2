@@ -792,7 +792,7 @@ search fc rig opts hints topty n_in
                                [res] => pure $ Just res
                                _ => pure Nothing
 
-getLHSData : {auto c : Ref Ctxt Defs} ->
+getLHSData : {auto c : ReadOnlyRef Ctxt Defs} ->
              Defs -> Maybe ClosedTerm -> Core (Maybe RecData)
 getLHSData defs Nothing = pure Nothing
 getLHSData defs (Just tm)
@@ -809,8 +809,8 @@ getLHSData defs (Just tm)
 firstLinearOK : {auto c : Ref Ctxt Defs} ->
                 {auto m : Ref MD Metadata} ->
                 {auto u : Ref UST UState} ->
-                {auto s : Ref Syn SyntaxInfo} ->
-                {auto o : Ref ROpts REPLOpts} ->
+                {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                {auto o : ReadOnlyRef ROpts REPLOpts} ->
                 FC -> Search (ClosedTerm, ExprDefs) ->
                 Core (Search RawImp)
 firstLinearOK fc [] = noResult
@@ -831,8 +831,8 @@ export
 exprSearchOpts : {auto c : Ref Ctxt Defs} ->
                  {auto m : Ref MD Metadata} ->
                  {auto u : Ref UST UState} ->
-                 {auto s : Ref Syn SyntaxInfo} ->
-                 {auto o : Ref ROpts REPLOpts} ->
+                 {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                 {auto o : ReadOnlyRef ROpts REPLOpts} ->
                  SearchOpts -> FC -> Name -> List Name ->
                  Core (Search RawImp)
 exprSearchOpts opts fc n_in hints
@@ -870,8 +870,8 @@ exprSearchOpts opts fc n_in hints
 exprSearch' : {auto c : Ref Ctxt Defs} ->
               {auto m : Ref MD Metadata} ->
               {auto u : Ref UST UState} ->
-              {auto s : Ref Syn SyntaxInfo} ->
-              {auto o : Ref ROpts REPLOpts} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+              {auto o : ReadOnlyRef ROpts REPLOpts} ->
               FC -> Name -> List Name ->
               Core (Search RawImp)
 exprSearch' = exprSearchOpts (initSearchOpts True 5)
@@ -880,8 +880,8 @@ export
 exprSearch : {auto c : Ref Ctxt Defs} ->
              {auto m : Ref MD Metadata} ->
              {auto u : Ref UST UState} ->
-             {auto s : Ref Syn SyntaxInfo} ->
-             {auto o : Ref ROpts REPLOpts} ->
+             {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+             {auto o : ReadOnlyRef ROpts REPLOpts} ->
              FC -> Name -> List Name ->
              Core (Search RawImp)
 exprSearch fc n hints
@@ -894,8 +894,8 @@ export
 exprSearchN : {auto c : Ref Ctxt Defs} ->
               {auto m : Ref MD Metadata} ->
               {auto u : Ref UST UState} ->
-              {auto s : Ref Syn SyntaxInfo} ->
-              {auto o : Ref ROpts REPLOpts} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+              {auto o : ReadOnlyRef ROpts REPLOpts} ->
               FC -> Nat -> Name -> List Name ->
               Core (List RawImp)
 exprSearchN fc max n hints

@@ -22,7 +22,7 @@ import TTImp.TTImp
 
 -- TODO: Later, we'll get the name of the lemma from the type, if it's one
 -- that's generated for a dependent type. For now, always return the default
-findRewriteLemma : {auto c : Ref Ctxt Defs} ->
+findRewriteLemma : {auto c : ReadOnlyRef Ctxt Defs} ->
                    FC -> (rulety : Term vars) ->
                    Core Name
 findRewriteLemma loc rulety
@@ -31,7 +31,7 @@ findRewriteLemma loc rulety
           Just n => pure n
 
 getRewriteTerms : {vars : _} ->
-                  {auto c : Ref Ctxt Defs} ->
+                  {auto c : ReadOnlyRef Ctxt Defs} ->
                   FC -> Defs -> NF vars -> Error ->
                   Core (NF vars, NF vars, NF vars)
 getRewriteTerms loc defs (NTCon nfc eq t a args) err
@@ -66,7 +66,7 @@ record Lemma vars where
   predTy : Term vars
 
 elabRewrite : {vars : _} ->
-              {auto c : Ref Ctxt Defs} ->
+              {auto c : ReadOnlyRef Ctxt Defs} ->
               {auto u : Ref UST UState} ->
               FC -> Env Term vars ->
               (expected : Term vars) ->
@@ -108,8 +108,8 @@ checkRewrite : {vars : _} ->
                {auto m : Ref MD Metadata} ->
                {auto u : Ref UST UState} ->
                {auto e : Ref EST (EState vars)} ->
-               {auto s : Ref Syn SyntaxInfo} ->
-               {auto o : Ref ROpts REPLOpts} ->
+               {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+               {auto o : ReadOnlyRef ROpts REPLOpts} ->
                RigCount -> ElabInfo ->
                NestedNames vars -> Env Term vars ->
                FC -> RawImp -> RawImp -> Maybe (Glued vars) ->

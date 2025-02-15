@@ -26,7 +26,7 @@ dropReps {vars} (Just (Local fc r x p) :: xs)
     toNothing tm = tm
 dropReps (x :: xs) = x :: dropReps xs
 
-updateParams : {auto _ : Ref Ctxt Defs} -> {vars : _} ->
+updateParams : {auto _ : ReadOnlyRef Ctxt Defs} -> {vars : _} ->
                Maybe (List (Maybe (Term vars))) ->
                   -- arguments to the type constructor which could be
                   -- parameters
@@ -48,7 +48,7 @@ updateParams (Just args) args' = pure $ dropReps $ zipWith mergeArg args args'
         = if x == y then Just (Local fc r x p) else Nothing
     mergeArg _ _ = Nothing
 
-getPs : {auto _ : Ref Ctxt Defs} -> {vars : _} ->
+getPs : {auto _ : ReadOnlyRef Ctxt Defs} -> {vars : _} ->
         Maybe (List (Maybe (Term vars))) -> Name -> Term vars ->
         Core (Maybe (List (Maybe (Term vars))))
 getPs acc tyn (Bind _ x (Pi _ _ _ ty) sc)
@@ -71,7 +71,7 @@ toPos (Just ns) = justPos 0 ns
     justPos i (Just x :: xs) = i :: justPos (1 + i) xs
     justPos i (Nothing :: xs) = justPos (1 + i) xs
 
-getConPs : {auto _ : Ref Ctxt Defs} -> {vars : _} ->
+getConPs : {auto _ : ReadOnlyRef Ctxt Defs} -> {vars : _} ->
            Maybe (List (Maybe (Term vars))) -> Name -> Term vars ->
            Core (List Nat)
 getConPs acc tyn (Bind _ x (Pi _ _ _ ty) sc)
@@ -81,7 +81,7 @@ getConPs acc tyn (Bind _ x (Let _ _ v ty) sc)
     = getConPs acc tyn (subst v sc)
 getConPs acc tyn tm = toPos <$> getPs acc tyn tm
 
-paramPos : {auto _ : Ref Ctxt Defs} -> Name -> (dcons : List ClosedTerm) ->
+paramPos : {auto _ : ReadOnlyRef Ctxt Defs} -> Name -> (dcons : List ClosedTerm) ->
            Core (Maybe (List Nat))
 paramPos tyn [] = pure Nothing -- no constructor!
 paramPos tyn dcons = do

@@ -36,7 +36,7 @@ import TTImp.TTImp
 
 -- If the expected type has an implicit pi, elaborate with leading
 -- implicit lambdas if they aren't there already.
-insertImpLam : {auto c : Ref Ctxt Defs} ->
+insertImpLam : {auto c : ReadOnlyRef Ctxt Defs} ->
                {auto u : Ref UST UState} ->
                Env Term vars ->
                (term : RawImp) -> (expected : Maybe (Glued vars)) ->
@@ -118,8 +118,8 @@ checkTerm : {vars : _} ->
             {auto m : Ref MD Metadata} ->
             {auto u : Ref UST UState} ->
             {auto e : Ref EST (EState vars)} ->
-            {auto s : Ref Syn SyntaxInfo} ->
-            {auto o : Ref ROpts REPLOpts} ->
+            {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+            {auto o : ReadOnlyRef ROpts REPLOpts} ->
             RigCount -> ElabInfo ->
             NestedNames vars -> Env Term vars -> RawImp -> Maybe (Glued vars) ->
             Core (Term vars, Glued vars)
@@ -279,6 +279,8 @@ checkTerm rig elabinfo nest env (IWithUnambigNames fc ns rhs) exp
 --         {auto m : Ref MD Metadata} ->
 --         {auto u : Ref UST UState} ->
 --         {auto e : Ref EST (EState vars)} ->
+--         {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+--         {auto o : ReadOnlyRef ROpts REPLOpts} ->
 --         RigCount -> ElabInfo -> Env Term vars -> RawImp ->
 --         Maybe (Glued vars) ->
 --         Core (Term vars, Glued vars)
@@ -311,6 +313,8 @@ onLHS _ = False
 --            {auto m : Ref MD Metadata} ->
 --            {auto u : Ref UST UState} ->
 --            {auto e : Ref EST (EState vars)} ->
+--            {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+--            {auto o : ReadOnlyRef ROpts REPLOpts} ->
 --            RigCount -> ElabInfo -> Env Term vars -> RawImp -> Maybe (Glued vars) ->
 --            Core (Term vars, Glued vars)
 TTImp.Elab.Check.checkImp rigc elabinfo nest env tm exp

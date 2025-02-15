@@ -141,7 +141,7 @@ resetNextVar = update UST { nextName := 0 }
 
 -- Generate a global name based on the given root, in the current namespace
 export
-genName : {auto c : Ref Ctxt Defs} ->
+genName : {auto c : ReadOnlyRef Ctxt Defs} ->
           {auto u : Ref UST UState} ->
           String -> Core Name
 genName str
@@ -152,7 +152,7 @@ genName str
 
 -- Generate a global name based on the given name, in the current namespace
 export
-genMVName : {auto c : Ref Ctxt Defs} ->
+genMVName : {auto c : ReadOnlyRef Ctxt Defs} ->
             {auto u : Ref UST UState} ->
             Name -> Core Name
 genMVName (UN str) = genName (displayUserName str)
@@ -165,7 +165,7 @@ genMVName n
 
 -- Generate a unique variable name based on the given root
 export
-genVarName : {auto c : Ref Ctxt Defs} ->
+genVarName : {auto c : ReadOnlyRef Ctxt Defs} ->
              {auto u : Ref UST UState} ->
              String -> Core Name
 genVarName str
@@ -175,7 +175,7 @@ genVarName str
 
 -- Again, for case names
 export
-genCaseName : {auto c : Ref Ctxt Defs} ->
+genCaseName : {auto c : ReadOnlyRef Ctxt Defs} ->
               {auto u : Ref UST UState} ->
               String -> Core Name
 genCaseName root
@@ -184,7 +184,7 @@ genCaseName root
          inCurrentNS (CaseBlock root (nextName ust))
 
 export
-genWithName : {auto c : Ref Ctxt Defs} ->
+genWithName : {auto c : ReadOnlyRef Ctxt Defs} ->
               {auto u : Ref UST UState} ->
               String -> Core Name
 genWithName root
@@ -246,30 +246,30 @@ removeGuess n = update UST { guesses $= delete n }
 
 -- Get all of the hole data
 export
-getHoles : {auto u : Ref UST UState} ->
+getHoles : {auto u : ReadOnlyRef UST UState} ->
            Core (IntMap (FC, Name))
 getHoles = holes <$> get UST
 
 -- Get all of the guess data
 export
-getGuesses : {auto u : Ref UST UState} ->
+getGuesses : {auto u : ReadOnlyRef UST UState} ->
            Core (IntMap (FC, Name))
 getGuesses = guesses <$> get UST
 
 -- Get the hole data for holes in the current elaboration session
 -- (i.e. since the last 'saveHoles')
 export
-getCurrentHoles : {auto u : Ref UST UState} ->
+getCurrentHoles : {auto u : ReadOnlyRef UST UState} ->
                   Core (IntMap (FC, Name))
 getCurrentHoles = currentHoles <$> get UST
 
 export
-isHole : {auto u : Ref UST UState} ->
+isHole : {auto u : ReadOnlyRef UST UState} ->
          Int -> Core Bool
 isHole i = isJust . lookup i <$> getHoles
 
 export
-isCurrentHole : {auto u : Ref UST UState} ->
+isCurrentHole : {auto u : ReadOnlyRef UST UState} ->
                 Int -> Core Bool
 isCurrentHole i = isJust . lookup i <$> getCurrentHoles
 
@@ -285,7 +285,7 @@ deleteConstraint cid = update UST { constraints $= delete cid }
 
 export
 addConstraint : {auto u : Ref UST UState} ->
-                {auto c : Ref Ctxt Defs} ->
+                {auto c : ReadOnlyRef Ctxt Defs} ->
                 Constraint -> Core Int
 addConstraint constr
     = do ust <- get UST
@@ -296,7 +296,7 @@ addConstraint constr
 
 export
 addDot : {vars : _} ->
-         {auto c : Ref Ctxt Defs} ->
+         {auto c : ReadOnlyRef Ctxt Defs} ->
          {auto u : Ref UST UState} ->
          FC -> Env Term vars -> Name -> Term vars -> DotReason -> Term vars ->
          Core ()
@@ -558,7 +558,7 @@ addDelayedHoleName : {auto u : Ref UST UState} ->
 addDelayedHoleName (idx, h) = update UST { delayedHoles $= insert idx h }
 
 export
-checkDelayedHoles : {auto u : Ref UST UState} ->
+checkDelayedHoles : {auto u : ReadOnlyRef UST UState} ->
                     Core (Maybe Error)
 checkDelayedHoles
     = do ust <- get UST
@@ -571,7 +571,7 @@ checkDelayedHoles
 -- not guarded by a unification problem (in which case, report that the unification
 -- problem is unsolved) and it doesn't depend on an implicit pattern variable
 -- (in which case, perhaps suggest binding it explicitly)
-checkValidHole : {auto c : Ref Ctxt Defs} ->
+checkValidHole : {auto c : ReadOnlyRef Ctxt Defs} ->
                  {auto u : Ref UST UState} ->
                  Int -> (Int, (FC, Name)) -> Core ()
 checkValidHole base (idx, (fc, n))
@@ -613,7 +613,7 @@ checkValidHole base (idx, (fc, n))
 -- unsolved searches
 export
 checkUserHolesAfter : {auto u : Ref UST UState} ->
-                      {auto c : Ref Ctxt Defs} ->
+                      {auto c : ReadOnlyRef Ctxt Defs} ->
                       Int -> Bool -> Core ()
 checkUserHolesAfter base now
     = do gs_map <- getGuesses
@@ -635,19 +635,19 @@ checkUserHolesAfter base now
 
 export
 checkUserHoles : {auto u : Ref UST UState} ->
-                 {auto c : Ref Ctxt Defs} ->
+                 {auto c : ReadOnlyRef Ctxt Defs} ->
                  Bool -> Core ()
 checkUserHoles = checkUserHolesAfter 0
 
 export
 checkNoGuards : {auto u : Ref UST UState} ->
-                {auto c : Ref Ctxt Defs} ->
+                {auto c : ReadOnlyRef Ctxt Defs} ->
                 Core ()
 checkNoGuards = checkUserHoles False
 
 export
 dumpHole : {auto u : Ref UST UState} ->
-           {auto c : Ref Ctxt Defs} ->
+           {auto c : ReadOnlyRef Ctxt Defs} ->
            (s : String) ->
            {auto 0 _ : KnownTopic s} ->
            Nat -> (hole : Int) -> Core ()
@@ -709,7 +709,7 @@ dumpHole str n hole
 
 export
 dumpConstraints : {auto u : Ref UST UState} ->
-                  {auto c : Ref Ctxt Defs} ->
+                  {auto c : ReadOnlyRef Ctxt Defs} ->
                   (topics : String) ->
                   {auto 0 _ : KnownTopic topics} ->
                   (verbosity : Nat) ->

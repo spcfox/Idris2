@@ -75,7 +75,7 @@ Eq Side where
 
 export
 extendSyn : {auto s : Ref Syn SyntaxInfo} ->
-            {auto c : Ref Ctxt Defs} ->
+            {auto c : ReadOnlyRef Ctxt Defs} ->
             SyntaxInfo -> Core ()
 extendSyn newsyn
     = do syn <- get Syn
@@ -121,7 +121,7 @@ mkPrec Prefix = Prefix
 -- modules as long as the fixities are consistent. If they aren't, the fixity
 -- can be hidden with %hide, this is handled by `removeFixity`.
 -- Once conflicts are handled we return the operator precedence we found.
-checkConflictingFixities : {auto s : Ref Syn SyntaxInfo} ->
+checkConflictingFixities : {auto s : ReadOnlyRef Syn SyntaxInfo} ->
                            {auto c : Ref Ctxt Defs} ->
                            (isPrefix : Bool) ->
                            WithFC (OpStr' Name) -> Core (OpPrec, FixityDeclarationInfo)
@@ -173,7 +173,7 @@ checkConflictingFixities isPrefix (MkFCVal exprFC opn)
                    """
 
 checkConflictingBinding : Ref Ctxt Defs =>
-                          Ref Syn SyntaxInfo =>
+                          ReadOnlyRef Syn SyntaxInfo =>
                           WithFC OpStr -> (foundFixity : FixityDeclarationInfo) ->
                           (usage : OperatorLHSInfo PTerm) -> (rhs : PTerm) -> Core ()
 checkConflictingBinding (MkFCVal fc opName) foundFixity use_site rhs
@@ -227,7 +227,7 @@ checkValidFixity _ InfixR 0 = True
 checkValidFixity _ _ _ = False
 
 parameters (side : Side)
-  toTokList : {auto s : Ref Syn SyntaxInfo} ->
+  toTokList : {auto s : ReadOnlyRef Syn SyntaxInfo} ->
               {auto c : Ref Ctxt Defs} ->
               PTerm -> Core (List (Tok ((OpStr, FixityDeclarationInfo), Maybe (OperatorLHSInfo PTerm)) PTerm))
   toTokList (POp fc (MkFCVal lhsFC l) opn r)
@@ -298,7 +298,7 @@ mutual
              {auto c : Ref Ctxt Defs} ->
              {auto m : Ref MD Metadata} ->
              {auto u : Ref UST UState} ->
-             {auto o : Ref ROpts REPLOpts} ->
+             {auto o : ReadOnlyRef ROpts REPLOpts} ->
              Side -> List Name -> PTerm -> Core RawImp
   desugarB side ps (PRef fc x) = do
     let ns = mbNamespace !(get Bang)
@@ -612,7 +612,7 @@ mutual
                   {auto c : Ref Ctxt Defs} ->
                   {auto u : Ref UST UState} ->
                   {auto m : Ref MD Metadata} ->
-                  {auto o : Ref ROpts REPLOpts} ->
+                  {auto o : ReadOnlyRef ROpts REPLOpts} ->
                   Side -> List Name -> PFieldUpdate -> Core IFieldUpdate
   desugarUpdate side ps (PSetField p v)
       = pure (ISetField p !(desugarB side ps v))
@@ -624,7 +624,7 @@ mutual
                {auto c : Ref Ctxt Defs} ->
                {auto u : Ref UST UState} ->
                {auto m : Ref MD Metadata} ->
-               {auto o : Ref ROpts REPLOpts} ->
+               {auto o : ReadOnlyRef ROpts REPLOpts} ->
                Side -> List Name ->
                (nilFC : FC) -> List (FC, PTerm) -> Core RawImp
   expandList side ps nilFC [] = pure (IVar nilFC (UN $ Basic "Nil"))
@@ -638,7 +638,7 @@ mutual
                {auto c : Ref Ctxt Defs} ->
                {auto u : Ref UST UState} ->
                {auto m : Ref MD Metadata} ->
-               {auto o : Ref ROpts REPLOpts} ->
+               {auto o : ReadOnlyRef ROpts REPLOpts} ->
                Side -> List Name -> (nilFC : FC) ->
                SnocList (FC, PTerm) -> Core RawImp
   expandSnocList side ps nilFC [<] = pure (IVar nilFC (UN $ Basic "Lin"))
@@ -659,7 +659,7 @@ mutual
                  {auto c : Ref Ctxt Defs} ->
                  {auto m : Ref MD Metadata} ->
                  {auto u : Ref UST UState} ->
-                 {auto o : Ref ROpts REPLOpts} ->
+                 {auto o : ReadOnlyRef ROpts REPLOpts} ->
                  Side -> List Name -> FC -> Nat -> List PStr -> Core RawImp
   expandString side ps fc hashtag xs
     = do xs <- traverse toRawImp (filter notEmpty $ mergeStrLit xs)
@@ -756,7 +756,7 @@ mutual
              {auto c : Ref Ctxt Defs} ->
              {auto u : Ref UST UState} ->
              {auto m : Ref MD Metadata} ->
-             {auto o : Ref ROpts REPLOpts} ->
+             {auto o : ReadOnlyRef ROpts REPLOpts} ->
              Side -> List Name -> FC -> Maybe Namespace -> List PDo -> Core RawImp
   expandDo side ps fc ns [] = throw (GenericMsg fc "Do block cannot be empty")
   expandDo side ps _ ns [DoExp fc tm] = desugarDo side ps ns tm
@@ -900,7 +900,7 @@ mutual
                 {auto c : Ref Ctxt Defs} ->
                 {auto u : Ref UST UState} ->
                 {auto m : Ref MD Metadata} ->
-                {auto o : Ref ROpts REPLOpts} ->
+                {auto o : ReadOnlyRef ROpts REPLOpts} ->
                 List Name -> PTypeDecl -> Core (List ImpTy)
   desugarType ps (MkFCVal fc $ MkPTy names d ty)
       = flip Core.traverse (forget names) $ \(doc, n) : (String, WithFC Name) =>
@@ -924,7 +924,7 @@ mutual
                {auto c : Ref Ctxt Defs} ->
                {auto m : Ref MD Metadata} ->
                {auto u : Ref UST UState} ->
-               {auto o : Ref ROpts REPLOpts} ->
+               {auto o : ReadOnlyRef ROpts REPLOpts} ->
                List Name -> (arg : Bool) -> PTerm ->
                Core (IMaybe (not arg) Name, List Name, RawImp)
                   -- ^ we only look for the head name of the expression...
@@ -950,7 +950,7 @@ mutual
     {auto c : Ref Ctxt Defs} ->
     {auto u : Ref UST UState} ->
     {auto m : Ref MD Metadata} ->
-    {auto o : Ref ROpts REPLOpts} ->
+    {auto o : ReadOnlyRef ROpts REPLOpts} ->
     List Name -> PWithProblem ->
     Core (RigCount, RawImp, Maybe (RigCount, Name))
   desugarWithProblem ps (MkPWithProblem rig wval mnm)
@@ -960,7 +960,7 @@ mutual
                   {auto c : Ref Ctxt Defs} ->
                   {auto u : Ref UST UState} ->
                   {auto m : Ref MD Metadata} ->
-                  {auto o : Ref ROpts REPLOpts} ->
+                  {auto o : ReadOnlyRef ROpts REPLOpts} ->
                   List Name -> (arg : Bool) -> PClause ->
                   Core (IMaybe (not arg) Name, ImpClause)
   desugarClause ps arg (MkPatClause fc lhs rhs wheres)
@@ -990,7 +990,7 @@ mutual
                 {auto c : Ref Ctxt Defs} ->
                 {auto u : Ref UST UState} ->
                 {auto m : Ref MD Metadata} ->
-                {auto o : Ref ROpts REPLOpts} ->
+                {auto o : ReadOnlyRef ROpts REPLOpts} ->
                 List Name -> (doc : String) ->
                 PDataDecl -> Core ImpData
   desugarData ps doc (MkPData fc n tycon opts datacons)
@@ -1013,7 +1013,7 @@ mutual
                  {auto c : Ref Ctxt Defs} ->
                  {auto u : Ref UST UState} ->
                  {auto m : Ref MD Metadata} ->
-                 {auto o : Ref ROpts REPLOpts} ->
+                 {auto o : ReadOnlyRef ROpts REPLOpts} ->
                  List Name -> Namespace -> PField ->
                  Core (List IField)
   desugarField ps ns (MkFCVal fc $ MkRecordField doc rig p names ty)
@@ -1034,7 +1034,7 @@ mutual
                  {auto c : Ref Ctxt Defs} ->
                  {auto u : Ref UST UState} ->
                  {auto m : Ref MD Metadata} ->
-                 {auto o : Ref ROpts REPLOpts} ->
+                 {auto o : ReadOnlyRef ROpts REPLOpts} ->
                  List Name -> PFnOpt -> Core FnOpt
   desugarFnOpt ps (IFnOpt f) = pure f
   desugarFnOpt ps (PForeign tms)
@@ -1049,7 +1049,7 @@ mutual
                      {auto c : Ref Ctxt Defs} ->
                      {auto u : Ref UST UState} ->
                      {auto m : Ref MD Metadata} ->
-                     {auto o : Ref ROpts REPLOpts} ->
+                     {auto o : ReadOnlyRef ROpts REPLOpts} ->
                      List Name -> PiInfo PTerm -> Core (PiInfo RawImp)
   mapDesugarPiInfo ps = PiInfo.traverse (desugar AnyExpr ps)
 
@@ -1059,7 +1059,7 @@ mutual
   displayFixity (Just vis) NotBinding fix prec op = "\{show vis} \{show fix} \{show  prec} \{show op}"
   displayFixity (Just vis) bind fix prec op = "\{show vis} \{show bind} \{show fix} \{show  prec} \{show op}"
 
-  verifyTotalityModifiers : {auto c : Ref Ctxt Defs} ->
+  verifyTotalityModifiers : {auto c : ReadOnlyRef Ctxt Defs} ->
                             FC -> List FnOpt -> Core ()
   verifyTotalityModifiers fc opts =
     when (count isTotalityReq opts > 1) $ do
@@ -1100,7 +1100,7 @@ mutual
                 {auto c : Ref Ctxt Defs} ->
                 {auto u : Ref UST UState} ->
                 {auto m : Ref MD Metadata} ->
-                {auto o : Ref ROpts REPLOpts} ->
+                {auto o : ReadOnlyRef ROpts REPLOpts} ->
                 List Name -> PDecl -> Core (List ImpDecl)
   desugarDecl ps (MkFCVal fc (PClaim (MkPClaim rig vis fnopts ty)))
       = do opts <- traverse (desugarFnOpt ps) fnopts
@@ -1445,7 +1445,7 @@ mutual
               {auto c : Ref Ctxt Defs} ->
               {auto m : Ref MD Metadata} ->
               {auto u : Ref UST UState} ->
-              {auto o : Ref ROpts REPLOpts} ->
+              {auto o : ReadOnlyRef ROpts REPLOpts} ->
               Side -> List Name -> Maybe Namespace -> PTerm -> Core RawImp
   desugarDo s ps doNamespace tm
       = do b <- newRef Bang (initBangs doNamespace)
@@ -1458,7 +1458,7 @@ mutual
             {auto c : Ref Ctxt Defs} ->
             {auto m : Ref MD Metadata} ->
             {auto u : Ref UST UState} ->
-            {auto o : Ref ROpts REPLOpts} ->
+            {auto o : ReadOnlyRef ROpts REPLOpts} ->
             Side -> List Name -> PTerm -> Core RawImp
 
   desugar s ps tm = desugarDo s ps Nothing tm

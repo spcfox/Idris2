@@ -145,7 +145,7 @@ mkDropSubst i es rest (x :: xs)
 
 -- See if the constructor is a special constructor type, e.g a nil or cons
 -- shaped thing.
-dconFlag : {auto c : Ref Ctxt Defs} ->
+dconFlag : {auto c : ReadOnlyRef Ctxt Defs} ->
            Name -> Core ConInfo
 dconFlag n
     = do defs <- get Ctxt
@@ -161,11 +161,11 @@ dconFlag n
     ciFlags def (x :: xs) = ciFlags def xs
 
 toCExpTm : {vars : _} ->
-           {auto c : Ref Ctxt Defs} ->
+           {auto c : ReadOnlyRef Ctxt Defs} ->
            Name -> Term vars ->
            Core (CExp vars)
 toCExp : {vars : _} ->
-         {auto c : Ref Ctxt Defs} ->
+         {auto c : ReadOnlyRef Ctxt Defs} ->
          Name -> Term vars ->
          Core (CExp vars)
 
@@ -228,7 +228,7 @@ toCExp n tm
 
 mutual
   conCases : {vars : _} ->
-             {auto c : Ref Ctxt Defs} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
              Name -> List (CaseAlt vars) ->
              Core (List (CConAlt vars))
   conCases n [] = pure []
@@ -256,7 +256,7 @@ mutual
   conCases n (_ :: ns) = conCases n ns
 
   constCases : {vars : _} ->
-               {auto c : Ref Ctxt Defs} ->
+               {auto c : ReadOnlyRef Ctxt Defs} ->
                Name -> List (CaseAlt vars) ->
                Core (List (CConstAlt vars))
   constCases n [] = pure []
@@ -273,7 +273,7 @@ mutual
   -- still need to let bind the scrutinee to ensure it's evaluated exactly
   -- once.
   getNewType : {vars : _} ->
-               {auto c : Ref Ctxt Defs} ->
+               {auto c : ReadOnlyRef Ctxt Defs} ->
                FC -> CExp vars ->
                Name -> List (CaseAlt vars) ->
                Core (Maybe (CExp vars))
@@ -328,7 +328,7 @@ mutual
   getNewType fc scr n (_ :: ns) = getNewType fc scr n ns
 
   getDef : {vars : _} ->
-           {auto c : Ref Ctxt Defs} ->
+           {auto c : ReadOnlyRef Ctxt Defs} ->
            Name -> List (CaseAlt vars) ->
            Core (Maybe (CExp vars))
   getDef n [] = pure Nothing
@@ -339,7 +339,7 @@ mutual
   getDef n (_ :: ns) = getDef n ns
 
   toCExpTree : {vars : _} ->
-               {auto c : Ref Ctxt Defs} ->
+               {auto c : ReadOnlyRef Ctxt Defs} ->
                Name -> CaseTree vars ->
                Core (CExp vars)
   toCExpTree n alts@(Case _ x scTy (DelayCase ty arg sc :: rest))
@@ -352,7 +352,7 @@ mutual
       = toCExpTree' n alts
 
   toCExpTree' : {vars : _} ->
-                {auto c : Ref Ctxt Defs} ->
+                {auto c : ReadOnlyRef Ctxt Defs} ->
                 Name -> CaseTree vars ->
                 Core (CExp vars)
   toCExpTree' n (Case _ x scTy alts@(ConCase _ _ _ _ :: _))
@@ -406,7 +406,7 @@ data NArgs : Type where
      NForeignObj : NArgs
      NIORes : Closure [] -> NArgs
 
-getPArgs : {auto c : Ref Ctxt Defs} ->
+getPArgs : {auto c : ReadOnlyRef Ctxt Defs} ->
            Defs -> Closure [] -> Core (String, Closure [])
 getPArgs defs cl
     = do NDCon fc _ _ _ args <- evalClosure defs cl
@@ -418,7 +418,7 @@ getPArgs defs cl
                      pure (n', tydesc)
               _ => throw (GenericMsg fc "Badly formed struct type")
 
-getFieldArgs : {auto c : Ref Ctxt Defs} ->
+getFieldArgs : {auto c : ReadOnlyRef Ctxt Defs} ->
                Defs -> Closure [] -> Core (List (String, Closure []))
 getFieldArgs defs cl
     = do NDCon fc _ _ _ args <- evalClosure defs cl
@@ -432,7 +432,7 @@ getFieldArgs defs cl
               -- nil
               _ => pure []
 
-getNArgs : {auto c : Ref Ctxt Defs} ->
+getNArgs : {auto c : ReadOnlyRef Ctxt Defs} ->
            Defs -> Name -> List (Closure []) -> Core NArgs
 getNArgs defs (NS _ (UN $ Basic "IORes")) [arg] = pure $ NIORes arg
 getNArgs defs (NS _ (UN $ Basic "Ptr")) [arg] = pure NPtr
@@ -448,7 +448,7 @@ getNArgs defs (NS _ (UN $ Basic "Struct")) [n, args]
          pure (Struct n' !(getFieldArgs defs args))
 getNArgs defs n args = pure $ User n args
 
-nfToCFType : {auto c : Ref Ctxt Defs} ->
+nfToCFType : {auto c : ReadOnlyRef Ctxt Defs} ->
              FC -> (inStruct : Bool) -> NF [] -> Core CFType
 nfToCFType _ _ (NPrimVal _ $ PrT IntType) = pure CFInt
 nfToCFType _ _ (NPrimVal _ $ PrT IntegerType) = pure CFInteger
@@ -509,7 +509,7 @@ nfToCFType fc s t
                        ("Can't marshal type for foreign call " ++
                                       show !(toFullNames ty)))
 
-getCFTypes : {auto c : Ref Ctxt Defs} ->
+getCFTypes : {auto c : ReadOnlyRef Ctxt Defs} ->
              List CFType -> NF [] ->
              Core (List CFType, CFType)
 getCFTypes args (NBind fc _ (Pi _ _ _ ty) sc)
@@ -553,7 +553,7 @@ lamRHS ns tm
     lamBind fc [] tm = tm
     lamBind fc (n :: ns) tm = lamBind fc ns (CLam fc n tm)
 
-toCDef : Ref Ctxt Defs => Ref NextMN Int =>
+toCDef : ReadOnlyRef Ctxt Defs =>
          Name -> ClosedTerm -> List Nat -> Def ->
          Core CDef
 toCDef n ty _ None
@@ -619,7 +619,7 @@ toCDef n ty _ def
                                        show (!(getFullName n), def))
 
 export
-compileExp : {auto c : Ref Ctxt Defs} ->
+compileExp : {auto c : ReadOnlyRef Ctxt Defs} ->
              ClosedTerm -> Core (CExp [])
 compileExp tm
     = do s <- newRef NextMN 0

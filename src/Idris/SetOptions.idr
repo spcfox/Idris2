@@ -203,7 +203,7 @@ visiblePackages dir = map (MkQualifiedPkgDir dir) <$> filter viable <$> getPacka
         viable : PkgDir -> Bool
         viable p = notHidden p && notDenylisted p
 
-findPackages : {auto c : Ref Ctxt Defs} -> Core (List QualifiedPkgDir)
+findPackages : {auto c : ReadOnlyRef Ctxt Defs} -> Core (List QualifiedPkgDir)
 findPackages
     = do d <- getDirs
          pkgPathPkgs <- coreLift $ traverse (\d => visiblePackages $ show d) d.package_search_paths
@@ -211,8 +211,8 @@ findPackages
          localPkgs <- coreLift $ visiblePackages !pkgLocalDirectory
          pure $ localPkgs ++ join pkgPathPkgs
 
-listPackages : {auto c : Ref Ctxt Defs} ->
-               {auto o : Ref ROpts REPLOpts} ->
+listPackages : {auto c : ReadOnlyRef Ctxt Defs} ->
+               {auto o : ReadOnlyRef ROpts REPLOpts} ->
                Core ()
 listPackages
     = do pkgs <- sortBy (compare `on` (pkgName . pkgDir)) <$> findPackages
@@ -252,8 +252,8 @@ listPackages
       pretty0 pkgName <++> parens (pretty0 $ maybe "unversioned" show version)
         <+> extraInfo pkg
 
-dirOption : {auto c : Ref Ctxt Defs} ->
-            {auto o : Ref ROpts REPLOpts} ->
+dirOption : {auto c : ReadOnlyRef Ctxt Defs} ->
+            {auto o : ReadOnlyRef ROpts REPLOpts} ->
             Dirs -> DirCommand -> Core ()
 dirOption dirs LibDir
     = coreLift $ putStrLn
@@ -287,7 +287,7 @@ prefixOnlyIfNonEmpty s    = prefixOnly s
 
 
 -- list of registered codegens
-codegens : {auto c : Ref Ctxt Defs} -> Core (List String)
+codegens : {auto c : ReadOnlyRef Ctxt Defs} -> Core (List String)
 codegens = map fst . availableCGs . options <$> get Ctxt
 
 logLevels : List String
@@ -301,7 +301,7 @@ logLevels = map fst knownTopics >>= prefixes . forget . split (== '.')
 -- before the one being edited, return a list of possible
 -- completions. If the list of completions is empty, bash
 -- will perform directory completion.
-opts : {auto c : Ref Ctxt Defs} -> String -> String -> Core (List String)
+opts : {auto c : ReadOnlyRef Ctxt Defs} -> String -> String -> Core (List String)
 opts "--" "idris2"  = pure optionFlags
 
 -- codegens
@@ -363,7 +363,7 @@ zshCompletionScript fun = """
 
 export
 setIncrementalCG : {auto c : Ref Ctxt Defs} ->
-                   {auto o : Ref ROpts REPLOpts} ->
+                   {auto o : ReadOnlyRef ROpts REPLOpts} ->
                    Bool -> String -> Core ()
 setIncrementalCG failOnError cgn
     = do defs <- get Ctxt

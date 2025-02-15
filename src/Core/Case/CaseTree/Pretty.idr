@@ -52,7 +52,7 @@ namespace Raw
 
 namespace Resugared
 
-  prettyName : {auto c : Ref Ctxt Defs} ->
+  prettyName : {auto c : ReadOnlyRef Ctxt Defs} ->
                Name -> Core (Doc IdrisSyntax)
   prettyName nm
     = pure $ ifThenElse (fullNamespace !(getPPrint))
@@ -61,12 +61,12 @@ namespace Resugared
 
   export
   prettyTree : {vars : _} ->
-    {auto c : Ref Ctxt Defs} ->
-    {auto s : Ref Syn SyntaxInfo} ->
+    {auto c : ReadOnlyRef Ctxt Defs} ->
+    {auto s : ReadOnlyRef Syn SyntaxInfo} ->
     Env Term vars -> CaseTree vars -> Core (Doc IdrisSyntax)
   prettyAlt : {vars : _} ->
-    {auto c : Ref Ctxt Defs} ->
-    {auto s : Ref Syn SyntaxInfo} ->
+    {auto c : ReadOnlyRef Ctxt Defs} ->
+    {auto s : ReadOnlyRef Syn SyntaxInfo} ->
     Env Term vars -> CaseAlt vars -> Core (Doc IdrisSyntax)
 
   prettyTree env (Case {name} idx prf ty alts) = do

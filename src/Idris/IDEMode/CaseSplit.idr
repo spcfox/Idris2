@@ -38,8 +38,8 @@ Updates : Type
 Updates = List (RawName, String)
 
 ||| Convert a RawImp update to a SourcePart one
-toStrUpdate : {auto c : Ref Ctxt Defs} ->
-              {auto s : Ref Syn SyntaxInfo} ->
+toStrUpdate : {auto c : ReadOnlyRef Ctxt Defs} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
               (Name, RawImp) -> Core Updates
 toStrUpdate (UN (Basic n), term)
     = do clause <- pterm (map defaultKindedName term) -- hack
@@ -68,7 +68,7 @@ isWhitespace _              = False
 ||| Given a list of definitions, a list of mappings from `RawName` to `String`,
 ||| and a list of tokens to update, work out the updates to do, apply them, and
 ||| return the result.
-doUpdates : {auto s : Ref Syn SyntaxInfo} ->
+doUpdates : {auto s : ReadOnlyRef Syn SyntaxInfo} ->
             {auto u : Ref UPD (List String)} ->
             Defs -> Updates -> List SourcePart ->
             Core (List SourcePart)
@@ -132,7 +132,7 @@ doUpdates defs ups (x :: xs)
 -- State here is a list of new hole names we generated (so as not to reuse any).
 -- Update the token list with the string replacements for each match, and return
 -- the newly generated strings.
-updateAll : {auto s : Ref Syn SyntaxInfo} ->
+updateAll : {auto s : ReadOnlyRef Syn SyntaxInfo} ->
             {auto u : Ref UPD (List String)} ->
             Defs -> List SourcePart -> List Updates ->
             Core (List String)
@@ -144,15 +144,15 @@ updateAll defs l (rs :: rss)
 
 -- Turn the replacements we got from 'getSplits' into a list of actual string
 -- replacements
-getReplaces : {auto c : Ref Ctxt Defs} ->
-              {auto s : Ref Syn SyntaxInfo} ->
+getReplaces : {auto c : ReadOnlyRef Ctxt Defs} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
               List (Name, RawImp) -> Core Updates
 getReplaces updates
     = do strups <- traverse toStrUpdate updates
          pure (concat strups)
 
-showImpossible : {auto c : Ref Ctxt Defs} ->
-                 {auto s : Ref Syn SyntaxInfo} ->
+showImpossible : {auto c : ReadOnlyRef Ctxt Defs} ->
+                 {auto s : ReadOnlyRef Syn SyntaxInfo} ->
                  (indent : Nat) -> RawImp -> Core String
 showImpossible indent lhs
     = do clause <- pterm (map defaultKindedName lhs) -- hack
@@ -281,9 +281,9 @@ handleCaseStmtType upds HoleNameParen = handleHoleNameParen upds
 ||| Given a list of updates and a line and column, find the relevant line in
 ||| the source file and return the lines to replace it with.
 export
-updateCase : {auto c : Ref Ctxt Defs} ->
-             {auto s : Ref Syn SyntaxInfo} ->
-             {auto o : Ref ROpts REPLOpts} ->
+updateCase : {auto c : ReadOnlyRef Ctxt Defs} ->
+             {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+             {auto o : ReadOnlyRef ROpts REPLOpts} ->
              List ClauseUpdate -> Int -> Int ->
              Core (List String)
 updateCase splits line col
@@ -338,9 +338,9 @@ fnName lhs n = nameRoot n
 
 
 export
-getClause : {auto c : Ref Ctxt Defs} ->
-            {auto m : Ref MD Metadata} ->
-            {auto o : Ref ROpts REPLOpts} ->
+getClause : {auto c : ReadOnlyRef Ctxt Defs} ->
+            {auto m : ReadOnlyRef MD Metadata} ->
+            {auto o : ReadOnlyRef ROpts REPLOpts} ->
             Int -> Name -> Core (Maybe String)
 getClause l n
     = do defs <- get Ctxt

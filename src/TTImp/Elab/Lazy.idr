@@ -24,8 +24,8 @@ checkDelayed : {vars : _} ->
                {auto m : Ref MD Metadata} ->
                {auto u : Ref UST UState} ->
                {auto e : Ref EST (EState vars)} ->
-               {auto s : Ref Syn SyntaxInfo} ->
-               {auto o : Ref ROpts REPLOpts} ->
+               {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+               {auto o : ReadOnlyRef ROpts REPLOpts} ->
                RigCount -> ElabInfo ->
                NestedNames vars -> Env Term vars ->
                FC -> LazyReason -> RawImp -> Maybe (Glued vars) ->
@@ -41,8 +41,8 @@ checkDelay : {vars : _} ->
              {auto m : Ref MD Metadata} ->
              {auto u : Ref UST UState} ->
              {auto e : Ref EST (EState vars)} ->
-             {auto s : Ref Syn SyntaxInfo} ->
-             {auto o : Ref ROpts REPLOpts} ->
+             {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+             {auto o : ReadOnlyRef ROpts REPLOpts} ->
              RigCount -> ElabInfo ->
              NestedNames vars -> Env Term vars ->
              FC -> RawImp -> Maybe (Glued vars) ->
@@ -83,8 +83,8 @@ checkForce : {vars : _} ->
              {auto m : Ref MD Metadata} ->
              {auto u : Ref UST UState} ->
              {auto e : Ref EST (EState vars)} ->
-             {auto s : Ref Syn SyntaxInfo} ->
-             {auto o : Ref ROpts REPLOpts} ->
+             {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+             {auto o : ReadOnlyRef ROpts REPLOpts} ->
              RigCount -> ElabInfo ->
              NestedNames vars -> Env Term vars ->
              FC -> RawImp -> Maybe (Glued vars) ->

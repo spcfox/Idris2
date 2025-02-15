@@ -161,12 +161,12 @@ compileConstant fc (PrT t) -- Constant types get compiled as TyCon names, for ma
 compileConstant fc WorldVal = Null
 
 compileStk : Ref Sym Integer =>
-             {auto c : Ref Ctxt Defs} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
              SchVars vars -> List (SchemeObj Write) -> Term vars ->
              Core (SchemeObj Write)
 
 compilePiInfo : Ref Sym Integer =>
-                {auto c : Ref Ctxt Defs} ->
+                {auto c : ReadOnlyRef Ctxt Defs} ->
                 SchVars vars -> PiInfo (Term vars) ->
                 Core (PiInfo (SchemeObj Write))
 compilePiInfo svs Implicit = pure Implicit
@@ -177,7 +177,7 @@ compilePiInfo svs (DefImplicit t)
          pure (DefImplicit t')
 
 compileWhyErased : Ref Sym Integer =>
-                {auto c : Ref Ctxt Defs} ->
+                {auto c : ReadOnlyRef Ctxt Defs} ->
                 SchVars vars -> List (SchemeObj Write) -> WhyErased (Term vars) ->
                 Core (WhyErased (SchemeObj Write))
 compileWhyErased svs stk Impossible = pure Impossible
@@ -289,7 +289,7 @@ compileStk svs stk (TType fc u) = pure $ Vector (-7) [toScheme fc, toScheme u]
 
 export
 compile : Ref Sym Integer =>
-          {auto c : Ref Ctxt Defs} ->
+          {auto c : ReadOnlyRef Ctxt Defs} ->
           SchVars vars -> Term vars -> Core (SchemeObj Write)
 compile vars tm = compileStk vars [] tm
 
@@ -309,7 +309,7 @@ extend (arg :: args) svs
          pure (n :: args', Bound (schVarName n) :: svs')
 
 compileCase : Ref Sym Integer =>
-              {auto c : Ref Ctxt Defs} ->
+              {auto c : ReadOnlyRef Ctxt Defs} ->
               (blocked : SchemeObj Write) ->
               SchVars vars -> CaseTree vars -> Core (SchemeObj Write)
 compileCase blk svs (Case idx p scTy xs)
@@ -492,7 +492,7 @@ bindArgs n (x :: xs) done body
                    Lambda [show x]
                       (bindArgs n xs (Var (show x) :: done) body)]
 
-compileBody : {auto c : Ref Ctxt Defs} ->
+compileBody : {auto c : ReadOnlyRef Ctxt Defs} ->
               Bool -> -- okay to reduce (if False, block)
               Name -> Def -> Core (SchemeObj Write)
 compileBody _ n None = pure $ blockedAppWith n []

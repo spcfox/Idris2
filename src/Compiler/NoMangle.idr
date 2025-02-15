@@ -20,7 +20,7 @@ record NoMangleMap where
 |||         for the given backend
 export
 initNoMangle :
-    {auto d : Ref Ctxt Defs} ->
+    {auto d : ReadOnlyRef Ctxt Defs} ->
     (backends : List String) ->
     (valid : String -> Bool) ->
     Core (Ref NoMangleMap NoMangleMap)
@@ -53,7 +53,7 @@ isNoMangle nm n = lookup n nm.map
 
 export
 lookupNoMangle :
-    {auto nm : Ref NoMangleMap NoMangleMap} ->
+    {auto nm : ReadOnlyRef NoMangleMap NoMangleMap} ->
     Name ->
     Core (Maybe String)
 lookupNoMangle n = pure $ isNoMangle !(get NoMangleMap) n

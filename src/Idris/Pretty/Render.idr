@@ -13,7 +13,7 @@ import System.Term
 
 %default total
 
-getPageWidth : {auto o : Ref ROpts REPLOpts} -> Core PageWidth
+getPageWidth : {auto o : ReadOnlyRef ROpts REPLOpts} -> Core PageWidth
 getPageWidth = do
   consoleWidth <- getConsoleWidth
   case consoleWidth of
@@ -24,7 +24,7 @@ getPageWidth = do
     Just cw => pure $ AvailablePerLine (cast cw) 1
 
 export
-render : {auto o : Ref ROpts REPLOpts} ->
+render : {auto o : ReadOnlyRef ROpts REPLOpts} ->
          (ann -> AnsiStyle) ->
          Doc ann -> Core String
 render stylerAnn doc = do
@@ -38,7 +38,7 @@ render stylerAnn doc = do
       else unAnnotateS layout
 
 export
-renderWithoutColor : {auto o : Ref ROpts REPLOpts} -> Doc ann -> Core String
+renderWithoutColor : {auto o : ReadOnlyRef ROpts REPLOpts} -> Doc ann -> Core String
 renderWithoutColor doc = do
   pageWidth <- getPageWidth
   let opts = MkLayoutOptions pageWidth
@@ -46,7 +46,7 @@ renderWithoutColor doc = do
   pure $ renderString $ unAnnotateS layout
 
 export
-renderWithSpans : {auto o : Ref ROpts REPLOpts} ->
+renderWithSpans : {auto o : ReadOnlyRef ROpts REPLOpts} ->
   Doc ann ->
   Core (String, List (Span ann))
 renderWithSpans doc = do

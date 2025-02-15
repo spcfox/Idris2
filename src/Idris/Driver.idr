@@ -236,8 +236,8 @@ stMain cgs opts
   where
 
   quitWithError : {auto c : Ref Ctxt Defs} ->
-                {auto s : Ref Syn SyntaxInfo} ->
-                {auto o : Ref ROpts REPLOpts} ->
+                {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                {auto o : ReadOnlyRef ROpts REPLOpts} ->
                 Error -> Core a
   quitWithError err = do
     doc <- display err

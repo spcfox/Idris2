@@ -189,7 +189,7 @@ saveHole : {auto e : Ref EST (EState vars)} ->
 saveHole n = update EST { saveHoles $= insert n () }
 
 weakenedEState : {n, vars : _} ->
-                 {auto e : Ref EST (EState vars)} ->
+                 {auto e : ReadOnlyRef EST (EState vars)} ->
                  Core (Ref EST (EState (n :: vars)))
 weakenedEState {e}
     = do est <- get EST
@@ -210,8 +210,8 @@ weakenedEState {e}
         = (f, AsBinding c (map weaken p) (weaken x) (weaken y) (weaken z))
 
 strengthenedEState : {n, vars : _} ->
-                     Ref Ctxt Defs ->
-                     Ref EST (EState (n :: vars)) ->
+                     ReadOnlyRef Ctxt Defs ->
+                     ReadOnlyRef EST (EState (n :: vars)) ->
                      FC -> Env Term (n :: vars) ->
                      Core (EState vars)
 strengthenedEState {n} {vars} c e fc env
@@ -288,7 +288,7 @@ strengthenedEState {n} {vars} c e fc env
 
 export
 inScope : {n, vars : _} ->
-          {auto c : Ref Ctxt Defs} ->
+          {auto c : ReadOnlyRef Ctxt Defs} ->
           {auto e : Ref EST (EState vars)} ->
           FC -> Env Term (n :: vars) ->
           (Ref EST (EState (n :: vars)) -> Core a) ->
@@ -296,7 +296,7 @@ inScope : {n, vars : _} ->
 inScope {c} {e} fc env elab
     = do e' <- weakenedEState
          res <- elab e'
-         st' <- strengthenedEState c e' fc env
+         st' <- strengthenedEState c (toReadOnly e') fc env
          put {ref=e} EST st'
          pure res
 
@@ -691,8 +691,8 @@ check : {vars : _} ->
         {auto m : Ref MD Metadata} ->
         {auto u : Ref UST UState} ->
         {auto e : Ref EST (EState vars)} ->
-        {auto s : Ref Syn SyntaxInfo} ->
-        {auto o : Ref ROpts REPLOpts} ->
+        {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+        {auto o : ReadOnlyRef ROpts REPLOpts} ->
         RigCount -> ElabInfo ->
         NestedNames vars -> Env Term vars -> RawImp ->
         Maybe (Glued vars) ->
@@ -705,8 +705,8 @@ checkImp : {vars : _} ->
            {auto m : Ref MD Metadata} ->
            {auto u : Ref UST UState} ->
            {auto e : Ref EST (EState vars)} ->
-           {auto s : Ref Syn SyntaxInfo} ->
-           {auto o : Ref ROpts REPLOpts} ->
+           {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+           {auto o : ReadOnlyRef ROpts REPLOpts} ->
            RigCount -> ElabInfo ->
            NestedNames vars -> Env Term vars -> RawImp -> Maybe (Glued vars) ->
            Core (Term vars, Glued vars)
@@ -717,8 +717,8 @@ processDecl : {vars : _} ->
               {auto c : Ref Ctxt Defs} ->
               {auto m : Ref MD Metadata} ->
               {auto u : Ref UST UState} ->
-              {auto s : Ref Syn SyntaxInfo} ->
-              {auto o : Ref ROpts REPLOpts} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+              {auto o : ReadOnlyRef ROpts REPLOpts} ->
               List ElabOpt -> NestedNames vars ->
               Env Term vars -> ImpDecl -> Core ()
 

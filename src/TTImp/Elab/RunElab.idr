@@ -53,7 +53,7 @@ Reflect NameInfo where
       = do nt <- reflect fc defs lhs env (nametype inf)
            appCon fc defs (reflectiontt "MkNameInfo") [nt]
 
-deepRefersTo : {auto c : Ref Ctxt Defs} ->
+deepRefersTo : {auto c : ReadOnlyRef Ctxt Defs} ->
                GlobalDef -> Core (List Name)
 deepRefersTo def = do
   defs <- get Ctxt
@@ -80,8 +80,8 @@ elabScript : {vars : _} ->
              {auto c : Ref Ctxt Defs} ->
              {auto m : Ref MD Metadata} ->
              {auto u : Ref UST UState} ->
-             {auto s : Ref Syn SyntaxInfo} ->
-             {auto o : Ref ROpts REPLOpts} ->
+             {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+             {auto o : ReadOnlyRef ROpts REPLOpts} ->
              RigCount -> FC -> NestedNames vars ->
              Env Term vars -> NF vars -> Maybe (Glued vars) ->
              Core (NF vars)
@@ -359,8 +359,8 @@ checkRunElab : {vars : _} ->
                {auto m : Ref MD Metadata} ->
                {auto u : Ref UST UState} ->
                {auto e : Ref EST (EState vars)} ->
-               {auto s : Ref Syn SyntaxInfo} ->
-               {auto o : Ref ROpts REPLOpts} ->
+               {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+               {auto o : ReadOnlyRef ROpts REPLOpts} ->
                RigCount -> ElabInfo ->
                NestedNames vars -> Env Term vars ->
                FC -> (requireExtension : Bool) -> RawImp -> Maybe (Glued vars) ->

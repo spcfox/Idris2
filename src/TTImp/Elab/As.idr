@@ -26,8 +26,8 @@ checkAs : {vars : _} ->
           {auto m : Ref MD Metadata} ->
           {auto u : Ref UST UState} ->
           {auto e : Ref EST (EState vars)} ->
-          {auto s : Ref Syn SyntaxInfo} ->
-          {auto o : Ref ROpts REPLOpts} ->
+          {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+          {auto o : ReadOnlyRef ROpts REPLOpts} ->
           RigCount -> ElabInfo ->
           NestedNames vars -> Env Term vars ->
           FC -> (nameFC : FC) -> UseSide -> Name -> RawImp -> Maybe (Glued vars) ->

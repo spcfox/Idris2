@@ -110,7 +110,7 @@ getPatInfo [] = []
 getPatInfo (x :: xs) = pat x :: getPatInfo xs
 
 updatePats : {vars, todo : _} ->
-             {auto c : Ref Ctxt Defs} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
              Env Term vars ->
              NF vars -> NamedPats vars todo -> Core (NamedPats vars todo)
 updatePats env nf [] = pure []
@@ -131,7 +131,7 @@ updatePats env nf (p :: ps)
          _ => pure (p :: ps)
 
 substInPatInfo : {pvar, vars, todo : _} ->
-                 {auto c : Ref Ctxt Defs} ->
+                 {auto c : ReadOnlyRef Ctxt Defs} ->
                  FC -> Name -> Term vars -> PatInfo pvar vars ->
                  NamedPats vars todo ->
                  Core (PatInfo pvar vars, NamedPats vars todo)
@@ -161,7 +161,7 @@ substInPatInfo {pvar} {vars} fc n tm p ps
 -- Substitute the name with a term in the pattern types, and reduce further
 -- (this aims to resolve any 'Stuck' pattern types)
 substInPats : {vars, todo : _} ->
-              {auto c : Ref Ctxt Defs} ->
+              {auto c : ReadOnlyRef Ctxt Defs} ->
               FC -> Name -> Term vars -> NamedPats vars todo ->
               Core (NamedPats vars todo)
 substInPats fc n tm [] = pure []
@@ -270,7 +270,7 @@ HasNames (PatClause vars todo) where
      = [| MkPatClause (traverse (resolved gam) ns) (resolved gam nps) (pure i) (resolved gam rhs) |]
 
 substInClause : {a, vars, todo : _} ->
-                {auto c : Ref Ctxt Defs} ->
+                {auto c : ReadOnlyRef Ctxt Defs} ->
                 FC -> PatClause vars (a :: todo) ->
                 Core (PatClause vars (a :: todo))
 substInClause {vars} {a} fc (MkPatClause pvars (MkInfo pat pprf fty :: pats) pid rhs)
@@ -442,7 +442,7 @@ nextName root
 
 nextNames : {vars : _} ->
             {auto i : Ref PName Int} ->
-            {auto c : Ref Ctxt Defs} ->
+            {auto c : ReadOnlyRef Ctxt Defs} ->
             FC -> String -> List Pat -> Maybe (NF vars) ->
             Core (args ** (SizeOf args, NamedPats (args ++ vars) args))
 nextNames fc root [] fty = pure ([] ** (zero, []))
@@ -508,7 +508,7 @@ updatePatNames ns (pi :: ps)
 
 groupCons : {a, vars, todo : _} ->
             {auto i : Ref PName Int} ->
-            {auto ct : Ref Ctxt Defs} ->
+            {auto ct : ReadOnlyRef Ctxt Defs} ->
             FC -> Name ->
             List Name ->
             List (PatClause vars (a :: todo)) ->
@@ -808,7 +808,7 @@ nextIdxByScore True RunTime xs      =
 -- and matchable type, which is multiplicity > 0.
 -- If so, it's okay to match on it
 sameType : {ns : _} ->
-           {auto c : Ref Ctxt Defs} ->
+           {auto c : ReadOnlyRef Ctxt Defs} ->
            FC -> Phase -> Name ->
            Env Term ns -> List (NamedPats ns (p :: ps)) ->
            Core ()
@@ -905,7 +905,7 @@ countDiff xs = length (distinct [] (map getFirstCon xs))
             else distinct (p :: acc) ps
 
 getScore : {ns : _} ->
-           {auto c : Ref Ctxt Defs} ->
+           {auto c : ReadOnlyRef Ctxt Defs} ->
            FC -> Phase -> Name ->
            List (NamedPats ns (p :: ps)) ->
            Core (Either CaseError ())
@@ -919,7 +919,7 @@ getScore fc phase name npss
 ||| Pick the leftmost matchable thing with all constructors in the
 ||| same family, or all variables, or all the same type constructor.
 pickNextViable : {p, ns, ps : _} ->
-           {auto c : Ref Ctxt Defs} ->
+           {auto c : ReadOnlyRef Ctxt Defs} ->
            FC -> Phase -> Name -> List (NamedPats ns (p :: ps)) ->
            Core (n ** NVar n (p :: ps))
 -- last possible variable
@@ -956,7 +956,7 @@ mutual
      level will be an error). -}
   match : {vars, todo : _} ->
           {auto i : Ref PName Int} ->
-          {auto c : Ref Ctxt Defs} ->
+          {auto c : ReadOnlyRef Ctxt Defs} ->
           FC -> Name -> Phase ->
           List (PatClause vars todo) -> (err : Maybe (CaseTree vars)) ->
           Core (CaseTree vars)
@@ -992,7 +992,7 @@ mutual
 
   caseGroups : {pvar, vars, todo : _} ->
                {auto i : Ref PName Int} ->
-               {auto c : Ref Ctxt Defs} ->
+               {auto c : ReadOnlyRef Ctxt Defs} ->
                FC -> Name -> Phase ->
                {idx : Nat} -> (0 p : IsVar pvar idx vars) -> Term vars ->
                List (Group vars todo) -> Maybe (CaseTree vars) ->
@@ -1020,7 +1020,7 @@ mutual
 
   conRule : {a, vars, todo : _} ->
             {auto i : Ref PName Int} ->
-            {auto c : Ref Ctxt Defs} ->
+            {auto c : ReadOnlyRef Ctxt Defs} ->
             FC -> Name -> Phase ->
             List (PatClause vars (a :: todo)) ->
             Maybe (CaseTree vars) ->
@@ -1040,7 +1040,7 @@ mutual
 
   varRule : {a, vars, todo : _} ->
             {auto i : Ref PName Int} ->
-            {auto c : Ref Ctxt Defs} ->
+            {auto c : ReadOnlyRef Ctxt Defs} ->
             FC -> Name -> Phase ->
             List (PatClause vars (a :: todo)) ->
             Maybe (CaseTree vars) ->
@@ -1069,7 +1069,7 @@ mutual
 
   mixture : {a, vars, todo : _} ->
             {auto i : Ref PName Int} ->
-            {auto c : Ref Ctxt Defs} ->
+            {auto c : ReadOnlyRef Ctxt Defs} ->
             {ps : List (PatClause vars (a :: todo))} ->
             FC -> Name -> Phase ->
             Partitions ps ->
@@ -1085,7 +1085,7 @@ mutual
       = pure err
 
 export
-mkPat : {auto c : Ref Ctxt Defs} -> List Pat -> ClosedTerm -> ClosedTerm -> Core Pat
+mkPat : {auto c : ReadOnlyRef Ctxt Defs} -> List Pat -> ClosedTerm -> ClosedTerm -> Core Pat
 mkPat [] orig (Ref fc Bound n) = pure $ PLoc fc n
 mkPat args orig (Ref fc (DataCon t a) n) = pure $ PCon fc n t a args
 mkPat args orig (Ref fc (TyCon t a) n) = pure $ PTyCon fc n a args
@@ -1127,11 +1127,11 @@ mkPat args orig tm
         pure $ PUnmatchable (getLoc orig) orig
 
 export
-argToPat : {auto c : Ref Ctxt Defs} -> ClosedTerm -> Core Pat
+argToPat : {auto c : ReadOnlyRef Ctxt Defs} -> ClosedTerm -> Core Pat
 argToPat tm = mkPat [] tm tm
 
 
-mkPatClause : {auto c : Ref Ctxt Defs} ->
+mkPatClause : {auto c : ReadOnlyRef Ctxt Defs} ->
               FC -> Name ->
               (args : List Name) -> ClosedTerm ->
               Int -> (List Pat, ClosedTerm) ->
@@ -1172,7 +1172,7 @@ mkPatClause fc fn args ty pid (ps, rhs)
                       :: weaken !(mkNames args ps eq (Builtin.fst fa_tys)))
 
 export
-patCompile : {auto c : Ref Ctxt Defs} ->
+patCompile : {auto c : ReadOnlyRef Ctxt Defs} ->
              FC -> Name -> Phase ->
              ClosedTerm -> List (List Pat, ClosedTerm) ->
              Maybe (CaseTree []) ->
@@ -1212,7 +1212,7 @@ patCompile fc fn phase ty (p :: ps) def
       let (ns ** n) = getNames (i + 1) xs
       in (MN "arg" i :: ns ** suc n)
 
-toPatClause : {auto c : Ref Ctxt Defs} ->
+toPatClause : {auto c : ReadOnlyRef Ctxt Defs} ->
               FC -> Name -> (ClosedTerm, ClosedTerm) ->
               Core (List Pat, ClosedTerm)
 toPatClause fc n (lhs, rhs)
@@ -1230,7 +1230,7 @@ toPatClause fc n (lhs, rhs)
 -- explicitly named. We'll assign de Bruijn indices when we're done, and
 -- the names of the top level variables we created are returned in 'args'
 export
-simpleCase : {auto c : Ref Ctxt Defs} ->
+simpleCase : {auto c : ReadOnlyRef Ctxt Defs} ->
              FC -> Phase -> Name -> ClosedTerm -> (def : Maybe (CaseTree [])) ->
              (clauses : List (ClosedTerm, ClosedTerm)) ->
              Core (args ** CaseTree args)
@@ -1261,7 +1261,7 @@ mutual
 -- the tree (just one constructor lookup up front).
 -- Unreachable defaults are those that when replaced by all possible constructors
 -- followed by a removal of duplicate cases there is one _fewer_ total case alts.
-identifyUnreachableDefaults : {auto c : Ref Ctxt Defs} ->
+identifyUnreachableDefaults : {auto c : ReadOnlyRef Ctxt Defs} ->
                               {vars : _} ->
                               FC -> Defs -> NF vars -> List (CaseAlt vars) ->
                               Core (SortedSet Int)
@@ -1309,7 +1309,7 @@ identifyUnreachableDefaults fc defs nfty cs
 ||| and if it turns out that the number of unreachable ways to use a clause is equal
 ||| to the number of ways to reach a RHS for that clause then the clause is totally
 ||| superfluous (it will never be reached).
-findExtraDefaults : {auto c : Ref Ctxt Defs} ->
+findExtraDefaults : {auto c : ReadOnlyRef Ctxt Defs} ->
                    {vars : _} ->
                    FC -> Defs -> CaseTree vars ->
                    Core (List Int)
@@ -1331,7 +1331,7 @@ findExtraDefaults fc defs ctree = pure []
 
 -- Returns the case tree, and a list of the clauses that aren't reachable
 export
-getPMDef : {auto c : Ref Ctxt Defs} ->
+getPMDef : {auto c : ReadOnlyRef Ctxt Defs} ->
            FC -> Phase -> Name -> ClosedTerm -> List Clause ->
            Core (args ** (CaseTree args, List Clause))
 -- If there's no clauses, make a definition with the right number of arguments

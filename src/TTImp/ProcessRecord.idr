@@ -41,8 +41,8 @@ elabRecord : {vars : _} ->
              {auto c : Ref Ctxt Defs} ->
              {auto m : Ref MD Metadata} ->
              {auto u : Ref UST UState} ->
-             {auto s : Ref Syn SyntaxInfo} ->
-             {auto o : Ref ROpts REPLOpts} ->
+             {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+             {auto o : ReadOnlyRef ROpts REPLOpts} ->
              List ElabOpt -> FC -> Env Term vars ->
              NestedNames vars -> Maybe String ->
              WithDefault Visibility Private ->
@@ -354,8 +354,8 @@ processRecord : {vars : _} ->
                 {auto c : Ref Ctxt Defs} ->
                 {auto m : Ref MD Metadata} ->
                 {auto u : Ref UST UState} ->
-                {auto s : Ref Syn SyntaxInfo} ->
-                {auto o : Ref ROpts REPLOpts} ->
+                {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                {auto o : ReadOnlyRef ROpts REPLOpts} ->
                 List ElabOpt -> NestedNames vars ->
                 Env Term vars -> Maybe String ->
                 WithDefault Visibility Private -> Maybe TotalReq ->

@@ -42,8 +42,8 @@ bindableArg p (Bind _ _ (Pi _ _ _ ty) sc)
 bindableArg p _ = False
 
 getArgs : {vars : _} ->
-          {auto c : Ref Ctxt Defs} ->
-          {auto s : Ref Syn SyntaxInfo} ->
+          {auto c : ReadOnlyRef Ctxt Defs} ->
+          {auto s : ReadOnlyRef Syn SyntaxInfo} ->
           Env Term vars -> Nat -> Term vars ->
           Core (List (Name, Maybe Name, PiInfo RawImp, RigCount, RawImp), RawImp)
 getArgs {vars} env (S k) (Bind _ x b@(Pi _ c _ ty) sc)
@@ -85,8 +85,8 @@ mkApp loc n args
 -- Return a top level type for the lemma, and an expression which applies
 -- the lemma to solve a hole with 'locs' arguments
 export
-makeLemma : {auto c : Ref Ctxt Defs} ->
-            {auto s : Ref Syn SyntaxInfo} ->
+makeLemma : {auto c : ReadOnlyRef Ctxt Defs} ->
+            {auto s : ReadOnlyRef Syn SyntaxInfo} ->
             FC -> Name -> Nat -> ClosedTerm ->
             Core (RawImp, RawImp)
 makeLemma loc n nlocs ty

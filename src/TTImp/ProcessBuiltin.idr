@@ -136,7 +136,7 @@ isStrict (TType _ _) = True
 
 ||| Get the name and definition of a list of names.
 getConsGDef :
-    Ref Ctxt Defs =>
+    ReadOnlyRef Ctxt Defs =>
     FC -> (cons : List Name) ->
     Core $ List (Name, GlobalDef)
 getConsGDef fc cons = do
@@ -147,7 +147,7 @@ getConsGDef fc cons = do
             | ns => ambiguousName fc n $ (\(n, _, _) => n) <$> ns
         pure (n', gdef)
 
-isNatural : Ref Ctxt Defs => FC ->Name -> Core Bool
+isNatural : ReadOnlyRef Ctxt Defs => FC ->Name -> Core Bool
 isNatural fc n = do
     defs <- get Ctxt
     Just gdef <- lookupCtxtExact n defs.gamma
@@ -213,7 +213,7 @@ checkNatCons c cons ty fc = case !(foldr checkCon (pure (Nothing, Nothing)) cons
 
 ||| Check a `%builtin Natural` pragma is correct.
 processBuiltinNatural :
-    Ref Ctxt Defs =>
+    ReadOnlyRef Ctxt Defs =>
     FC -> Name -> Core ()
 processBuiltinNatural fc name = do
     ds <- get Ctxt

@@ -24,7 +24,7 @@ import Libraries.Data.WithDefault
 
 %default covering
 
-checkVisibleNS : {auto c : Ref Ctxt Defs} ->
+checkVisibleNS : {auto c : ReadOnlyRef Ctxt Defs} ->
                  FC -> Name -> Visibility -> Core ()
 checkVisibleNS fc (NS ns x) vis
     = if !(isVisible ns)
@@ -166,8 +166,8 @@ mutual
                  {auto m : Ref MD Metadata} ->
                  {auto u : Ref UST UState} ->
                  {auto e : Ref EST (EState vars)} ->
-                 {auto s : Ref Syn SyntaxInfo} ->
-                 {auto o : Ref ROpts REPLOpts} ->
+                 {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                 {auto o : ReadOnlyRef ROpts REPLOpts} ->
                  RigCount -> RigCount -> ElabInfo ->
                  NestedNames vars -> Env Term vars ->
                  FC -> (fntm : Term vars) ->
@@ -197,8 +197,8 @@ mutual
                      {auto m : Ref MD Metadata} ->
                      {auto u : Ref UST UState} ->
                      {auto e : Ref EST (EState vars)} ->
-                     {auto s : Ref Syn SyntaxInfo} ->
-                     {auto o : Ref ROpts REPLOpts} ->
+                     {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                     {auto o : ReadOnlyRef ROpts REPLOpts} ->
                      RigCount -> RigCount -> ElabInfo ->
                      NestedNames vars -> Env Term vars ->
                      FC -> (fntm : Term vars) ->
@@ -253,8 +253,8 @@ mutual
                     {auto m : Ref MD Metadata} ->
                     {auto u : Ref UST UState} ->
                     {auto e : Ref EST (EState vars)} ->
-                    {auto s : Ref Syn SyntaxInfo} ->
-                    {auto o : Ref ROpts REPLOpts} ->
+                    {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                    {auto o : ReadOnlyRef ROpts REPLOpts} ->
                     RigCount -> RigCount -> ElabInfo ->
                     NestedNames vars -> Env Term vars ->
                     FC -> (fntm : Term vars) ->
@@ -296,7 +296,7 @@ mutual
 
   -- Defer elaborating anything which will be easier given a known target
   -- type (ambiguity, cases, etc)
-  needsDelayExpr : {auto c : Ref Ctxt Defs} ->
+  needsDelayExpr : {auto c : ReadOnlyRef Ctxt Defs} ->
                    (knownRet : Bool) -> RawImp ->
                    Core Bool
   needsDelayExpr False _ = pure False
@@ -320,7 +320,7 @@ mutual
   -- On the LHS, for any concrete thing, we need to make sure we know
   -- its type before we proceed so that we can reject it if the type turns
   -- out to be polymorphic
-  needsDelayLHS : {auto c : Ref Ctxt Defs} ->
+  needsDelayLHS : {auto c : ReadOnlyRef Ctxt Defs} ->
                   RawImp -> Core Bool
   needsDelayLHS (IVar fc n) = pure True
   needsDelayLHS (IApp _ f _) = needsDelayLHS f
@@ -334,7 +334,7 @@ mutual
   needsDelayLHS (IWithUnambigNames _ _ t) = needsDelayLHS t
   needsDelayLHS _ = pure False
 
-  needsDelay : {auto c : Ref Ctxt Defs} ->
+  needsDelay : {auto c : ReadOnlyRef Ctxt Defs} ->
                ElabMode ->
                (knownRet : Bool) -> RawImp ->
                Core Bool
@@ -344,9 +344,9 @@ mutual
   checkValidPattern :
     {vars : _} ->
     {auto c : Ref Ctxt Defs} ->
-    {auto m : Ref MD Metadata} ->
+    {auto m : ReadOnlyRef MD Metadata} ->
     {auto u : Ref UST UState} ->
-    {auto e : Ref EST (EState vars)} ->
+    {auto e : ReadOnlyRef EST (EState vars)} ->
     RigCount -> Env Term vars -> FC ->
     Term vars -> Glued vars ->
     Core (Term vars, Glued vars)
@@ -357,7 +357,7 @@ mutual
            _ => pure (tm, ty)
 
   dotErased : {vars : _} ->
-              {auto c : Ref Ctxt Defs} -> (argty : Closure vars) ->
+              {auto c : ReadOnlyRef Ctxt Defs} -> (argty : Closure vars) ->
               Maybe Name -> Nat -> ElabMode -> RigCount -> RawImp -> Core RawImp
   dotErased argty mn argpos (InLHS lrig ) rig tm
       = if not (isErased lrig) && isErased rig
@@ -421,8 +421,8 @@ mutual
                  {auto m : Ref MD Metadata} ->
                  {auto u : Ref UST UState} ->
                  {auto e : Ref EST (EState vars)} ->
-                 {auto s : Ref Syn SyntaxInfo} ->
-                 {auto o : Ref ROpts REPLOpts} ->
+                 {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                 {auto o : ReadOnlyRef ROpts REPLOpts} ->
                  RigCount -> RigCount -> ElabInfo ->
                  NestedNames vars -> Env Term vars ->
                  FC -> (fntm : Term vars) -> Name ->
@@ -588,8 +588,8 @@ mutual
                  {auto m : Ref MD Metadata} ->
                  {auto u : Ref UST UState} ->
                  {auto e : Ref EST (EState vars)} ->
-                 {auto s : Ref Syn SyntaxInfo} ->
-                 {auto o : Ref ROpts REPLOpts} ->
+                 {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                 {auto o : ReadOnlyRef ROpts REPLOpts} ->
                  RigCount -> ElabInfo ->
                  NestedNames vars -> Env Term vars ->
                  FC -> (fntm : Term vars) -> (fnty : NF vars) ->
@@ -766,8 +766,8 @@ mutual
                  {auto m : Ref MD Metadata} ->
                  {auto u : Ref UST UState} ->
                  {auto e : Ref EST (EState vars)} ->
-                 {auto s : Ref Syn SyntaxInfo} ->
-                 {auto o : Ref ROpts REPLOpts} ->
+                 {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                 {auto o : ReadOnlyRef ROpts REPLOpts} ->
                  RigCount -> ElabInfo ->
                  NestedNames vars -> Env Term vars ->
                  FC -> (fntm : Term vars) -> (fnty : NF vars) ->
@@ -802,8 +802,8 @@ checkApp : {vars : _} ->
            {auto m : Ref MD Metadata} ->
            {auto u : Ref UST UState} ->
            {auto e : Ref EST (EState vars)} ->
-           {auto s : Ref Syn SyntaxInfo} ->
-           {auto o : Ref ROpts REPLOpts} ->
+           {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+           {auto o : ReadOnlyRef ROpts REPLOpts} ->
            RigCount -> ElabInfo ->
            NestedNames vars -> Env Term vars ->
            FC -> (fn : RawImp) ->

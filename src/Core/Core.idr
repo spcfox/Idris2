@@ -904,8 +904,8 @@ newRef x val
          pure (MkRef ref)
 
 export %inline
-get : (0 x : label) -> {auto ref : Ref x a} -> Core a
-get x {ref = MkRef io} = coreLift (readIORef io)
+get : (0 x : label) -> {auto ref : ReadOnlyRef x a} -> Core a
+get x = coreLift $ getIO x
 
 export %inline
 put : (0 x : label) -> {auto ref : Ref x a} -> a -> Core ()

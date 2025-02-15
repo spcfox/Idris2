@@ -13,7 +13,7 @@ import TTImp.TTImp
 
 %default covering
 
-detagSafe : {auto c : Ref Ctxt Defs} ->
+detagSafe : {auto c : ReadOnlyRef Ctxt Defs} ->
             Defs -> NF [] -> Core Bool
 detagSafe defs (NTCon _ n _ _ args)
     = do Just (TCon _ _ _ _ _ _ _ (Just detags)) <- lookupDefExact n (gamma defs)
@@ -32,7 +32,7 @@ detagSafe defs (NTCon _ n _ _ args)
         = elem i ns || notErased (i + 1) ns rest
 detagSafe defs _ = pure False
 
-findErasedFrom : {auto c : Ref Ctxt Defs} ->
+findErasedFrom : {auto c : ReadOnlyRef Ctxt Defs} ->
                  Defs -> Nat -> NF [] -> Core (List Nat, List Nat)
 findErasedFrom defs pos (NBind fc x (Pi _ c _ aty) scf)
     = do -- In the scope, use 'Erased fc Impossible' to mean 'argument is erased'.
@@ -50,7 +50,7 @@ findErasedFrom defs pos tm = pure ([], [])
 -- Find the argument positions in the given type which are guaranteed to be
 -- erasable
 export
-findErased : {auto c : Ref Ctxt Defs} ->
+findErased : {auto c : ReadOnlyRef Ctxt Defs} ->
              ClosedTerm -> Core (List Nat, List Nat)
 findErased tm
     = do defs <- get Ctxt
@@ -174,7 +174,7 @@ inExtended a new sc
     = do used <- get Used
          u' <- newRef Used (extendUsed a new used)
          res <- sc u'
-         put Used (dropUsed new !(get Used @{u'}))
+         put Used (dropUsed new !(get Used @{toReadOnly u'}))
          pure res
 
 termInlineSafe : {vars : _} ->
@@ -261,7 +261,7 @@ inlineSafe t
          caseInlineSafe t
 
 export
-canInlineDef : {auto c : Ref Ctxt Defs} ->
+canInlineDef : {auto c : ReadOnlyRef Ctxt Defs} ->
                Name -> Core Bool
 canInlineDef n
     = do defs <- get Ctxt
@@ -273,7 +273,7 @@ canInlineDef n
 -- is the last one, since the others are just variables passed through from
 -- the environment, and duplicating a variable doesn't cost anything.
 export
-canInlineCaseBlock : {auto c : Ref Ctxt Defs} ->
+canInlineCaseBlock : {auto c : ReadOnlyRef Ctxt Defs} ->
                      Name -> Core Bool
 canInlineCaseBlock n
     = do defs <- get Ctxt

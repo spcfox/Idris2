@@ -63,7 +63,7 @@ initInterpState defsList = do
 Stack : Type
 Stack = List Name
 
-interpError : Ref State InterpState => Stack -> String -> Core a
+interpError : ReadOnlyRef State InterpState => Stack -> String -> Core a
 interpError stk msg = do
     MkInterpState _ ls ret <- get State
     lsList <- coreLift $ toList ls
@@ -75,7 +75,7 @@ interpError stk msg = do
     showWithIndex {idx} [] = ""
     showWithIndex {idx} (x :: xs) = "  " ++ show idx ++ ": " ++ show x ++ "\n" ++ showWithIndex {idx = S idx} xs
 
-getReg : Ref State InterpState => Stack -> Reg -> Core Object
+getReg : ReadOnlyRef State InterpState => Stack -> Reg -> Core Object
 getReg stk (Loc i) = do
     ls <- locals <$> get State
     objm <- coreLift $ readArray ls i
@@ -110,7 +110,7 @@ indexMaybe : List a -> Int -> Maybe a
 indexMaybe [] _ = Nothing
 indexMaybe (x :: xs) idx = if idx <= 0 then Just x else indexMaybe xs (idx - 1)
 
-callPrim : Ref State InterpState => Stack -> PrimFn ar -> Vect ar Object -> Core Object
+callPrim : ReadOnlyRef State InterpState => Stack -> PrimFn ar -> Vect ar Object -> Core Object
 callPrim stk BelieveMe [_, _, obj] = pure obj
 callPrim stk fn args = case the (Either Object (Vect ar Constant)) $ traverse getConst args of
     Right args' => case getOp {vars=[]} fn (NPrimVal EmptyFC <$> args') of
@@ -125,7 +125,7 @@ callPrim stk fn args = case the (Either Object (Vect ar Constant)) $ traverse ge
 NS_UN : Namespace -> String -> Name
 NS_UN ns un = NS ns (UN $ Basic un)
 
-argError : Ref State InterpState => Stack -> Vect h Object -> Core a
+argError : ReadOnlyRef State InterpState => Stack -> Vect h Object -> Core a
 argError stk obj = interpError stk $ "Unexpected arguments: " ++ foldMap ((" " ++) . showDepth 1) obj
 
 unit : Object
@@ -179,7 +179,7 @@ beginFunction args (START :: is) maxLoc = do
     pure is
 beginFunction args is maxLoc = pure is
 
-parameters {auto c : Ref Ctxt Defs}
+parameters {auto c : ReadOnlyRef Ctxt Defs}
   mutual
     step : Stack -> Ref State InterpState => VMInst -> Core ()
     step stk (DECLARE _) = pure ()
@@ -286,13 +286,13 @@ parameters {auto c : Ref Ctxt Defs}
 
 compileExpr :
   Ref Ctxt Defs ->
-  Ref Syn SyntaxInfo ->
+  ReadOnlyRef Syn SyntaxInfo ->
   String -> String -> ClosedTerm -> String -> Core (Maybe String)
 compileExpr _ _ _ _ _ _ = throw (InternalError "compile not implemeted for vmcode-interp")
 
 executeExpr :
   Ref Ctxt Defs ->
-  Ref Syn SyntaxInfo ->
+  ReadOnlyRef Syn SyntaxInfo ->
   String -> ClosedTerm -> Core ()
 executeExpr c s _ tm = do
     cdata <- getCompileData False VMCode tm

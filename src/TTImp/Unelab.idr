@@ -65,7 +65,7 @@ mutual
   |||
   ||| We will try to do our best...
   unelabCase : {vars : _} ->
-               {auto c : Ref Ctxt Defs} ->
+               {auto c : ReadOnlyRef Ctxt Defs} ->
                List (Name, Nat) ->
                Env Term vars ->
                Name ->
@@ -188,7 +188,7 @@ mutual
   -- NOTE: There is *no guarantee* that this will elaborate back successfully!
   -- It's only intended for display
   unelabTy : {vars : _} ->
-             {auto c : Ref Ctxt Defs} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
              (umode : UnelabMode) ->
              (nest : List (Name, Nat)) ->
              Env Term vars -> Term vars ->
@@ -197,7 +197,7 @@ mutual
       = dropParams nest !(unelabTy' umode nest env tm)
 
   unelabTy' : {vars : _} ->
-              {auto c : Ref Ctxt Defs} ->
+              {auto c : ReadOnlyRef Ctxt Defs} ->
               (umode : UnelabMode) ->
               (nest : List (Name, Nat)) ->
               Env Term vars -> Term vars ->
@@ -312,7 +312,7 @@ mutual
   unelabTy' umode nest env (TType fc _) = pure (IType fc, gType fc (MN "top" 0))
 
   unelabPi : {vars : _} ->
-             {auto c : Ref Ctxt Defs} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
              (umode : UnelabMode) ->
              (nest : List (Name, Nat)) ->
              Env Term vars -> PiInfo (Term vars) ->
@@ -325,7 +325,7 @@ mutual
            pure (DefImplicit t')
 
   unelabBinder : {vars : _} ->
-                 {auto c : Ref Ctxt Defs} ->
+                 {auto c : ReadOnlyRef Ctxt Defs} ->
                  (umode : UnelabMode) ->
                  (nest : List (Name, Nat)) ->
                  FC -> Env Term vars -> (x : Name) ->
@@ -372,7 +372,7 @@ mutual
 
 export
 unelabNoSugar : {vars : _} ->
-                {auto c : Ref Ctxt Defs} ->
+                {auto c : ReadOnlyRef Ctxt Defs} ->
                 Env Term vars -> Term vars -> Core IRawImp
 unelabNoSugar env tm
     = do tm' <- unelabTy (NoSugar False) [] env tm
@@ -380,7 +380,7 @@ unelabNoSugar env tm
 
 export
 unelabUniqueBinders : {vars : _} ->
-                {auto c : Ref Ctxt Defs} ->
+                {auto c : ReadOnlyRef Ctxt Defs} ->
                 Env Term vars -> Term vars -> Core IRawImp
 unelabUniqueBinders env tm
     = do tm' <- unelabTy (NoSugar True) [] env tm
@@ -388,7 +388,7 @@ unelabUniqueBinders env tm
 
 export
 unelabNoPatvars : {vars : _} ->
-                  {auto c : Ref Ctxt Defs} ->
+                  {auto c : ReadOnlyRef Ctxt Defs} ->
                   Env Term vars -> Term vars -> Core IRawImp
 unelabNoPatvars env tm
     = do tm' <- unelabTy ImplicitHoles [] env tm
@@ -396,7 +396,7 @@ unelabNoPatvars env tm
 
 export
 unelabNest : {vars : _} ->
-             {auto c : Ref Ctxt Defs} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
              UnelabMode ->
              List (Name, Nat) ->
              Env Term vars ->
@@ -422,7 +422,7 @@ unelabNest mode nest env tm
 
 export
 unelab : {vars : _} ->
-         {auto c : Ref Ctxt Defs} ->
+         {auto c : ReadOnlyRef Ctxt Defs} ->
          Env Term vars ->
          Term vars -> Core IRawImp
 unelab = unelabNest Full []

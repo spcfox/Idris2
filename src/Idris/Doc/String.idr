@@ -44,7 +44,7 @@ import Idris.Doc.Brackets
 
 -- Add a doc string for a name in the current namespace
 export
-addDocString : {auto c : Ref Ctxt Defs} ->
+addDocString : {auto c : ReadOnlyRef Ctxt Defs} ->
                {auto s : Ref Syn SyntaxInfo} ->
                Name -> String ->
                Core ()
@@ -58,7 +58,7 @@ addDocString n_in doc
 -- Add a doc string for a name, in an extended namespace (e.g. for
 -- record getters)
 export
-addDocStringNS : {auto c : Ref Ctxt Defs} ->
+addDocStringNS : {auto c : ReadOnlyRef Ctxt Defs} ->
                  {auto s : Ref Syn SyntaxInfo} ->
                  Namespace -> Name -> String ->
                  Core ()
@@ -83,8 +83,8 @@ prettyKindedName (Just kw) nm
   = annotate (Syntax Keyword) (pretty0 kw) <++> nm
 
 export
-prettyType : {auto c : Ref Ctxt Defs} ->
-             {auto s : Ref Syn SyntaxInfo} ->
+prettyType : {auto c : ReadOnlyRef Ctxt Defs} ->
+             {auto s : ReadOnlyRef Syn SyntaxInfo} ->
              (IdrisSyntax -> ann) -> ClosedTerm -> Core (Doc ann)
 prettyType syn ty = do
   defs <- get Ctxt
@@ -94,8 +94,8 @@ prettyType syn ty = do
   pure (prettyBy syn ty)
 
 ||| Look up implementations
-getImplDocs : {auto c : Ref Ctxt Defs} ->
-              {auto s : Ref Syn SyntaxInfo} ->
+getImplDocs : {auto c : ReadOnlyRef Ctxt Defs} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
               (keep : Term [] -> Core Bool) ->
               Core (List (Doc IdrisDocAnn))
 getImplDocs keep
@@ -121,8 +121,8 @@ getImplDocs keep
                         vcat $ map (indent 2) docs]]
 
 ||| Look up implementations corresponding to the named type
-getHintsForType : {auto c : Ref Ctxt Defs} ->
-                  {auto s : Ref Syn SyntaxInfo} ->
+getHintsForType : {auto c : ReadOnlyRef Ctxt Defs} ->
+                  {auto s : ReadOnlyRef Syn SyntaxInfo} ->
                   Name -> Core (List (Doc IdrisDocAnn))
 getHintsForType nty
     = do log "doc.data" 10 $ "Looking at \{show nty}"
@@ -135,8 +135,8 @@ getHintsForType nty
               pure $ isJust (lookup nty nms)
 
 ||| Look up implementations corresponding to the primitive type
-getHintsForPrimitive : {auto c : Ref Ctxt Defs} ->
-                       {auto s : Ref Syn SyntaxInfo} ->
+getHintsForPrimitive : {auto c : ReadOnlyRef Ctxt Defs} ->
+                       {auto s : ReadOnlyRef Syn SyntaxInfo} ->
                        Constant -> Core (List (Doc IdrisDocAnn))
 getHintsForPrimitive c
     = do log "doc.data" 10 $ "Looking at \{show c}"
@@ -149,8 +149,8 @@ getHintsForPrimitive c
               pure $ contains c nms
 
 export
-getDocsForPrimitive : {auto c : Ref Ctxt Defs} ->
-                      {auto s : Ref Syn SyntaxInfo} ->
+getDocsForPrimitive : {auto c : ReadOnlyRef Ctxt Defs} ->
+                      {auto s : ReadOnlyRef Syn SyntaxInfo} ->
                       Constant -> Core (Doc IdrisDocAnn)
 getDocsForPrimitive constant = do
     let (_, type) = checkPrim EmptyFC constant
@@ -241,9 +241,9 @@ justUserDoc
              {getTotality = False}
 
 export
-getDocsForName : {auto o : Ref ROpts REPLOpts} ->
-                 {auto c : Ref Ctxt Defs} ->
-                 {auto s : Ref Syn SyntaxInfo} ->
+getDocsForName : {auto o : ReadOnlyRef ROpts REPLOpts} ->
+                 {auto c : ReadOnlyRef Ctxt Defs} ->
+                 {auto s : ReadOnlyRef Syn SyntaxInfo} ->
                  FC -> Name -> Config -> Core (Doc IdrisDocAnn)
 getDocsForName fc n config
     = do syn <- get Syn
@@ -483,8 +483,8 @@ getDocsForName fc n config
 
 export
 getDocsForImplementation :
-  {auto s : Ref Syn SyntaxInfo} ->
-  {auto c : Ref Ctxt Defs} ->
+  {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+  {auto c : ReadOnlyRef Ctxt Defs} ->
   PTerm -> Core (Maybe (Doc IdrisSyntax))
 getDocsForImplementation t = do
   -- the term better be of the shape (I e1 e2 e3) where I is a name
@@ -549,9 +549,9 @@ getDocsForImplementation t = do
             pure $ Just $ vcat ds
 
 export
-getDocsForPTerm : {auto o : Ref ROpts REPLOpts} ->
-                  {auto c : Ref Ctxt Defs} ->
-                  {auto s : Ref Syn SyntaxInfo} ->
+getDocsForPTerm : {auto o : ReadOnlyRef ROpts REPLOpts} ->
+                  {auto c : ReadOnlyRef Ctxt Defs} ->
+                  {auto s : ReadOnlyRef Syn SyntaxInfo} ->
                   PTerm -> Core (Doc IdrisDocAnn)
 getDocsForPTerm (PRef fc name) = getDocsForName fc name MkConfig
 getDocsForPTerm (PPrimVal _ c) = getDocsForPrimitive c
@@ -653,9 +653,9 @@ getDocsForPTerm (PForce _ _) = pure $ vcat $
 getDocsForPTerm pterm = pure $ "Docs not implemented for" <++> pretty0 (show pterm) <++> "yet"
 
 export
-getDocs : {auto o : Ref ROpts REPLOpts} ->
-          {auto c : Ref Ctxt Defs} ->
-          {auto s : Ref Syn SyntaxInfo} ->
+getDocs : {auto o : ReadOnlyRef ROpts REPLOpts} ->
+          {auto c : ReadOnlyRef Ctxt Defs} ->
+          {auto s : ReadOnlyRef Syn SyntaxInfo} ->
           DocDirective -> Core (Doc IdrisDocAnn)
 getDocs (APTerm ptm) = getDocsForPTerm ptm
 getDocs (Symbol k) = pure $ getDocsForSymbol k
@@ -667,8 +667,8 @@ getDocs (AModule mod) = do
     | _ => throw (ModuleNotFound replFC mod)
   pure (pretty0 modDoc)
 
-summarise : {auto c : Ref Ctxt Defs} ->
-            {auto s : Ref Syn SyntaxInfo} ->
+summarise : {auto c : ReadOnlyRef Ctxt Defs} ->
+            {auto s : ReadOnlyRef Syn SyntaxInfo} ->
             Name -> Core (Doc IdrisDocAnn)
 summarise n -- n is fully qualified
     = do defs <- get Ctxt
@@ -682,9 +682,9 @@ summarise n -- n is fully qualified
 
 -- Display all the exported names in the given namespace
 export
-getContents : {auto o : Ref ROpts REPLOpts} ->
-              {auto c : Ref Ctxt Defs} ->
-              {auto s : Ref Syn SyntaxInfo} ->
+getContents : {auto o : ReadOnlyRef ROpts REPLOpts} ->
+              {auto c : ReadOnlyRef Ctxt Defs} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
               Namespace -> Core (Doc IdrisDocAnn)
 getContents ns
    = -- Get all the names, filter by any that match the given namespace

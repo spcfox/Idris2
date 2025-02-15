@@ -93,8 +93,8 @@ showName _ = True
 
 export
 extractHoleData : {vars : _} ->
-          {auto c : Ref Ctxt Defs} ->
-          {auto s : Ref Syn SyntaxInfo} ->
+          {auto c : ReadOnlyRef Ctxt Defs} ->
+          {auto s : ReadOnlyRef Syn SyntaxInfo} ->
           Defs -> Env Term vars -> Name -> Nat -> Term vars ->
           Core Holes.Data
 extractHoleData defs env fn (S args) (Bind fc x (Let _ c val ty) sc)
@@ -120,8 +120,8 @@ extractHoleData defs env fn args ty
 
 export
 holeData : {vars : _} ->
-           {auto c : Ref Ctxt Defs} ->
-           {auto s : Ref Syn SyntaxInfo} ->
+           {auto c : ReadOnlyRef Ctxt Defs} ->
+           {auto s : ReadOnlyRef Syn SyntaxInfo} ->
            Defs -> Env Term vars -> Name -> Nat -> Term vars ->
            Core Holes.Data
 
@@ -141,8 +141,8 @@ holeData gam env fn args ty
 
 export
 getUserHolesData :
-  {auto c : Ref Ctxt Defs} ->
-  {auto s : Ref Syn SyntaxInfo} ->
+  {auto c : ReadOnlyRef Ctxt Defs} ->
+  {auto s : ReadOnlyRef Syn SyntaxInfo} ->
   Core (List Holes.Data)
 getUserHolesData
     = do defs <- get Ctxt
@@ -160,8 +160,8 @@ getUserHolesData
 
 export
 showHole : {vars : _} ->
-          {auto c : Ref Ctxt Defs} ->
-          {auto s : Ref Syn SyntaxInfo} ->
+          {auto c : ReadOnlyRef Ctxt Defs} ->
+          {auto s : ReadOnlyRef Syn SyntaxInfo} ->
           Defs -> Env Term vars -> Name -> Nat -> Term vars ->
           Core String
 
@@ -176,8 +176,8 @@ showHole defs env fn args ty
 
 export
 prettyHole : {vars : _} ->
-             {auto c : Ref Ctxt Defs} ->
-             {auto s : Ref Syn SyntaxInfo} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
+             {auto s : ReadOnlyRef Syn SyntaxInfo} ->
              Defs -> Env Term vars -> Name -> Nat -> Term vars ->
              Core (Doc IdrisSyntax)
 prettyHole defs env fn args ty

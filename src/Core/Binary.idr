@@ -190,7 +190,7 @@ HasNames e => HasNames (TTCFile e) where
 -- NOTE: TTC files are only compatible if the version number is the same,
 -- *and* the 'annot/extra' type are the same, or there are no holes/constraints
 writeTTCFile : (HasNames extra, TTC extra) =>
-               {auto c : Ref Ctxt Defs} ->
+               {auto c : ReadOnlyRef Ctxt Defs} ->
                Ref Bin Binary -> TTCFile extra -> Core ()
 writeTTCFile b file_in
       = do file <- toFullNames file_in
@@ -220,7 +220,7 @@ writeTTCFile b file_in
            toBuf b (foreignExports file)
 
 readTTCFile : TTC extra =>
-              {auto c : Ref Ctxt Defs} ->
+              {auto c : ReadOnlyRef Ctxt Defs} ->
               Bool -> String -> Maybe (Namespace) ->
               Ref Bin Binary -> Core (TTCFile extra)
 readTTCFile readall file as b
@@ -295,8 +295,8 @@ getSaveDefs modns (n :: ns) acc defs
 -- current source file
 export
 writeToTTC : (HasNames extra, TTC extra) =>
-             {auto c : Ref Ctxt Defs} ->
-             {auto u : Ref UST UState} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
+             {auto u : ReadOnlyRef UST UState} ->
              extra -> (sourceFileName : String) ->
              (ttcFileName : String) -> Core ()
 writeToTTC extradata sourceFileName ttcFileName

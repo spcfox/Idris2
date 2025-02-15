@@ -100,7 +100,7 @@ setOutput : {auto o : Ref ROpts REPLOpts} ->
 setOutput m = update ROpts { idemode := m }
 
 export
-getOutput : {auto o : Ref ROpts REPLOpts} -> Core OutputMode
+getOutput : {auto o : ReadOnlyRef ROpts REPLOpts} -> Core OutputMode
 getOutput = idemode <$> get ROpts
 
 export
@@ -121,19 +121,19 @@ setSource : {auto o : Ref ROpts REPLOpts} ->
 setSource src = update ROpts { source := src }
 
 export
-getSource : {auto o : Ref ROpts REPLOpts} ->
+getSource : {auto o : ReadOnlyRef ROpts REPLOpts} ->
             Core String
 getSource = source <$> get ROpts
 
 export
-getSourceLine : {auto o : Ref ROpts REPLOpts} ->
+getSourceLine : {auto o : ReadOnlyRef ROpts REPLOpts} ->
                 Int -> Core (Maybe String)
 getSourceLine l
     = do src <- getSource
          pure $ elemAt (lines src) (integerToNat (cast (l-1)))
 
 export
-getLitStyle : {auto o : Ref ROpts REPLOpts} ->
+getLitStyle : {auto o : ReadOnlyRef ROpts REPLOpts} ->
               Core (Maybe LiterateStyle)
 getLitStyle = literateStyle <$> get ROpts
 
@@ -143,7 +143,7 @@ setCurrentElabSource : {auto o : Ref ROpts REPLOpts} ->
 setCurrentElabSource src = update ROpts { currentElabSource := src }
 
 export
-getCurrentElabSource : {auto o : Ref ROpts REPLOpts} ->
+getCurrentElabSource : {auto o : ReadOnlyRef ROpts REPLOpts} ->
                        Core String
 getCurrentElabSource = currentElabSource <$> get ROpts
 
@@ -152,12 +152,12 @@ addCodegen : {auto o : Ref ROpts REPLOpts} ->
 addCodegen s cg = update ROpts { extraCodegens $= ((s,cg)::) }
 
 export
-getCodegen : {auto o : Ref ROpts REPLOpts} ->
+getCodegen : {auto o : ReadOnlyRef ROpts REPLOpts} ->
              String -> Core (Maybe Codegen)
 getCodegen s = lookup s . extraCodegens <$> get ROpts
 
 export
-getConsoleWidth : {auto o : Ref ROpts REPLOpts} -> Core (Maybe Nat)
+getConsoleWidth : {auto o : ReadOnlyRef ROpts REPLOpts} -> Core (Maybe Nat)
 getConsoleWidth = consoleWidth <$> get ROpts
 
 export
@@ -165,7 +165,7 @@ setConsoleWidth : {auto o : Ref ROpts REPLOpts} -> Maybe Nat -> Core ()
 setConsoleWidth n = update ROpts { consoleWidth := n }
 
 export
-getColor : {auto o : Ref ROpts REPLOpts} -> Core Bool
+getColor : {auto o : ReadOnlyRef ROpts REPLOpts} -> Core Bool
 getColor = color <$> get ROpts
 
 export
@@ -173,7 +173,7 @@ setColor : {auto o : Ref ROpts REPLOpts} -> Bool -> Core ()
 setColor b = update ROpts { color := b }
 
 export
-getSynHighlightOn : {auto o : Ref ROpts REPLOpts} -> Core Bool
+getSynHighlightOn : {auto o : ReadOnlyRef ROpts REPLOpts} -> Core Bool
 getSynHighlightOn = synHighlightOn <$> get ROpts
 
 export
@@ -181,7 +181,7 @@ setSynHighlightOn : {auto o : Ref ROpts REPLOpts} -> Bool -> Core ()
 setSynHighlightOn b = update ROpts { synHighlightOn := b }
 
 export
-getEvalTiming : {auto o : Ref ROpts REPLOpts} -> Core Bool
+getEvalTiming : {auto o : ReadOnlyRef ROpts REPLOpts} -> Core Bool
 getEvalTiming = evalTiming <$> get ROpts
 
 export

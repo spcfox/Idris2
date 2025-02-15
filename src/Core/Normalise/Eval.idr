@@ -26,7 +26,7 @@ public export
 data Glued : List Name -> Type where
      MkGlue : (fromTerm : Bool) -> -- is it built from the term; i.e. can
                                    -- we read the term straight back?
-              Core (Term vars) -> (Ref Ctxt Defs -> Core (NF vars)) -> Glued vars
+              Core (Term vars) -> (ReadOnlyRef Ctxt Defs -> Core (NF vars)) -> Glued vars
 
 export
 isFromTerm : Glued vars -> Bool
@@ -37,25 +37,25 @@ getTerm : Glued vars -> Core (Term vars)
 getTerm (MkGlue _ tm _) = tm
 
 export
-getNF : {auto c : Ref Ctxt Defs} -> Glued vars -> Core (NF vars)
+getNF : {auto c : ReadOnlyRef Ctxt Defs} -> Glued vars -> Core (NF vars)
 getNF {c} (MkGlue _ _ nf) = nf c
 
 public export
 Stack : List Name -> Type
 Stack vars = List (FC, Closure vars)
 
-evalWithOpts : {auto c : Ref Ctxt Defs} ->
+evalWithOpts : {auto c : ReadOnlyRef Ctxt Defs} ->
                {free, vars : _} ->
                Defs -> EvalOpts ->
                Env Term free -> LocalEnv free vars ->
                Term (vars ++ free) -> Stack free -> Core (NF free)
 
 export
-evalClosure : {auto c : Ref Ctxt Defs} ->
+evalClosure : {auto c : ReadOnlyRef Ctxt Defs} ->
               {free : _} -> Defs -> Closure free -> Core (NF free)
 
 export
-evalArg : {auto c : Ref Ctxt Defs} -> {free : _} -> Defs -> Closure free -> Core (NF free)
+evalArg : {auto c : ReadOnlyRef Ctxt Defs} -> {free : _} -> Defs -> Closure free -> Core (NF free)
 evalArg defs c = evalClosure defs c
 
 export
@@ -93,7 +93,7 @@ record TermWithEnv (free : List Name) where
 
 parameters (defs : Defs) (topopts : EvalOpts)
   mutual
-    eval : {auto c : Ref Ctxt Defs} ->
+    eval : {auto c : ReadOnlyRef Ctxt Defs} ->
            {free, vars : _} ->
            Env Term free -> LocalEnv free vars ->
            Term (vars ++ free) -> Stack free -> Core (NF free)
@@ -155,7 +155,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
     -- Apply an evaluated argument (perhaps cached from an earlier evaluation)
     -- to a stack
     export
-    applyToStack : {auto c : Ref Ctxt Defs} ->
+    applyToStack : {auto c : ReadOnlyRef Ctxt Defs} ->
                    {free : _} ->
                    Env Term free ->
                    NF free -> Stack free -> Core (NF free)
@@ -203,7 +203,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
       = NErased fc <$> traverse @{%search} @{CORE} (\ t => applyToStack env t stk) a
     applyToStack env nf@(NType fc _) _ = pure nf
 
-    evalLocClosure : {auto c : Ref Ctxt Defs} ->
+    evalLocClosure : {auto c : ReadOnlyRef Ctxt Defs} ->
                      {free : _} ->
                      Env Term free ->
                      FC -> Maybe Bool ->
@@ -215,7 +215,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
     evalLocClosure {free} env fc mrig stk (MkNFClosure opts env' nf)
         = applyToStack env' nf stk
 
-    evalLocal : {auto c : Ref Ctxt Defs} ->
+    evalLocal : {auto c : ReadOnlyRef Ctxt Defs} ->
                 {free : _} ->
                 Env Term free ->
                 FC -> Maybe Bool ->
@@ -250,7 +250,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
         = x :: updateLocal opts env idx p locs nf
     updateLocal _ _ _ _ locs nf = locs
 
-    evalMeta : {auto c : Ref Ctxt Defs} ->
+    evalMeta : {auto c : ReadOnlyRef Ctxt Defs} ->
                {free : _} ->
                Env Term free ->
                FC -> Name -> Int -> List (Closure free) ->
@@ -265,7 +265,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
     -- The commented out logging here might still be useful one day, but
     -- evalRef is used a lot and even these tiny checks turn out to be
     -- worth skipping if we can
-    evalRef : {auto c : Ref Ctxt Defs} ->
+    evalRef : {auto c : ReadOnlyRef Ctxt Defs} ->
               {free : _} ->
               Env Term free ->
               (isMeta : Bool) ->
@@ -325,7 +325,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
     getCaseBound (arg :: args) (n :: ns) loc = (arg ::) <$> getCaseBound args ns loc
 
     -- Returns the case term from the matched pattern with the LocalEnv (arguments from constructor pattern ConCase)
-    evalConAlt : {auto c : Ref Ctxt Defs} ->
+    evalConAlt : {auto c : ReadOnlyRef Ctxt Defs} ->
                  {more, free : _} ->
                  Env Term free ->
                  LocalEnv free more -> EvalOpts -> FC ->
@@ -339,7 +339,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
                    | Nothing => pure GotStuck
               evalTree env bound opts fc stk sc
 
-    tryAlt : {auto c : Ref Ctxt Defs} ->
+    tryAlt : {auto c : ReadOnlyRef Ctxt Defs} ->
              {free, more : _} ->
              Env Term free ->
              LocalEnv free more -> EvalOpts -> FC ->
@@ -403,7 +403,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
         concrete _ = False
     tryAlt _ _ _ _ _ _ _ = pure GotStuck
 
-    findAlt : {auto c : Ref Ctxt Defs} ->
+    findAlt : {auto c : ReadOnlyRef Ctxt Defs} ->
               {args, free : _} ->
               Env Term free ->
               LocalEnv free args -> EvalOpts -> FC ->
@@ -423,7 +423,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
                        pure GotStuck
               pure res
 
-    evalTree : {auto c : Ref Ctxt Defs} ->
+    evalTree : {auto c : ReadOnlyRef Ctxt Defs} ->
                {args, free : _} -> Env Term free -> LocalEnv free args ->
                EvalOpts -> FC ->
                Stack free -> CaseTree args ->
@@ -466,7 +466,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
          = do (loc', stk') <- argsFromStack ns args
               pure (snd arg :: loc', stk')
 
-    evalOp : {auto c : Ref Ctxt Defs} ->
+    evalOp : {auto c : ReadOnlyRef Ctxt Defs} ->
              {arity, free : _} ->
              (Vect arity (NF free) -> Maybe (NF free)) ->
              Stack free -> (def : Lazy (NF free)) ->
@@ -486,7 +486,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
         evalAll [] = pure []
         evalAll (c :: cs) = pure $ !(evalClosure defs c) :: !(evalAll cs)
 
-    evalDef : {auto c : Ref Ctxt Defs} ->
+    evalDef : {auto c : ReadOnlyRef Ctxt Defs} ->
               {free : _} ->
               Env Term free -> EvalOpts ->
               (isMeta : Bool) -> FC ->
@@ -556,7 +556,7 @@ evalClosure defs (MkNFClosure opts env nf)
     = applyToStack defs opts env nf []
 
 export
-evalClosureWithOpts : {auto c : Ref Ctxt Defs} ->
+evalClosureWithOpts : {auto c : ReadOnlyRef Ctxt Defs} ->
                       {free : _} ->
                       Defs -> EvalOpts -> Closure free -> Core (NF free)
 evalClosureWithOpts defs opts (MkClosure _ locs env tm)
@@ -565,13 +565,13 @@ evalClosureWithOpts defs opts (MkNFClosure _ env nf)
     = applyToStack defs opts env nf []
 
 export
-nf : {auto c : Ref Ctxt Defs} ->
+nf : {auto c : ReadOnlyRef Ctxt Defs} ->
      {vars : _} ->
      Defs -> Env Term vars -> Term vars -> Core (NF vars)
 nf defs env tm = eval defs defaultOpts env [] tm []
 
 export
-nfOpts : {auto c : Ref Ctxt Defs} ->
+nfOpts : {auto c : ReadOnlyRef Ctxt Defs} ->
          {vars : _} ->
          EvalOpts -> Defs -> Env Term vars -> Term vars -> Core (NF vars)
 nfOpts opts defs env tm = eval defs opts env [] tm []
@@ -604,7 +604,7 @@ gErased fc = MkGlue True (pure (Erased fc Placeholder)) (const (pure (NErased fc
 
 -- Resume a previously blocked normalisation with a new environment
 export
-continueNF : {auto c : Ref Ctxt Defs} ->
+continueNF : {auto c : ReadOnlyRef Ctxt Defs} ->
              {vars : _} ->
              Defs -> Env Term vars -> NF vars -> Core (NF vars)
 continueNF defs env stuck

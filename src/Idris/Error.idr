@@ -149,8 +149,8 @@ pShowMN t env acc = case t of
   _ => acc
 
 pshow : {vars : _} ->
-        {auto c : Ref Ctxt Defs} ->
-        {auto s : Ref Syn SyntaxInfo} ->
+        {auto c : ReadOnlyRef Ctxt Defs} ->
+        {auto s : ReadOnlyRef Syn SyntaxInfo} ->
         Env Term vars -> Term vars -> Core (Doc IdrisAnn)
 pshow env tm
     = do defs <- get Ctxt
@@ -159,15 +159,15 @@ pshow env tm
          pure (pShowMN ntm env $ prettyBy Syntax itm)
 
 pshowNoNorm : {vars : _} ->
-              {auto c : Ref Ctxt Defs} ->
-              {auto s : Ref Syn SyntaxInfo} ->
+              {auto c : ReadOnlyRef Ctxt Defs} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
               Env Term vars -> Term vars -> Core (Doc IdrisAnn)
 pshowNoNorm env tm
     = do defs <- get Ctxt
          itm <- resugar env tm
          pure (pShowMN tm env $ prettyBy Syntax itm)
 
-ploc : {auto o : Ref ROpts REPLOpts} ->
+ploc : {auto o : ReadOnlyRef ROpts REPLOpts} ->
        FC -> Core (Doc IdrisAnn)
 ploc fc = do
     let Just (fn, s, e) = isNonEmptyFC fc
@@ -193,7 +193,7 @@ ploc fc = do
       snd $ foldl (\(i, s), l => (S i, snoc s (space <+> annotate FileCtxt (pretty0 (pad size $ show $ i + 1) <++> pipe) <++> l))) (st, []) xs
 
 -- Assumes the two FCs are sorted
-ploc2 : {auto o : Ref ROpts REPLOpts} ->
+ploc2 : {auto o : ReadOnlyRef ROpts REPLOpts} ->
         FC -> FC -> Core (Doc IdrisAnn)
 ploc2 fc1 fc2 =
     do let Just (fn1, s1, e1) = isNonEmptyFC fc1
@@ -255,9 +255,9 @@ ploc2 fc1 fc2 =
       snd $ foldl (\(i, s), l => (S i, snoc s (space <+> annotate FileCtxt (pretty0 (pad size $ show $ i + 1) <++> pipe) <++> l))) (st, []) xs
 
 export
-pwarningRaw : {auto c : Ref Ctxt Defs} ->
-              {auto s : Ref Syn SyntaxInfo} ->
-              {auto o : Ref ROpts REPLOpts} ->
+pwarningRaw : {auto c : ReadOnlyRef Ctxt Defs} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+              {auto o : ReadOnlyRef ROpts REPLOpts} ->
               Warning -> Core (Doc IdrisAnn)
 pwarningRaw (ParserWarning fc msg)
     = pure $ pretty0 msg <+> line <+> !(ploc fc)
@@ -301,15 +301,15 @@ pwarningRaw (GenericWarn fc s)
     = pure $ vcat [pretty0 s, !(ploc fc)]
 
 export
-pwarning : {auto c : Ref Ctxt Defs} ->
-           {auto s : Ref Syn SyntaxInfo} ->
-           {auto o : Ref ROpts REPLOpts} ->
+pwarning : {auto c : ReadOnlyRef Ctxt Defs} ->
+           {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+           {auto o : ReadOnlyRef ROpts REPLOpts} ->
            Warning -> Core (Doc IdrisAnn)
 pwarning wrn = pwarningRaw !(toFullNames wrn)
 
 perrorRaw : {auto c : Ref Ctxt Defs} ->
-            {auto s : Ref Syn SyntaxInfo} ->
-            {auto o : Ref ROpts REPLOpts} ->
+            {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+            {auto o : ReadOnlyRef ROpts REPLOpts} ->
             Error -> Core (Doc IdrisAnn)
 perrorRaw (Fatal err) = perrorRaw err
 perrorRaw (CantConvert fc gam env l r)
@@ -796,8 +796,8 @@ perrorRaw (WarningAsError warn) = pwarningRaw warn
 
 export
 perror : {auto c : Ref Ctxt Defs} ->
-         {auto s : Ref Syn SyntaxInfo} ->
-         {auto o : Ref ROpts REPLOpts} ->
+         {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+         {auto o : ReadOnlyRef ROpts REPLOpts} ->
          Error -> Core (Doc IdrisAnn)
 perror err = perrorRaw !(toFullNames err)
 
@@ -806,8 +806,8 @@ perror err = perrorRaw !(toFullNames err)
 export
 checkError :
   {auto c : Ref Ctxt Defs} ->
-  {auto s : Ref Syn SyntaxInfo} ->
-  {auto o : Ref ROpts REPLOpts} ->
+  {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+  {auto o : ReadOnlyRef ROpts REPLOpts} ->
   (msg : String) -> Error -> Core Bool
 checkError msg err = do
   -- Kill the locations so that we don't get source code excerpts
@@ -826,16 +826,16 @@ prettyMaybeLoc (Just fc) = annotate FileCtxt (pretty0 fc) <+> colon
 
 export
 display : {auto c : Ref Ctxt Defs} ->
-          {auto s : Ref Syn SyntaxInfo} ->
-          {auto o : Ref ROpts REPLOpts} ->
+          {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+          {auto o : ReadOnlyRef ROpts REPLOpts} ->
           Error -> Core (Doc IdrisAnn)
 display err = do
   pure $ annotate Error "Error:" <++> !(perror err)
 
 export
-displayWarning : {auto c : Ref Ctxt Defs} ->
-                 {auto s : Ref Syn SyntaxInfo} ->
-                 {auto o : Ref ROpts REPLOpts} ->
+displayWarning : {auto c : ReadOnlyRef Ctxt Defs} ->
+                 {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                 {auto o : ReadOnlyRef ROpts REPLOpts} ->
                  Warning -> Core (Doc IdrisAnn)
 displayWarning w
     = pure $ annotate Warning "Warning:" <++> !(pwarning w)

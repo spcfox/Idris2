@@ -26,7 +26,7 @@ getRecordType : Env Term vars -> NF vars -> Maybe Name
 getRecordType env (NTCon _ n _ _ _) = Just n
 getRecordType env _ = Nothing
 
-getNames : {auto c : Ref Ctxt Defs} -> Defs -> NF [] -> Core $ SortedSet Name
+getNames : {auto c : ReadOnlyRef Ctxt Defs} -> Defs -> NF [] -> Core $ SortedSet Name
 getNames defs (NApp _ hd args)
     = do eargs <- traverse (evalClosure defs . snd) args
          pure $ nheadNames hd `union` concat !(traverse (getNames defs) eargs)
@@ -82,7 +82,7 @@ findConName defs tyn
            Just (TCon _ _ _ _ _ _ (Just [con]) _) => pure (Just con)
            _ => pure Nothing
 
-findFieldsAndTypeArgs : {auto c : Ref Ctxt Defs} ->
+findFieldsAndTypeArgs : {auto c : ReadOnlyRef Ctxt Defs} ->
                         Defs -> Name ->
                         Core $ Maybe (List (String, Maybe Name, Maybe Name), SortedSet Name)
 findFieldsAndTypeArgs defs con
@@ -121,7 +121,7 @@ replace k v ((k', v') :: vs)
          then ((k, v) :: vs)
          else ((k', v') :: replace k v vs)
 
-findPath : {auto c : Ref Ctxt Defs} ->
+findPath : {auto c : ReadOnlyRef Ctxt Defs} ->
            {auto u : Ref UST UState} ->
            FC -> List String -> List String -> Maybe Name ->
            (String -> RawImp) ->
@@ -165,7 +165,7 @@ findPath loc (p :: ps) full tyn val (Constr mn con args)
         prec' <- findPath loc ps full mfty val prec
         pure (Constr mn con (replace p prec' args))
 
-getSides : {auto c : Ref Ctxt Defs} ->
+getSides : {auto c : ReadOnlyRef Ctxt Defs} ->
            {auto u : Ref UST UState} ->
            FC -> IFieldUpdate -> Name -> RawImp -> Rec ->
            Core Rec
@@ -177,7 +177,7 @@ getSides loc (ISetFieldApp path val) tyn orig rec
    = findPath loc path path (Just tyn)
       (\n => apply val [IVar (virtualiseFC loc) (UN $ Basic n)]) rec
 
-getAllSides : {auto c : Ref Ctxt Defs} ->
+getAllSides : {auto c : ReadOnlyRef Ctxt Defs} ->
               {auto u : Ref UST UState} ->
               FC -> List IFieldUpdate -> Name ->
               RawImp -> Rec ->
@@ -200,7 +200,7 @@ checkForDuplicates (x :: xs) seen dups
 -- which does the updates all in one go
 export
 recUpdate : {vars : _} ->
-            {auto c : Ref Ctxt Defs} ->
+            {auto c : ReadOnlyRef Ctxt Defs} ->
             {auto u : Ref UST UState} ->
             RigCount -> ElabInfo -> FC ->
             NestedNames vars -> Env Term vars ->
@@ -241,8 +241,8 @@ checkUpdate : {vars : _} ->
               {auto m : Ref MD Metadata} ->
               {auto u : Ref UST UState} ->
               {auto e : Ref EST (EState vars)} ->
-              {auto s : Ref Syn SyntaxInfo} ->
-              {auto o : Ref ROpts REPLOpts} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+              {auto o : ReadOnlyRef ROpts REPLOpts} ->
               RigCount -> ElabInfo ->
               NestedNames vars -> Env Term vars ->
               FC -> List IFieldUpdate -> RawImp -> Maybe (Glued vars) ->

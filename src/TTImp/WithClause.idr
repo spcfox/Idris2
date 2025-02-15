@@ -28,7 +28,7 @@ getHeadLoc (INamedApp _ f _ _) = getHeadLoc f
 getHeadLoc t = throw (InternalError $ "Could not find head of LHS: " ++ show t)
 
 addAlias : {auto m : Ref MD Metadata} ->
-           {auto c : Ref Ctxt Defs} ->
+           {auto c : ReadOnlyRef Ctxt Defs} ->
            FC -> FC -> Core ()
 addAlias from to =
   whenJust (isConcreteFC from) $ \ from =>
@@ -40,7 +40,7 @@ addAlias from to =
 mutual
   export
   getMatch : {auto m : Ref MD Metadata} ->
-             {auto c : Ref Ctxt Defs} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
              (lhs : Bool) -> RawImp -> RawImp ->
              Core (List (String, RawImp))
   getMatch lhs (IBindVar to n) tm@(IBindVar from _)
@@ -114,7 +114,7 @@ mutual
   getMatch lhs pat spec = matchFail (getFC pat)
 
   matchAny : {auto m : Ref MD Metadata} ->
-             {auto c : Ref Ctxt Defs} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
              FC -> (lhs : Bool) -> List (RawImp, RawImp) ->
              Core (List (String, RawImp))
   matchAny fc lhs [] = matchFail fc
@@ -123,7 +123,7 @@ mutual
               (\err => matchAny fc lhs ms)
 
   matchAll : {auto m : Ref MD Metadata} ->
-             {auto c : Ref Ctxt Defs} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
              (lhs : Bool) -> List (RawImp, RawImp) ->
              Core (List (String, RawImp))
   matchAll lhs [] = pure []
@@ -133,7 +133,7 @@ mutual
            mergeMatches lhs (mxy ++ matches)
 
   mergeMatches : {auto m : Ref MD Metadata} ->
-                 {auto c : Ref Ctxt Defs} ->
+                 {auto c : ReadOnlyRef Ctxt Defs} ->
                  (lhs : Bool) -> List (String, RawImp) ->
                  Core (List (String, RawImp))
   mergeMatches lhs [] = pure []
@@ -220,7 +220,7 @@ getNewLHS iploc drop nest wname wargnames lhs_raw patlhs
 
 -- Find a 'with' application on the RHS and update it
 export
-withRHS : {auto c : Ref Ctxt Defs} ->
+withRHS : {auto c : ReadOnlyRef Ctxt Defs} ->
           {auto m : Ref MD Metadata} ->
           FC -> (drop : Nat) -> Name -> List (Maybe (PiInfo RawImp, Name)) ->
           RawImp -> RawImp ->

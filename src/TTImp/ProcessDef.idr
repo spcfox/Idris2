@@ -45,7 +45,7 @@ import Libraries.Text.PrettyPrint.Prettyprinter
 %default covering
 
 mutual
-  mismatchNF : {auto c : Ref Ctxt Defs} ->
+  mismatchNF : {auto c : ReadOnlyRef Ctxt Defs} ->
                {vars : _} ->
                Defs -> NF vars -> NF vars -> Core Bool
   mismatchNF defs (NTCon _ xn xt _ xargs) (NTCon _ yn yt _ yargs)
@@ -83,7 +83,7 @@ mutual
 
   mismatchNF _ _ _ = pure False
 
-  mismatch : {auto c : Ref Ctxt Defs} ->
+  mismatch : {auto c : ReadOnlyRef Ctxt Defs} ->
              {vars : _} ->
              Defs -> (Closure vars, Closure vars) -> Core Bool
   mismatch defs (x, y)
@@ -93,7 +93,7 @@ mutual
 -- the argument positions has different constructors at its head, then this
 -- is an impossible case, so return True
 export
-impossibleOK : {auto c : Ref Ctxt Defs} ->
+impossibleOK : {auto c : ReadOnlyRef Ctxt Defs} ->
                {vars : _} ->
                Defs -> NF vars -> NF vars -> Core Bool
 impossibleOK defs (NTCon _ xn xt xa xargs) (NTCon _ yn yt ya yargs)
@@ -130,7 +130,7 @@ impossibleOK defs (NType _ _) (NBind _ _ _ _) = pure True
 impossibleOK defs x y = pure False
 
 export
-impossibleErrOK : {auto c : Ref Ctxt Defs} ->
+impossibleErrOK : {auto c : ReadOnlyRef Ctxt Defs} ->
                   Defs -> Error -> Core Bool
 impossibleErrOK defs (CantConvert fc gam env l r)
     = do let defs = { gamma := gam } defs
@@ -152,7 +152,7 @@ impossibleErrOK defs _ = pure False
 -- is, if we have a concrete thing, and we're expecting the same concrete
 -- thing, or a function of something, then we might have a match.
 export
-recoverable : {auto c : Ref Ctxt Defs} ->
+recoverable : {auto c : ReadOnlyRef Ctxt Defs} ->
               {vars : _} ->
               Defs -> NF vars -> NF vars -> Core Bool
 -- Unlike the above, any mismatch will do
@@ -201,7 +201,7 @@ recoverable defs (NBind _ _ _ _) (NPrimVal _ _) = pure False
 recoverable defs x y = pure False
 
 export
-recoverableErr : {auto c : Ref Ctxt Defs} ->
+recoverableErr : {auto c : ReadOnlyRef Ctxt Defs} ->
                  Defs -> Error -> Core Bool
 recoverableErr defs (CantConvert fc gam env l r)
   = do let defs = { gamma := gam } defs
@@ -264,7 +264,7 @@ extendEnv env p nest tm ty
 -- only ones we're checking linearity of (we may be shadowing names if this
 -- is a local definition, so we need to leave the earlier ones alone)
 findLinear : {vars : _} ->
-             {auto c : Ref Ctxt Defs} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
              Bool -> Nat -> RigCount -> Term vars ->
              Core (List (Name, RigCount))
 findLinear top bound rig (Bind fc n b sc)
@@ -363,8 +363,8 @@ checkLHS : {vars : _} ->
            {auto c : Ref Ctxt Defs} ->
            {auto m : Ref MD Metadata} ->
            {auto u : Ref UST UState} ->
-           {auto s : Ref Syn SyntaxInfo} ->
-           {auto o : Ref ROpts REPLOpts} ->
+           {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+           {auto o : ReadOnlyRef ROpts REPLOpts} ->
            Bool -> -- in transform
            (mult : RigCount) ->
            Int -> List ElabOpt -> NestedNames vars -> Env Term vars ->
@@ -436,7 +436,7 @@ checkLHS {vars} trans mult n opts nest env fc lhs_in
 --  * Every constructor of the family has a return type which conflicts with
 --    the given constructor's type
 hasEmptyPat : {vars : _} ->
-              {auto c : Ref Ctxt Defs} ->
+              {auto c : ReadOnlyRef Ctxt Defs} ->
               Defs -> Env Term vars -> Term vars -> Core Bool
 hasEmptyPat defs env (Bind fc x b sc)
    = pure $ !(isEmpty defs env !(nf defs env (binderType b)))
@@ -461,8 +461,8 @@ checkClause : {vars : _} ->
               {auto c : Ref Ctxt Defs} ->
               {auto m : Ref MD Metadata} ->
               {auto u : Ref UST UState} ->
-              {auto s : Ref Syn SyntaxInfo} ->
-              {auto o : Ref ROpts REPLOpts} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+              {auto o : ReadOnlyRef ROpts REPLOpts} ->
               (mult : RigCount) -> (vis : Visibility) ->
               (totreq : TotalReq) -> (hashit : Bool) ->
               Int -> List ElabOpt -> NestedNames vars -> Env Term vars ->
@@ -787,8 +787,8 @@ calcRefs rt at fn
 mkRunTime : {auto c : Ref Ctxt Defs} ->
             {auto m : Ref MD Metadata} ->
             {auto u : Ref UST UState} ->
-            {auto s : Ref Syn SyntaxInfo} ->
-            {auto o : Ref ROpts REPLOpts} ->
+            {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+            {auto o : ReadOnlyRef ROpts REPLOpts} ->
             FC -> Name -> Core ()
 mkRunTime fc n
     = do logC "compile.casetree" 5 $ do pure $ "Making run time definition for " ++ show !(toFullNames n)
@@ -891,8 +891,8 @@ mkRunTime fc n
 compileRunTime : {auto c : Ref Ctxt Defs} ->
                  {auto m : Ref MD Metadata} ->
                  {auto u : Ref UST UState} ->
-                 {auto s : Ref Syn SyntaxInfo} ->
-                 {auto o : Ref ROpts REPLOpts} ->
+                 {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                 {auto o : ReadOnlyRef ROpts REPLOpts} ->
                  FC -> Name -> Core ()
 compileRunTime fc atotal
     = do defs <- get Ctxt
@@ -922,8 +922,8 @@ lookupOrAddAlias : {vars : _} ->
                    {auto m : Ref MD Metadata} ->
                    {auto c : Ref Ctxt Defs} ->
                    {auto u : Ref UST UState} ->
-                   {auto s : Ref Syn SyntaxInfo} ->
-                   {auto o : Ref ROpts REPLOpts} ->
+                   {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                   {auto o : ReadOnlyRef ROpts REPLOpts} ->
                    List ElabOpt -> NestedNames vars -> Env Term vars -> FC ->
                    Name -> List ImpClause -> Core (Maybe GlobalDef)
 lookupOrAddAlias eopts nest env fc n [cl@(PatClause _ lhs _)]
@@ -977,8 +977,8 @@ processDef : {vars : _} ->
              {auto c : Ref Ctxt Defs} ->
              {auto m : Ref MD Metadata} ->
              {auto u : Ref UST UState} ->
-             {auto s : Ref Syn SyntaxInfo} ->
-             {auto o : Ref ROpts REPLOpts} ->
+             {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+             {auto o : ReadOnlyRef ROpts REPLOpts} ->
              List ElabOpt -> NestedNames vars -> Env Term vars -> FC ->
              Name -> List ImpClause -> Core ()
 processDef opts nest env fc n_in cs_in

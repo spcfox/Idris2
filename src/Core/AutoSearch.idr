@@ -217,7 +217,7 @@ getUsableEnv {vars = v :: vs} {done} fc rigc p (b :: env)
 
 -- A local is usable if it contains no holes in a determining argument position
 usableLocal : {vars : _} ->
-              {auto c : Ref Ctxt Defs} ->
+              {auto c : ReadOnlyRef Ctxt Defs} ->
               FC -> (defaults : Bool) ->
               Env Term vars -> (locTy : NF vars) -> Core Bool
 -- pattern variables count as concrete things!
@@ -364,7 +364,7 @@ searchLocalVars fc rig defaults trying depth def top env target
                          (getUsableEnv fc rig zero env)
          exactlyOne fc env top target elabs
 
-isPairNF : {auto c : Ref Ctxt Defs} ->
+isPairNF : {auto c : ReadOnlyRef Ctxt Defs} ->
            Env Term vars -> NF vars -> Defs -> Core Bool
 isPairNF env (NTCon _ n _ _ _) defs
     = isPairType n
@@ -441,7 +441,7 @@ searchNames fc rigc defaults trying depth defining topty env ambig (n :: ns) tar
                 else pure $ Nothing
 
 concreteDets : {vars : _} ->
-               {auto c : Ref Ctxt Defs} ->
+               {auto c : ReadOnlyRef Ctxt Defs} ->
                FC -> Bool ->
                Env Term vars -> (top : ClosedTerm) ->
                (pos : Nat) -> (dets : List Nat) ->
@@ -490,7 +490,7 @@ concreteDets {vars} fc defaults env top pos dets (arg :: args)
     concrete defs tm atTop = pure ()
 
 checkConcreteDets : {vars : _} ->
-                    {auto c : Ref Ctxt Defs} ->
+                    {auto c : ReadOnlyRef Ctxt Defs} ->
                     FC -> Bool ->
                     Env Term vars -> (top : ClosedTerm) ->
                     NF vars ->
@@ -516,7 +516,7 @@ checkConcreteDets fc defaults env top _
     = pure ()
 
 abandonIfCycle : {vars : _} ->
-                 {auto c : Ref Ctxt Defs} ->
+                 {auto c : ReadOnlyRef Ctxt Defs} ->
                  Env Term vars -> Term vars -> List (Term vars) ->
                  Core ()
 abandonIfCycle env tm [] = pure ()

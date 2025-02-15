@@ -7,7 +7,7 @@ import Libraries.Data.NameMap
 
 -- Check that the names a function refers to are terminating
 export
-totRefs : {auto c : Ref Ctxt Defs} ->
+totRefs : {auto c : ReadOnlyRef Ctxt Defs} ->
           Defs -> List Name -> Core Terminating
 totRefs defs [] = pure IsTerminating
 totRefs defs (n :: ns)
@@ -25,6 +25,6 @@ totRefs defs (n :: ns)
                           _ => toFullNames $ NotTerminating (BadCall [n])
 
 export
-totRefsIn : {auto c : Ref Ctxt Defs} ->
+totRefsIn : {auto c : ReadOnlyRef Ctxt Defs} ->
             Defs -> Term vars -> Core Terminating
 totRefsIn defs ty = totRefs defs (keys (getRefs (Resolved (-1)) ty))

@@ -178,8 +178,8 @@ record CWrapperDefs where
   boxDef : Builder
   cWrapDef : Builder
 
-cCall : {auto c : Ref Ctxt Defs} ->
-        {auto l : Ref Loaded (List String)} ->
+cCall : {auto c : ReadOnlyRef Ctxt Defs} ->
+        {auto l : ReadOnlyRef Loaded (List String)} ->
         FC -> (cfn : String) -> (fnWrapName : String -> String) -> (clib : String) ->
         List (Name, CFType) -> CFType -> Core (Builder, Builder)
 cCall fc cfn fnWrapName clib args ret
@@ -287,8 +287,8 @@ schemeCall fc sfn argns ret
 -- Use a calling convention to compile a foreign def.
 -- Returns the name of the static library to link and the body
 -- of the function call.
-useCC : {auto c : Ref Ctxt Defs} ->
-        {auto l : Ref Loaded (List String)} ->
+useCC : {auto c : ReadOnlyRef Ctxt Defs} ->
+        {auto l : ReadOnlyRef Loaded (List String)} ->
         FC -> List String -> List (Name, CFType) -> CFType -> Core (Maybe String, Builder, Builder)
 useCC fc ccs args ret
     = case parseCC ["scheme,gambit", "scheme", "C"] ccs of
@@ -330,8 +330,8 @@ mkStruct (CFIORes t) = mkStruct t
 mkStruct (CFFun a b) = [| mkStruct a ++ mkStruct b |]
 mkStruct _ = pure ""
 
-schFgnDef : {auto c : Ref Ctxt Defs} ->
-            {auto l : Ref Loaded (List String)} ->
+schFgnDef : {auto c : ReadOnlyRef Ctxt Defs} ->
+            {auto l : ReadOnlyRef Loaded (List String)} ->
             {auto s : Ref Structs (List String)} ->
             FC -> Name -> NamedDef -> Core (Maybe String, Builder)
 schFgnDef fc n (MkNmForeign cs args ret)
@@ -350,8 +350,8 @@ schFgnDef fc n (MkNmForeign cs args ret)
                 body ++ "))\n")
 schFgnDef _ _ _ = pure (Nothing, "")
 
-getFgnCall : {auto c : Ref Ctxt Defs} ->
-             {auto l : Ref Loaded (List String)} ->
+getFgnCall : {auto c : ReadOnlyRef Ctxt Defs} ->
+             {auto l : ReadOnlyRef Loaded (List String)} ->
              {auto s : Ref Structs (List String)} ->
              (Name, FC, NamedDef) -> Core (Maybe String, Builder)
 getFgnCall (n, fc, d) = schFgnDef fc n d
@@ -385,7 +385,7 @@ compileToSCM c tm outfile
 
 compileExpr :
   Ref Ctxt Defs ->
-  Ref Syn SyntaxInfo ->
+  ReadOnlyRef Syn SyntaxInfo ->
   (tmpDir : String) -> (outputDir : String) ->
   ClosedTerm -> (outfile : String) -> Core (Maybe String)
 compileExpr c s tmpDir outputDir tm outfile
@@ -408,7 +408,7 @@ compileExpr c s tmpDir outputDir tm outfile
 
 executeExpr :
   Ref Ctxt Defs ->
-  Ref Syn SyntaxInfo ->
+  ReadOnlyRef Syn SyntaxInfo ->
   (tmpDir : String) -> ClosedTerm -> Core ()
 executeExpr c s tmpDir tm
     = do Just sh <- compileExpr c s tmpDir tmpDir tm "_tmpgambit"

@@ -59,7 +59,7 @@ yaffleMain sourceFileName args
                             ttcFileName <- getTTCFileName sourceFileName "ttc"
                             writeToTTC () sourceFileName ttcFileName
                             coreLift_ $ putStrLn "Written TTC"
-         repl {c} {u} {s} {o}
+         repl
 
 ymain : IO ()
 ymain

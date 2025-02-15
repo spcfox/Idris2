@@ -24,7 +24,7 @@ data Unq : Type where
 -- Collect the escaped subterms in a term we're about to quote, and let bind
 -- them first
 mutual
-  getUnquote : {auto c : Ref Ctxt Defs} ->
+  getUnquote : {auto c : ReadOnlyRef Ctxt Defs} ->
                {auto q : Ref Unq (List (Name, FC, RawImp))} ->
                {auto u : Ref UST UState} ->
                RawImp ->
@@ -77,7 +77,7 @@ mutual
            pure (IUnquote fc (IVar fc qv)) -- turned into just qv when reflecting
   getUnquote tm = pure tm
 
-  getUnquoteClause : {auto c : Ref Ctxt Defs} ->
+  getUnquoteClause : {auto c : ReadOnlyRef Ctxt Defs} ->
                      {auto q : Ref Unq (List (Name, FC, RawImp))} ->
                      {auto u : Ref UST UState} ->
                      ImpClause ->
@@ -96,7 +96,7 @@ mutual
   getUnquoteClause (ImpossibleClause fc l)
       = pure $ ImpossibleClause fc !(getUnquote l)
 
-  getUnquoteUpdate : {auto c : Ref Ctxt Defs} ->
+  getUnquoteUpdate : {auto c : ReadOnlyRef Ctxt Defs} ->
                      {auto q : Ref Unq (List (Name, FC, RawImp))} ->
                      {auto u : Ref UST UState} ->
                      IFieldUpdate ->
@@ -104,14 +104,14 @@ mutual
   getUnquoteUpdate (ISetField p t) = pure $ ISetField p !(getUnquote t)
   getUnquoteUpdate (ISetFieldApp p t) = pure $ ISetFieldApp p !(getUnquote t)
 
-  getUnquoteTy : {auto c : Ref Ctxt Defs} ->
+  getUnquoteTy : {auto c : ReadOnlyRef Ctxt Defs} ->
                  {auto q : Ref Unq (List (Name, FC, RawImp))} ->
                  {auto u : Ref UST UState} ->
                  ImpTy ->
                  Core ImpTy
   getUnquoteTy (MkImpTy fc n t) = pure $ MkImpTy fc n !(getUnquote t)
 
-  getUnquoteField : {auto c : Ref Ctxt Defs} ->
+  getUnquoteField : {auto c : ReadOnlyRef Ctxt Defs} ->
                     {auto q : Ref Unq (List (Name, FC, RawImp))} ->
                     {auto u : Ref UST UState} ->
                     IField ->
@@ -119,7 +119,7 @@ mutual
   getUnquoteField (MkIField fc c p n ty)
       = pure $ MkIField fc c p n !(getUnquote ty)
 
-  getUnquoteRecord : {auto c : Ref Ctxt Defs} ->
+  getUnquoteRecord : {auto c : ReadOnlyRef Ctxt Defs} ->
                      {auto q : Ref Unq (List (Name, FC, RawImp))} ->
                      {auto u : Ref UST UState} ->
                      ImpRecord ->
@@ -132,7 +132,7 @@ mutual
                 Core (Name, RigCount, PiInfo RawImp, RawImp)
       unqPair (n, c, p, t) = pure (n, c, p, !(getUnquote t))
 
-  getUnquoteData : {auto c : Ref Ctxt Defs} ->
+  getUnquoteData : {auto c : ReadOnlyRef Ctxt Defs} ->
                    {auto q : Ref Unq (List (Name, FC, RawImp))} ->
                    {auto u : Ref UST UState} ->
                    ImpData ->
@@ -143,7 +143,7 @@ mutual
   getUnquoteData (MkImpLater fc n tc)
       = pure $ MkImpLater fc n !(getUnquote tc)
 
-  getUnquoteDecl : {auto c : Ref Ctxt Defs} ->
+  getUnquoteDecl : {auto c : ReadOnlyRef Ctxt Defs} ->
                    {auto q : Ref Unq (List (Name, FC, RawImp))} ->
                    {auto u : Ref UST UState} ->
                    ImpDecl ->
@@ -174,8 +174,8 @@ bindUnqs : {vars : _} ->
            {auto m : Ref MD Metadata} ->
            {auto u : Ref UST UState} ->
            {auto e : Ref EST (EState vars)} ->
-           {auto s : Ref Syn SyntaxInfo} ->
-           {auto o : Ref ROpts REPLOpts} ->
+           {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+           {auto o : ReadOnlyRef ROpts REPLOpts} ->
            List (Name, FC, RawImp) ->
            RigCount -> ElabInfo -> NestedNames vars -> Env Term vars ->
            Term vars ->
@@ -202,8 +202,8 @@ checkQuote : {vars : _} ->
              {auto m : Ref MD Metadata} ->
              {auto u : Ref UST UState} ->
              {auto e : Ref EST (EState vars)} ->
-             {auto s : Ref Syn SyntaxInfo} ->
-             {auto o : Ref ROpts REPLOpts} ->
+             {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+             {auto o : ReadOnlyRef ROpts REPLOpts} ->
              RigCount -> ElabInfo ->
              NestedNames vars -> Env Term vars ->
              FC -> RawImp -> Maybe (Glued vars) ->
@@ -239,8 +239,8 @@ checkQuoteDecl : {vars : _} ->
                  {auto m : Ref MD Metadata} ->
                  {auto u : Ref UST UState} ->
                  {auto e : Ref EST (EState vars)} ->
-                 {auto s : Ref Syn SyntaxInfo} ->
-                 {auto o : Ref ROpts REPLOpts} ->
+                 {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                 {auto o : ReadOnlyRef ROpts REPLOpts} ->
                  RigCount -> ElabInfo ->
                  NestedNames vars -> Env Term vars ->
                  FC -> List ImpDecl -> Maybe (Glued vars) ->

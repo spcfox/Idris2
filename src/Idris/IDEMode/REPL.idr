@@ -116,8 +116,8 @@ getInput f
                    pure (Just (pack x), pack inp)
 
 ||| Do nothing and tell the user to wait for us to implmement this (or join the effort!)
-todoCmd : {auto c : Ref Ctxt Defs} ->
-          {auto o : Ref ROpts REPLOpts} ->
+todoCmd : {auto c : ReadOnlyRef Ctxt Defs} ->
+          {auto o : ReadOnlyRef ROpts REPLOpts} ->
           String -> Core ()
 todoCmd cmdName = iputStrLn $ reflow $ cmdName ++ ": command not yet implemented. Hopefully soon!"
 
@@ -263,20 +263,20 @@ processCatch cmd
                            msg <- perror err
                            pure $ REPL $ REPLError msg)
 
-idePutStrLn : {auto c : Ref Ctxt Defs} -> File -> Integer -> String -> Core ()
+idePutStrLn : {auto c : ReadOnlyRef Ctxt Defs} -> File -> Integer -> String -> Core ()
 idePutStrLn outf i msg
     = send outf $ WriteString msg i
 
-returnFromIDE : {auto c : Ref Ctxt Defs} -> File -> Integer -> IDE.ReplyPayload -> Core ()
+returnFromIDE : {auto c : ReadOnlyRef Ctxt Defs} -> File -> Integer -> IDE.ReplyPayload -> Core ()
 returnFromIDE outf i payload
     = do send outf (Immediate payload i)
 
-printIDEResult : {auto c : Ref Ctxt Defs} -> File -> Integer -> IDE.Result -> Core ()
+printIDEResult : {auto c : ReadOnlyRef Ctxt Defs} -> File -> Integer -> IDE.Result -> Core ()
 printIDEResult outf i result
   = returnFromIDE outf i $ OK result []
 
 printIDEResultWithHighlight :
-  {auto c : Ref Ctxt Defs} ->
+  {auto c : ReadOnlyRef Ctxt Defs} ->
   File -> Integer -> (Result, List (Span Properties)) ->
   Core ()
 printIDEResultWithHighlight outf i (result, spans) = do
@@ -285,7 +285,9 @@ printIDEResultWithHighlight outf i (result, spans) = do
     $ OK result spans
 
 -- TODO: refactor to construct an error response
-printIDEError : Ref ROpts REPLOpts => {auto c : Ref Ctxt Defs} -> File -> Integer -> Doc IdrisAnn -> Core ()
+printIDEError : ReadOnlyRef ROpts REPLOpts =>
+                {auto c : ReadOnlyRef Ctxt Defs} ->
+                File -> Integer -> Doc IdrisAnn -> Core ()
 printIDEError outf i msg = returnFromIDE outf i $
   uncurry IDE.Error !(renderWithDecorations annToProperties msg)
 
@@ -307,8 +309,8 @@ Cast REPLOpt REPLOption where
   cast (EvalTiming p)        = MkOption "evaltiming"     BOOL p
 
 
-displayIDEResult : {auto c : Ref Ctxt Defs} ->
-       {auto o : Ref ROpts REPLOpts} ->
+displayIDEResult : {auto c : ReadOnlyRef Ctxt Defs} ->
+       {auto o : ReadOnlyRef ROpts REPLOpts} ->
        File -> Integer -> IDEResult -> Core ()
 displayIDEResult outf i  (REPL $ REPLError err)
   = printIDEError outf i err
@@ -453,8 +455,8 @@ displayIDEResult outf i (REPL DefDeclared) = printIDEResult outf i (AString "")
 displayIDEResult outf i (REPL Exited) = printIDEResult outf i (AString "")
 
 
-handleIDEResult : {auto c : Ref Ctxt Defs} ->
-       {auto o : Ref ROpts REPLOpts} ->
+handleIDEResult : {auto c : ReadOnlyRef Ctxt Defs} ->
+       {auto o : ReadOnlyRef ROpts REPLOpts} ->
        File -> Integer -> IDEResult -> Core ()
 handleIDEResult outf i (REPL Exited) = idePutStrLn outf i "Bye for now!"
 handleIDEResult outf i other = displayIDEResult outf i other

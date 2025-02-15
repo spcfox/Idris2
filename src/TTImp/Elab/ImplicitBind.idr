@@ -110,7 +110,7 @@ mkPatternHole loc rig n env _ _
 -- Ideally just normalise the holes, but if it gets too big, try normalising
 -- everything instead
 export
-normaliseType : {auto c : Ref Ctxt Defs} ->
+normaliseType : {auto c : ReadOnlyRef Ctxt Defs} ->
                 {free : _} ->
                 Defs -> Env Term free -> Term free -> Core (Term free)
 normaliseType defs env tm
@@ -278,7 +278,7 @@ bindImplVars {vars} fc mode gam env imps_in scope scty
               (Bind fc _ (PLet fc c bpat' bty') tm',
                Bind fc _ (PLet fc c bpat' bty') ty')
 
-normaliseHolesScope : {auto c : Ref Ctxt Defs} ->
+normaliseHolesScope : {auto c : ReadOnlyRef Ctxt Defs} ->
                       {vars : _} ->
                       Defs -> Env Term vars -> Term vars -> Core (Term vars)
 normaliseHolesScope defs env (Bind fc n b sc)
@@ -419,8 +419,8 @@ checkBindVar : {vars : _} ->
                {auto m : Ref MD Metadata} ->
                {auto u : Ref UST UState} ->
                {auto e : Ref EST (EState vars)} ->
-               {auto s : Ref Syn SyntaxInfo} ->
-               {auto o : Ref ROpts REPLOpts} ->
+               {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+               {auto o : ReadOnlyRef ROpts REPLOpts} ->
                RigCount -> ElabInfo ->
                NestedNames vars -> Env Term vars ->
                FC -> UserName -> -- username is base of the pattern name
@@ -496,7 +496,7 @@ checkBindVar rig elabinfo nest env fc str topexp
                          (throw (LinearUsed fc 2 n))
 
 checkPolyConstraint :
-            {auto c : Ref Ctxt Defs} ->
+            {auto c : ReadOnlyRef Ctxt Defs} ->
             PolyConstraint -> Core ()
 checkPolyConstraint (MkPolyConstraint fc env arg x y)
     = do defs <- get Ctxt
@@ -534,8 +534,8 @@ checkBindHere : {vars : _} ->
                 {auto m : Ref MD Metadata} ->
                 {auto u : Ref UST UState} ->
                 {auto e : Ref EST (EState vars)} ->
-                {auto s : Ref Syn SyntaxInfo} ->
-                {auto o : Ref ROpts REPLOpts} ->
+                {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                {auto o : ReadOnlyRef ROpts REPLOpts} ->
                 RigCount -> ElabInfo ->
                 NestedNames vars -> Env Term vars ->
                 FC -> BindMode -> RawImp ->

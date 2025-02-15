@@ -22,10 +22,23 @@ import Libraries.Data.SparseMatrix
 import Libraries.Utils.Binary
 import Libraries.Utils.Scheme
 
+export
+data ReadOnlyRef : (l : label) -> Type -> Type where
+    [search l]
+    MkReadOnlyRef : IORef a -> ReadOnlyRef x a
+
+export %inline
+getIO : (0 x : label) -> {auto ref : ReadOnlyRef x a} -> IO a
+getIO x {ref = MkReadOnlyRef ref} = readIORef ref
+
 public export
 data Ref : (l : label) -> Type -> Type where
      [search l]
      MkRef : IORef a -> Ref x a
+
+export %hint %inline
+toReadOnly : Ref l a -> ReadOnlyRef l a
+toReadOnly (MkRef ref) = MkReadOnlyRef ref
 
 public export
 data HoleInfo

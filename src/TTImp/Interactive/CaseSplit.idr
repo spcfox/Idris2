@@ -68,7 +68,7 @@ Show a => Show (SplitResult a) where
   show (OK res) = "OK: " ++ show res
 
 findTyName : {vars : _} ->
-             {auto c : Ref Ctxt Defs} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
              Defs -> Env Term vars -> Name -> Term vars ->
              Core (Maybe Name)
 findTyName defs env n (Bind _ x b@(PVar _ c p ty) sc)
@@ -91,7 +91,7 @@ getDefining tm
 
 -- For the name on the lhs, return the function name being defined, the
 -- type name, and the possible constructors.
-findCons : {auto c : Ref Ctxt Defs} ->
+findCons : {auto c : ReadOnlyRef Ctxt Defs} ->
            Name -> Term [] -> Core (SplitResult (Name, Name, List Name))
 findCons n lhs
     = case getDefining lhs of
@@ -130,14 +130,14 @@ explicitlyBound defs (NBind fc x (Pi _ _ _ _) sc)
 explicitlyBound defs _ = pure []
 
 export
-getEnvArgNames : {auto c : Ref Ctxt Defs} ->
+getEnvArgNames : {auto c : ReadOnlyRef Ctxt Defs} ->
                  Defs -> Nat -> NF [] -> Core (List String)
 getEnvArgNames defs Z sc = getArgNames defs !(explicitlyBound defs sc) [] [] sc
 getEnvArgNames defs (S k) (NBind fc n _ sc)
     = getEnvArgNames defs k !(sc defs (toClosure defaultOpts [] (Erased fc Placeholder)))
 getEnvArgNames defs n ty = pure []
 
-expandCon : {auto c : Ref Ctxt Defs} ->
+expandCon : {auto c : ReadOnlyRef Ctxt Defs} ->
             FC -> List Name -> Name -> Core RawImp
 expandCon fc usedvars con
     = do defs <- get Ctxt
@@ -148,7 +148,7 @@ expandCon fc usedvars con
                      !(getArgNames defs [] usedvars []
                                    !(nf defs [] ty))))
 
-updateArg : {auto c : Ref Ctxt Defs} ->
+updateArg : {auto c : ReadOnlyRef Ctxt Defs} ->
             List Name -> -- all the variable names
             (var : Name) -> (con : Name) ->
             RawImp -> Core RawImp
@@ -174,7 +174,7 @@ updateArg allvars var con (IAs fc nameFC s n p)
     = updateArg allvars var con p
 updateArg allvars var con tm = pure $ Implicit (getFC tm) True
 
-update : {auto c : Ref Ctxt Defs} ->
+update : {auto c : ReadOnlyRef Ctxt Defs} ->
          List Name -> -- all the variable names
          (var : Name) -> (con : Name) ->
          Arg -> Core Arg
@@ -188,7 +188,7 @@ update allvars var con (Named fc n arg)
 -- Return a new LHS to check, replacing 'var' with an application of 'con'
 -- Also replace any variables with '_' to allow elaboration to
 -- expand them
-newLHS : {auto c : Ref Ctxt Defs} ->
+newLHS : {auto c : ReadOnlyRef Ctxt Defs} ->
          FC ->
          Nat -> -- previous environment length; leave these alone
          List Name -> -- all the variable names
@@ -254,8 +254,8 @@ getUpdates defs orig updated
 
 mkCase : {auto c : Ref Ctxt Defs} ->
          {auto u : Ref UST UState} ->
-         {auto s : Ref Syn SyntaxInfo} ->
-         {auto o : Ref ROpts REPLOpts} ->
+         {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+         {auto o : ReadOnlyRef ROpts REPLOpts} ->
          Int -> RawImp -> RawImp -> Core ClauseUpdate
 mkCase {c} {u} fn orig lhs_raw
     = do m <- newRef MD (initMetadata $ Virtual Interactive)
@@ -315,8 +315,8 @@ combine (x :: xs) acc = combine xs (x :: acc)
 export
 getSplitsLHS : {auto c : Ref Ctxt Defs} ->
                {auto u : Ref UST UState} ->
-               {auto s : Ref Syn SyntaxInfo} ->
-               {auto o : Ref ROpts REPLOpts} ->
+               {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+               {auto o : ReadOnlyRef ROpts REPLOpts} ->
                FC -> Nat -> ClosedTerm -> Name ->
                Core (SplitResult (List ClauseUpdate))
 getSplitsLHS fc envlen lhs_in n
@@ -341,10 +341,10 @@ getSplitsLHS fc envlen lhs_in n
 
 export
 getSplits : {auto c : Ref Ctxt Defs} ->
-            {auto m : Ref MD Metadata} ->
+            {auto m : ReadOnlyRef MD Metadata} ->
             {auto u : Ref UST UState} ->
-            {auto s : Ref Syn SyntaxInfo} ->
-            {auto o : Ref ROpts REPLOpts} ->
+            {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+            {auto o : ReadOnlyRef ROpts REPLOpts} ->
             (NonEmptyFC -> ClosedTerm -> Bool) -> Name ->
             Core (SplitResult (List ClauseUpdate))
 getSplits p n

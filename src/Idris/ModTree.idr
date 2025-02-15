@@ -139,7 +139,7 @@ getBuildMods loc done fname
                  mkBuildMods {d=dm} {o} t
                  pure (reverse !(get BuildOrder))
 
-checkTotalReq : {auto c : Ref Ctxt Defs} ->
+checkTotalReq : {auto c : ReadOnlyRef Ctxt Defs} ->
                 String -> String -> TotalReq -> Core Bool
 checkTotalReq sourceFile ttcFile expected
   = catch (do log "totality.requirement" 20 $
@@ -156,13 +156,13 @@ checkTotalReq sourceFile ttcFile expected
               pure (got < expected))
           (\error => pure False)
 
-needsBuildingTime : {auto c : Ref Ctxt Defs} ->
+needsBuildingTime : {auto c : ReadOnlyRef Ctxt Defs} ->
                     (sourceFile : String) -> (ttcFile : String) ->
                     (depFiles : List String) -> Core Bool
 needsBuildingTime sourceFile ttcFile depFiles
   = isTTCOutdated ttcFile (sourceFile :: depFiles)
 
-needsBuildingDepHash : {auto c : Ref Ctxt Defs} ->
+needsBuildingDepHash : {auto c : ReadOnlyRef Ctxt Defs} ->
                  String -> Core Bool
 needsBuildingDepHash depFileName
   = catch (do defs                   <- get Ctxt
@@ -172,7 +172,7 @@ needsBuildingDepHash depFileName
 
 ||| Build from source if any of the dependencies, or the associated source file,
 ||| have been modified from the stored hashes.
-needsBuildingHash : {auto c : Ref Ctxt Defs} ->
+needsBuildingHash : {auto c : ReadOnlyRef Ctxt Defs} ->
                     (sourceFile : String) -> (ttcFile : String) ->
                     (depFiles : List String) -> Core Bool
 needsBuildingHash sourceFile ttcFile depFiles
@@ -183,8 +183,8 @@ needsBuildingHash sourceFile ttcFile depFiles
 
 export
 needsBuilding :
-  {auto c : Ref Ctxt Defs} ->
-  {auto o : Ref ROpts REPLOpts} ->
+  {auto c : ReadOnlyRef Ctxt Defs} ->
+  {auto o : ReadOnlyRef ROpts REPLOpts} ->
   (sourceFile, ttcFile : String) -> List String -> Core Bool
 needsBuilding sourceFile ttcFile depFiles
   = do -- if the ttc file does not exist there is no point in asking

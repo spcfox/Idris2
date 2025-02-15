@@ -48,7 +48,7 @@ count p (v :: xs)
 mutual
   updateHoleUsageArgs : {0 vars : _} ->
                         {auto c : Ref Ctxt Defs} ->
-                        {auto u : Ref UST UState} ->
+                        {auto u : ReadOnlyRef UST UState} ->
                         (useInHole : Bool) ->
                         Var vars -> List (Var vars) ->
                         List (Term vars) -> Core Bool
@@ -63,7 +63,7 @@ mutual
   -- arguments and there are no lets
   updateHoleType : {0 vars : _} ->
                    {auto c : Ref Ctxt Defs} ->
-                   {auto u : Ref UST UState} ->
+                   {auto u : ReadOnlyRef UST UState} ->
                    (useInHole : Bool) ->
                    Var vars -> List (Var vars) ->
                    Term vs -> List (Term vars) ->
@@ -90,7 +90,7 @@ mutual
            pure ty
 
   updateHoleUsagePats : {auto c : Ref Ctxt Defs} ->
-                        {auto u : Ref UST UState} ->
+                        {auto u : ReadOnlyRef UST UState} ->
                         (useInHole : Bool) ->
                         Var vars -> List (Term vars) ->
                         (vs ** (Env Term vs, Term vs, Term vs)) ->
@@ -122,7 +122,7 @@ mutual
 
   updateHoleUsage : {0 vars : _} ->
                     {auto c : Ref Ctxt Defs} ->
-                    {auto u : Ref UST UState} ->
+                    {auto u : ReadOnlyRef UST UState} ->
                     (useInHole : Bool) ->
                     Var vars -> List (Var vars) ->
                     Term vars -> Core Bool
@@ -696,7 +696,7 @@ mutual
 
 checkEnvUsage : {vars : _} ->
                 {auto c : Ref Ctxt Defs} ->
-                {auto u : Ref UST UState} ->
+                {auto u : ReadOnlyRef UST UState} ->
                 FC -> SizeOf done -> RigCount ->
                 Env Term vars -> Usage (done <>> vars) ->
                 Term (done <>> vars) ->

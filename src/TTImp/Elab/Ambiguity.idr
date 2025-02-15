@@ -29,8 +29,8 @@ import Libraries.Data.WithDefault
 
 export
 expandAmbigName : {vars : _} ->
-                  {auto c : Ref Ctxt Defs} ->
-                  {auto e : Ref EST (EState vars)} ->
+                  {auto c : ReadOnlyRef Ctxt Defs} ->
+                  {auto e : ReadOnlyRef EST (EState vars)} ->
                   ElabMode -> NestedNames vars -> Env Term vars -> RawImp ->
                   List (FC, Maybe (Maybe Name), RawImp) ->
                   RawImp -> Maybe (Glued vars) -> Core RawImp
@@ -188,13 +188,13 @@ Show TypeMatch where
   show NoMatch = "NoMatch"
 
 mutual
-  mightMatchD : {auto c : Ref Ctxt Defs} ->
+  mightMatchD : {auto c : ReadOnlyRef Ctxt Defs} ->
                 {vars : _} ->
                 Defs -> NF vars -> NF [] -> Core TypeMatch
   mightMatchD defs l r
       = mightMatch defs (stripDelay l) (stripDelay r)
 
-  mightMatchArg : {auto c : Ref Ctxt Defs} ->
+  mightMatchArg : {auto c : ReadOnlyRef Ctxt Defs} ->
                   {vars : _} ->
                   Defs ->
                   Closure vars -> Closure [] ->
@@ -204,7 +204,7 @@ mutual
              NoMatch => False
              _ => True
 
-  mightMatchArgs : {auto c : Ref Ctxt Defs} ->
+  mightMatchArgs : {auto c : ReadOnlyRef Ctxt Defs} ->
                    {vars : _} ->
                    Defs ->
                    List (Closure vars) -> List (Closure []) ->
@@ -217,7 +217,7 @@ mutual
               else pure False
   mightMatchArgs _ _ _ = pure False
 
-  mightMatch : {auto c : Ref Ctxt Defs} ->
+  mightMatch : {auto c : ReadOnlyRef Ctxt Defs} ->
                {vars : _} ->
                Defs -> NF vars -> NF [] -> Core TypeMatch
   mightMatch defs target (NBind fc n (Pi _ _ _ _) sc)
@@ -243,7 +243,7 @@ mutual
   mightMatch _ _ _ = pure NoMatch
 
 -- Return true if the given name could return something of the given target type
-couldBeName : {auto c : Ref Ctxt Defs} ->
+couldBeName : {auto c : ReadOnlyRef Ctxt Defs} ->
               {vars : _} ->
               Defs -> NF vars -> Name -> Core TypeMatch
 couldBeName defs target n
@@ -251,7 +251,7 @@ couldBeName defs target n
            Nothing => pure Poly -- could be a local name, don't rule it out
            Just ty => mightMatchD defs target !(nf defs [] ty)
 
-couldBeFn : {auto c : Ref Ctxt Defs} ->
+couldBeFn : {auto c : ReadOnlyRef Ctxt Defs} ->
             {vars : _} ->
             Defs -> NF vars -> RawImp -> Core TypeMatch
 couldBeFn defs ty (IVar _ n) = couldBeName defs ty n
@@ -262,7 +262,7 @@ couldBeFn defs ty _ = pure Poly
 -- the target type
 -- Just (True, app) if it's a match on concrete return type
 -- Just (False, app) if it might be a match due to being polymorphic
-couldBe : {auto c : Ref Ctxt Defs} ->
+couldBe : {auto c : ReadOnlyRef Ctxt Defs} ->
           {vars : _} ->
           Defs -> NF vars -> RawImp -> Core (Maybe (Bool, RawImp))
 couldBe {vars} defs ty@(NTCon _ n _ _ _) app
@@ -307,7 +307,7 @@ filterCore f (x :: xs)
               else pure xs'
 
 pruneByType : {vars : _} ->
-              {auto c : Ref Ctxt Defs} ->
+              {auto c : ReadOnlyRef Ctxt Defs} ->
               Env Term vars -> NF vars -> List RawImp ->
               Core (List RawImp)
 pruneByType env target alts
@@ -327,8 +327,8 @@ pruneByType env target alts
             then pure alts -- if none of them work, better to show all the errors
             else pure res
 
-checkAmbigDepth : {auto c : Ref Ctxt Defs} ->
-                  {auto e : Ref EST (EState vars)} ->
+checkAmbigDepth : {auto c : ReadOnlyRef Ctxt Defs} ->
+                  {auto e : ReadOnlyRef EST (EState vars)} ->
                   FC -> ElabInfo -> Core ()
 checkAmbigDepth fc info
     = do max <- getAmbigLimit
@@ -357,8 +357,8 @@ checkAlternative : {vars : _} ->
                    {auto m : Ref MD Metadata} ->
                    {auto u : Ref UST UState} ->
                    {auto e : Ref EST (EState vars)} ->
-                   {auto s : Ref Syn SyntaxInfo} ->
-                   {auto o : Ref ROpts REPLOpts} ->
+                   {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+                   {auto o : ReadOnlyRef ROpts REPLOpts} ->
                    RigCount -> ElabInfo ->
                    NestedNames vars -> Env Term vars ->
                    FC -> AltType -> List RawImp -> Maybe (Glued vars) ->

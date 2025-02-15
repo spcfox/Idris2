@@ -222,9 +222,9 @@ data ParsedMods : Type where
 
 data MainMod : Type where
 
-addField : {auto c : Ref Ctxt Defs} ->
-           {auto s : Ref Syn SyntaxInfo} ->
-           {auto o : Ref ROpts REPLOpts} ->
+addField : {auto c : ReadOnlyRef Ctxt Defs} ->
+           {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+           {auto o : ReadOnlyRef ROpts REPLOpts} ->
            {auto p : Ref ParsedMods (List (FC, ModuleIdent))} ->
            {auto m : Ref MainMod (Maybe (FC, ModuleIdent))} ->
            DescField -> PkgDesc -> Core PkgDesc
@@ -261,8 +261,8 @@ addField (PPreclean fc e)    pkg = pure $ { preclean := Just (fc, e) } pkg
 addField (PPostclean fc e)   pkg = pure $ { postclean := Just (fc, e) } pkg
 
 addFields : {auto c : Ref Ctxt Defs} ->
-            {auto s : Ref Syn SyntaxInfo} ->
-            {auto o : Ref ROpts REPLOpts} ->
+            {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+            {auto o : ReadOnlyRef ROpts REPLOpts} ->
             (setSrc : Bool) ->
             List DescField -> PkgDesc -> Core PkgDesc
 addFields setSrc xs desc = do
@@ -294,7 +294,7 @@ runScript (Just (fc, s))
 
 export
 parsePkgFile : {auto c : Ref Ctxt Defs} ->
-               {auto s : Ref Syn SyntaxInfo} ->
+               {auto s : ReadOnlyRef Syn SyntaxInfo} ->
                {auto o : Ref ROpts REPLOpts} ->
                (setSrc : Bool) -> -- parse package file as a dependency
                String -> Core PkgDesc
@@ -380,7 +380,7 @@ tryAll ps f = go [<] ps
           go (se <>< map (prepend x) errs) xs
 
 pkgDirs :
-    {auto c : Ref Ctxt Defs} ->
+    {auto c : ReadOnlyRef Ctxt Defs} ->
     Core (List String)
 pkgDirs = do
   localdir <- pkgLocalDirectory
@@ -391,7 +391,7 @@ pkgDirs = do
 ||| context so modules from each is accessible during compilation.
 addDeps :
     {auto c : Ref Ctxt Defs} ->
-    {auto s : Ref Syn SyntaxInfo} ->
+    {auto s : ReadOnlyRef Syn SyntaxInfo} ->
     {auto o : Ref ROpts REPLOpts} ->
     PkgDesc ->
     Core ()
@@ -481,8 +481,8 @@ compileMain mainn mfilename exec
 ||| afterwards (to avoid emitting them in some unrelated
 ||| codepath later).
 withWarnings : Ref Ctxt Defs =>
-               Ref Syn SyntaxInfo =>
-               Ref ROpts REPLOpts =>
+               ReadOnlyRef Syn SyntaxInfo =>
+               ReadOnlyRef ROpts REPLOpts =>
                Core a -> Core a
 withWarnings op = do o <- catch op $ \err =>
                            do emit
@@ -567,8 +567,8 @@ installBuildArtifactFrom file_extension builddir destdir ns
 
          pure ()
 
-installFrom : {auto o : Ref ROpts REPLOpts} ->
-              {auto c : Ref Ctxt Defs} ->
+installFrom : {auto o : ReadOnlyRef ROpts REPLOpts} ->
+              {auto c : ReadOnlyRef Ctxt Defs} ->
               String -> String -> ModuleIdent -> Core ()
 installFrom builddir destdir ns = do
   installBuildArtifactFrom "ttc" builddir destdir ns
@@ -648,8 +648,8 @@ absoluteInstallDir relativeInstallDir = do
 -- Install all the built modules in prefix/package/
 -- We've already built and checked for success, so if any don't exist that's
 -- an internal error.
-install : {auto c : Ref Ctxt Defs} ->
-          {auto o : Ref ROpts REPLOpts} ->
+install : {auto c : ReadOnlyRef Ctxt Defs} ->
+          {auto o : ReadOnlyRef ROpts REPLOpts} ->
           PkgDesc ->
           List CLOpt ->
           (installSrc : Bool) ->
@@ -848,7 +848,7 @@ foldWithKeysC {a} {b} fk fv = go []
                              (StringMap.toList sm))
                    nd
 
-clean : {auto c : Ref Ctxt Defs} ->
+clean : {auto c : ReadOnlyRef Ctxt Defs} ->
         PkgDesc ->
         List CLOpt ->
         Core ()
@@ -1088,7 +1088,7 @@ processPackageOpts opts
 export
 findIpkg : {auto c : Ref Ctxt Defs} ->
            {auto r : Ref ROpts REPLOpts} ->
-           {auto s : Ref Syn SyntaxInfo} ->
+           {auto s : ReadOnlyRef Syn SyntaxInfo} ->
            Maybe String -> Core (Maybe String)
 findIpkg fname
    = do Just (dir, ipkgn, up) <- coreLift findIpkgFile

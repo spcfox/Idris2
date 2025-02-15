@@ -17,7 +17,7 @@ import Core.Value
 
 mutual
   chk : {vars : _} ->
-        {auto c : Ref Ctxt Defs} ->
+        {auto c : ReadOnlyRef Ctxt Defs} ->
         Env Term vars -> Term vars -> Core (Glued vars)
   chk env (Local fc r idx p)
       = pure $ gnf env (binderType (getBinder p env))
@@ -64,7 +64,7 @@ mutual
   chk env (Erased fc _) = pure (gErased fc)
 
   chkMeta : {vars : _} ->
-            {auto c : Ref Ctxt Defs} ->
+            {auto c : ReadOnlyRef Ctxt Defs} ->
             FC -> Env Term vars -> NF vars -> List (Term vars) ->
             Core (Glued vars)
   chkMeta fc env ty []
@@ -80,7 +80,7 @@ mutual
            throw (NotFunctionType fc env !(quote defs env ty))
 
   chkBinder : {vars : _} ->
-              {auto c : Ref Ctxt Defs} ->
+              {auto c : ReadOnlyRef Ctxt Defs} ->
               Env Term vars -> Binder (Term vars) -> Core (Glued vars)
   chkBinder env b = chk env (binderType b)
 
@@ -118,6 +118,6 @@ mutual
 
 export
 getType : {vars : _} ->
-          {auto c : Ref Ctxt Defs} ->
+          {auto c : ReadOnlyRef Ctxt Defs} ->
           Env Term vars -> (term : Term vars) -> Core (Glued vars)
 getType env term = chk env term

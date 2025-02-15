@@ -41,7 +41,7 @@ processDataOpt fc ndef External
 processDataOpt fc ndef NoNewtype
     = pure ()
 
-checkRetType : {auto c : Ref Ctxt Defs} ->
+checkRetType : {auto c : ReadOnlyRef Ctxt Defs} ->
                Env Term vars -> NF vars ->
                (NF vars -> Core ()) -> Core ()
 checkRetType env (NBind fc x (Pi _ _ _ ty) sc) chk
@@ -49,7 +49,7 @@ checkRetType env (NBind fc x (Pi _ _ _ ty) sc) chk
          checkRetType env !(sc defs (toClosure defaultOpts env (Erased fc Placeholder))) chk
 checkRetType env nf chk = chk nf
 
-checkIsType : {auto c : Ref Ctxt Defs} ->
+checkIsType : {auto c : ReadOnlyRef Ctxt Defs} ->
               FC -> Name -> Env Term vars -> NF vars -> Core ()
 checkIsType loc n env nf
     = checkRetType env nf $
@@ -57,7 +57,7 @@ checkIsType loc n env nf
            NType _ _ => pure ()
            _ => throw $ BadTypeConType loc n
 
-checkFamily : {auto c : Ref Ctxt Defs} ->
+checkFamily : {auto c : ReadOnlyRef Ctxt Defs} ->
               FC -> Name -> Name -> Env Term vars -> NF vars -> Core ()
 checkFamily loc cn tn env nf
     = checkRetType env nf $
@@ -87,8 +87,8 @@ checkCon : {vars : _} ->
            {auto c : Ref Ctxt Defs} ->
            {auto m : Ref MD Metadata} ->
            {auto u : Ref UST UState} ->
-           {auto s : Ref Syn SyntaxInfo} ->
-           {auto o : Ref ROpts REPLOpts} ->
+           {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+           {auto o : ReadOnlyRef ROpts REPLOpts} ->
            List ElabOpt -> NestedNames vars ->
            Env Term vars -> Visibility -> (orig : Name) -> (resolved : Name) ->
            ImpTy -> Core Constructor
@@ -126,7 +126,7 @@ checkCon {vars} opts nest env vis tn_in tn (MkImpTy fc cn_in ty_raw)
          pure (MkCon fc cn !(getArity defs [] fullty) fullty)
 
 -- Get the indices of the constructor type (with non-constructor parts erased)
-getIndexPats : {auto c : Ref Ctxt Defs} ->
+getIndexPats : {auto c : ReadOnlyRef Ctxt Defs} ->
                ClosedTerm -> Core (List (NF []))
 getIndexPats tm
     = do defs <- get Ctxt
@@ -145,7 +145,7 @@ getIndexPats tm
         = traverse (evalClosure defs . snd) args
     getPats defs _ = pure [] -- Can't happen if we defined the type successfully!
 
-getDetags : {auto c : Ref Ctxt Defs} ->
+getDetags : {auto c : ReadOnlyRef Ctxt Defs} ->
             FC -> List ClosedTerm -> Core (Maybe (List Nat))
 getDetags fc [] = pure (Just []) -- empty type, trivially detaggable
 getDetags fc [t] = pure (Just []) -- one constructor, trivially detaggable
@@ -208,7 +208,7 @@ getDetags fc tys
                 else pure rest
 
 -- If exactly one argument is unerased, return its position
-getRelevantArg : {auto c : Ref Ctxt Defs} ->
+getRelevantArg : {auto c : ReadOnlyRef Ctxt Defs} ->
                  Defs -> Nat -> Maybe Nat -> Bool -> NF [] ->
                  Core (Maybe (Bool, Nat))
 getRelevantArg defs i rel world (NBind fc _ (Pi _ rig _ val) sc)
@@ -273,7 +273,7 @@ typeCon (Ref _ (TyCon _ _) n) = Just n
 typeCon (App _ fn _) = typeCon fn
 typeCon _ = Nothing
 
-shaped : {auto c : Ref Ctxt Defs} ->
+shaped : {auto c : ReadOnlyRef Ctxt Defs} ->
          (forall vs . Term vs -> Bool) ->
          List Constructor -> Core (Maybe Name)
 shaped as [] = pure Nothing
@@ -397,8 +397,8 @@ processData : {vars : _} ->
               {auto c : Ref Ctxt Defs} ->
               {auto m : Ref MD Metadata} ->
               {auto u : Ref UST UState} ->
-              {auto s : Ref Syn SyntaxInfo} ->
-              {auto o : Ref ROpts REPLOpts} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+              {auto o : ReadOnlyRef ROpts REPLOpts} ->
               List ElabOpt -> NestedNames vars ->
               Env Term vars -> FC ->
               WithDefault Visibility Private -> Maybe TotalReq ->

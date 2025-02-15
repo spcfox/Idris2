@@ -291,7 +291,7 @@ mkCon loc n
    = let str = show n in
      DN (str ++ " at " ++ show loc) (UN $ Basic ("__mk" ++  str))
 
-updateIfaceSyn : {auto c : Ref Ctxt Defs} ->
+updateIfaceSyn : {auto c : ReadOnlyRef Ctxt Defs} ->
                  {auto s : Ref Syn SyntaxInfo} ->
                  Name -> Name -> List Name -> List Name -> List RawImp ->
                  List Declaration -> List (Name, List ImpClause) ->
@@ -324,7 +324,7 @@ elabInterface : {vars : _} ->
                 {auto u : Ref UST UState} ->
                 {auto s : Ref Syn SyntaxInfo} ->
                 {auto m : Ref MD Metadata} ->
-                {auto o : Ref ROpts REPLOpts} ->
+                {auto o : ReadOnlyRef ROpts REPLOpts} ->
                 FC -> WithDefault Visibility Private ->
                 Env Term vars -> NestedNames vars ->
                 (constraints : List (Maybe Name, RawImp)) ->

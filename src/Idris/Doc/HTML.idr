@@ -27,7 +27,7 @@ hasNS : Name -> Bool
 hasNS (NS _ _) = True
 hasNS _ = False
 
-tryCanonicalName : {auto c : Ref Ctxt Defs} ->
+tryCanonicalName : {auto c : ReadOnlyRef Ctxt Defs} ->
                 FC -> Name -> Core (Maybe Name)
 tryCanonicalName fc n with (hasNS n)
   tryCanonicalName fc n | True
@@ -37,14 +37,14 @@ tryCanonicalName fc n with (hasNS n)
                 _ => pure Nothing
   tryCanonicalName fc n | False = pure Nothing
 
-packageInternal : {auto c : Ref Ctxt Defs} ->
+packageInternal : {auto c : ReadOnlyRef Ctxt Defs} ->
                   Name -> Core Bool
 packageInternal (NS ns _) =
   do let mi = nsAsModuleIdent ns
      catch ((const True) <$> nsToSource emptyFC mi) (\_ => pure False)
 packageInternal _ = pure False
 
-addLink : {auto c : Ref Ctxt Defs} ->
+addLink : {auto c : ReadOnlyRef Ctxt Defs} ->
           Maybe Name -> String -> Core String
 addLink Nothing rest = pure rest
 addLink (Just n) rest = do
@@ -68,7 +68,7 @@ addLink (Just n) rest = do
        , "</a>"
        ]
 
-renderHtml : {auto c : Ref Ctxt Defs} ->
+renderHtml : {auto c : ReadOnlyRef Ctxt Defs} ->
              SimpleDocTree IdrisDocAnn ->
              Core String
 renderHtml STEmpty = pure neutral
@@ -117,7 +117,7 @@ removeNewlinesFromDeclarations = go False
     go _ (STAnn ann rest) = STAnn ann $ go False rest
     go _ doc = doc
 
-docDocToHtml : {auto c : Ref Ctxt Defs} ->
+docDocToHtml : {auto c : ReadOnlyRef Ctxt Defs} ->
                Doc IdrisDocAnn ->
                Core String
 docDocToHtml doc =
@@ -233,7 +233,7 @@ preserveLayout : String -> String
 preserveLayout d = "<pre>" ++ d ++ "</pre>"
 
 export
-renderModuleDoc : {auto c : Ref Ctxt Defs} ->
+renderModuleDoc : {auto c : ReadOnlyRef Ctxt Defs} ->
                   ModuleIdent ->
                   Maybe String -> -- module description
                   Maybe (List (Doc IdrisDocAnn)) -> -- module re-exports

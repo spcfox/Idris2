@@ -88,8 +88,8 @@ namespace Raw
 namespace Resugared
 
   export
-  prettyDef : {auto c : Ref Ctxt Defs} ->
-              {auto s : Ref Syn SyntaxInfo} ->
+  prettyDef : {auto c : ReadOnlyRef Ctxt Defs} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
               Def -> Core (Doc IdrisDocAnn)
   prettyDef None = pure "undefined"
   prettyDef (PMDef _ args ct _ pats) = do

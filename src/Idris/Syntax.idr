@@ -1214,7 +1214,7 @@ removeFixity loc _ key = do
 
 ||| Return all fixity declarations for an operator name
 export
-getFixityInfo : {auto s : Ref Syn SyntaxInfo} -> String -> Core (List (Name, FixityInfo))
+getFixityInfo : {auto s : ReadOnlyRef Syn SyntaxInfo} -> String -> Core (List (Name, FixityInfo))
 getFixityInfo nm = do
   syn <- get Syn
   pure $ lookupName (UN $ Basic nm) (fixities syn)

@@ -259,7 +259,7 @@ makeShWindows chez outShRel appDirSh targetSh = do
 compileExpr :
   Bool ->
   Ref Ctxt Defs ->
-  Ref Syn SyntaxInfo ->
+  ReadOnlyRef Syn SyntaxInfo ->
   (tmpDir : String) -> (outputDir : String) ->
   ClosedTerm -> (outfile : String) -> Core (Maybe String)
 compileExpr makeitso c s tmpDir outputDir tm outfile = do
@@ -308,7 +308,7 @@ compileExpr makeitso c s tmpDir outputDir tm outfile = do
 ||| This implementation simply runs the usual compiler, saving it to a temp file, then interpreting it.
 executeExpr :
   Ref Ctxt Defs ->
-  Ref Syn SyntaxInfo ->
+  ReadOnlyRef Syn SyntaxInfo ->
   (tmpDir : String) -> ClosedTerm -> Core ()
 executeExpr c s tmpDir tm
     = do Just sh <- compileExpr False c s tmpDir tmpDir tm "_tmpchez"

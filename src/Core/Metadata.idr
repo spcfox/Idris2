@@ -107,7 +107,7 @@ record Metadata where
 ||| a single posmap with all the information
 export
 allSemanticHighlighting :
-  {auto c : Ref Ctxt Defs} ->
+  {auto c : ReadOnlyRef Ctxt Defs} ->
   Metadata -> Core (PosMap ASemanticDecoration)
 allSemanticHighlighting meta = do
     let semHigh = meta.semanticHighlighting
@@ -193,7 +193,7 @@ TTC Metadata where
 
 export
 addLHS : {vars : _} ->
-         {auto c : Ref Ctxt Defs} ->
+         {auto c : ReadOnlyRef Ctxt Defs} ->
          {auto m : Ref MD Metadata} ->
          FC -> Nat -> Env Term vars -> Term vars -> Core ()
 addLHS loc outerenvlen env tm
@@ -225,7 +225,7 @@ substEnv {vars = x :: _} loc (b :: env) tm
 
 export
 addNameType : {vars : _} ->
-              {auto c : Ref Ctxt Defs} ->
+              {auto c : ReadOnlyRef Ctxt Defs} ->
               {auto m : Ref MD Metadata} ->
               FC -> Name -> Env Term vars -> Term vars -> Core ()
 addNameType loc n env tm
@@ -239,7 +239,7 @@ addNameType loc n env tm
 
 export
 addTyDecl : {vars : _} ->
-            {auto c : Ref Ctxt Defs} ->
+            {auto c : ReadOnlyRef Ctxt Defs} ->
             {auto m : Ref MD Metadata} ->
             FC -> Name -> Env Term vars -> Term vars -> Core ()
 addTyDecl loc n env tm
@@ -252,7 +252,7 @@ addTyDecl loc n env tm
 
 export
 addNameLoc : {auto m : Ref MD Metadata} ->
-             {auto c : Ref Ctxt Defs} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
              FC -> Name -> Core ()
 addNameLoc loc n
     = do meta <- get MD
@@ -269,7 +269,7 @@ clearHoleLHS : {auto m : Ref MD Metadata} -> Core ()
 clearHoleLHS = update MD { currentLHS := Nothing }
 
 export
-withCurrentLHS : {auto c : Ref Ctxt Defs} ->
+withCurrentLHS : {auto c : ReadOnlyRef Ctxt Defs} ->
                  {auto m : Ref MD Metadata} ->
                  Name -> Core ()
 withCurrentLHS n
@@ -283,7 +283,7 @@ findEntryWith : (NonEmptyFC -> a -> Bool) -> List (NonEmptyFC, a) -> Maybe (NonE
 findEntryWith = find . uncurry
 
 export
-findLHSAt : {auto m : Ref MD Metadata} ->
+findLHSAt : {auto m : ReadOnlyRef MD Metadata} ->
             (NonEmptyFC -> ClosedTerm -> Bool) ->
             Core (Maybe (NonEmptyFC, Nat, ClosedTerm))
 findLHSAt p
@@ -291,7 +291,7 @@ findLHSAt p
          pure (findEntryWith (\ loc, tm => p loc (snd tm)) (lhsApps meta))
 
 export
-findTypeAt : {auto m : Ref MD Metadata} ->
+findTypeAt : {auto m : ReadOnlyRef MD Metadata} ->
              (NonEmptyFC -> (Name, Nat, ClosedTerm) -> Bool) ->
              Core (Maybe (Name, Nat, ClosedTerm))
 findTypeAt p
@@ -299,7 +299,7 @@ findTypeAt p
          pure (map snd (findEntryWith p (names meta)))
 
 export
-findTyDeclAt : {auto m : Ref MD Metadata} ->
+findTyDeclAt : {auto m : ReadOnlyRef MD Metadata} ->
                (NonEmptyFC -> (Name, Nat, ClosedTerm) -> Bool) ->
                Core (Maybe (NonEmptyFC, Name, Nat, ClosedTerm))
 findTyDeclAt p
@@ -307,7 +307,7 @@ findTyDeclAt p
          pure (findEntryWith p (tydecls meta))
 
 export
-findHoleLHS : {auto m : Ref MD Metadata} ->
+findHoleLHS : {auto m : ReadOnlyRef MD Metadata} ->
               Name -> Core (Maybe ClosedTerm)
 findHoleLHS hn
     = do meta <- get MD
@@ -325,7 +325,7 @@ addSemanticAlias from to = update MD { semanticAliases $= insert (from, to) }
 
 export
 addSemanticDecorations : {auto m : Ref MD Metadata} ->
-                         {auto c : Ref Ctxt Defs} ->
+                         {auto c : ReadOnlyRef Ctxt Defs} ->
    SemanticDecorations -> Core ()
 addSemanticDecorations decors
     = do meta <- get MD
@@ -346,7 +346,7 @@ addSemanticDecorations decors
 -- Normalise all the types of the names, since they might have had holes
 -- when added and the holes won't necessarily get saved
 normaliseTypes : {auto m : Ref MD Metadata} ->
-                 {auto c : Ref Ctxt Defs} ->
+                 {auto c : ReadOnlyRef Ctxt Defs} ->
                  Core ()
 normaliseTypes
     = do meta <- get MD
@@ -425,7 +425,7 @@ HasNames Metadata where
       resolvedDecls (fc, n) = pure (fc, !(resolved gam n))
 
 export
-writeToTTM : {auto c : Ref Ctxt Defs} ->
+writeToTTM : {auto c : ReadOnlyRef Ctxt Defs} ->
              {auto m : Ref MD Metadata} ->
              (fname : String) ->
              Core ()

@@ -50,7 +50,7 @@ import System.File
 -- If we're on an incremental codegen, check to see if the ttc was
 -- built with incremental.
 export
-missingIncremental : {auto c : Ref Ctxt Defs} ->
+missingIncremental : {auto c : ReadOnlyRef Ctxt Defs} ->
                    String -> Core Bool
 missingIncremental ttcFile
   = catch (do s <- getSession
@@ -66,14 +66,14 @@ processDecls : {auto c : Ref Ctxt Defs} ->
                {auto u : Ref UST UState} ->
                {auto s : Ref Syn SyntaxInfo} ->
                {auto m : Ref MD Metadata} ->
-               {auto o : Ref ROpts REPLOpts} ->
+               {auto o : ReadOnlyRef ROpts REPLOpts} ->
                List PDecl -> Core (List Error)
 
 processDecl : {auto c : Ref Ctxt Defs} ->
               {auto u : Ref UST UState} ->
               {auto s : Ref Syn SyntaxInfo} ->
               {auto m : Ref MD Metadata} ->
-              {auto o : Ref ROpts REPLOpts} ->
+              {auto o : ReadOnlyRef ROpts REPLOpts} ->
               PDecl -> Core (List Error)
 
 -- Special cases to avoid treating these big blocks as units
@@ -148,7 +148,7 @@ addImport imp
          readImport True imp
          setNS topNS
 
-readImportMeta : {auto c : Ref Ctxt Defs} ->
+readImportMeta : {auto c : ReadOnlyRef Ctxt Defs} ->
                  Import -> Core (Bool, (Namespace, Int))
 readImportMeta imp
     = do Right ttcFileName <- nsToPath (loc imp) (path imp)
@@ -248,7 +248,7 @@ addPublicHash _ = pure ()
 ||| Determine if the TTC is outdated based on any of the given
 ||| source or dependency source file names.
 export
-isTTCOutdated : {auto c : Ref Ctxt Defs} ->
+isTTCOutdated : {auto c : ReadOnlyRef Ctxt Defs} ->
                 (ttcFile : String) ->
                 (sourceFiles : List String) ->
                 Core Bool
@@ -272,7 +272,7 @@ unchangedHash hashFn ttcFileName sourceFileName
        pure $ sourceCodeHash == storedSourceHash
 
 export
-getCG : {auto o : Ref ROpts REPLOpts} ->
+getCG : {auto o : ReadOnlyRef ROpts REPLOpts} ->
         CG -> Core (Maybe Codegen)
 getCG Chez = pure $ Just codegenChez
 getCG ChezSep = pure $ Just codegenChezSep
@@ -285,8 +285,8 @@ getCG VMCodeInterp = pure $ Just codegenVMCodeInterp
 getCG (Other s) = getCodegen s
 
 export
-findCG : {auto o : Ref ROpts REPLOpts} ->
-         {auto c : Ref Ctxt Defs} -> Core (Maybe Codegen)
+findCG : {auto o : ReadOnlyRef ROpts REPLOpts} ->
+         {auto c : ReadOnlyRef Ctxt Defs} -> Core (Maybe Codegen)
 findCG
     = do defs <- get Ctxt
          getCG (codegen (session (options defs)))

@@ -339,7 +339,7 @@ fillArgs env arglist (v :: vars) k = do
 makeClosure : {auto a : Ref ArgCounter Nat}
             -> {auto oft : Ref OutfileText Output}
             -> {auto il : Ref IndentLevel Nat}
-            -> {auto e : Ref EnvTracker Env}
+            -> {auto e : ReadOnlyRef EnvTracker Env}
             -> FC
             -> Name
             -> List AVar
@@ -794,7 +794,7 @@ additionalFFIStub name argTypes retType =
     " (*" ++ cName name ++ ")(" ++
     (concat $ intersperse ", " $ map cTypeOfCFType argTypes) ++ ") = (void*)idris2_missing_ffi;\n"
 
-createCFunctions : {auto c : Ref Ctxt Defs}
+createCFunctions : {auto c : ReadOnlyRef Ctxt Defs}
                 -> {auto a : Ref ArgCounter Nat}
                 -> {auto _ : Ref ConstDef (SortedMap Constant ConstDef)}
                 -> {auto f : Ref FunctionDefinitions (List String)}
@@ -960,7 +960,7 @@ footer = do
       """
 
 export
-generateCSourceFile : {auto c : Ref Ctxt Defs}
+generateCSourceFile : {auto c : ReadOnlyRef Ctxt Defs}
                    -> {default [] additionalFFILangs : List String}
                    -> List (Name, ANFDef)
                    -> (outn : String)
@@ -984,7 +984,7 @@ generateCSourceFile defs outn =
 export
 compileExpr : UsePhase
            -> Ref Ctxt Defs
-           -> Ref Syn SyntaxInfo
+           -> ReadOnlyRef Syn SyntaxInfo
            -> (tmpDir : String)
            -> (outputDir : String)
            -> ClosedTerm
@@ -1009,7 +1009,7 @@ compileExpr _ _ _ _ _ _ _ = pure Nothing
 
 
 export
-executeExpr : Ref Ctxt Defs -> Ref Syn SyntaxInfo ->
+executeExpr : Ref Ctxt Defs -> ReadOnlyRef Syn SyntaxInfo ->
               (execDir : String) -> ClosedTerm -> Core ()
 executeExpr c s tmpDir tm = do
   do let outfile = "_tmp_refc"

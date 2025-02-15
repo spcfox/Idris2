@@ -114,7 +114,7 @@ mutual
 
 mutual
   evalLocal : {vars, free : _} ->
-              {auto c : Ref Ctxt Defs} ->
+              {auto c : ReadOnlyRef Ctxt Defs} ->
               {auto l : Ref LVar Int} ->
               FC -> List Name -> Stack free ->
               EEnv free vars ->
@@ -130,7 +130,7 @@ mutual
       = evalLocal fc rec stk env p
 
   tryApply : {vars, free : _} ->
-             {auto c : Ref Ctxt Defs} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
              {auto l : Ref LVar Int} ->
              List Name -> Stack free -> EEnv free vars -> CDef ->
              Core (Maybe (CExp free))
@@ -144,7 +144,7 @@ mutual
   tryApply rec stk env _ = pure Nothing
 
   eval : {vars, free : _} ->
-         {auto c : Ref Ctxt Defs} ->
+         {auto c : ReadOnlyRef Ctxt Defs} ->
          {auto l : Ref LVar Int} ->
          List Name -> EEnv free vars -> Stack free -> CExp (vars ++ free) ->
          Core (CExp free)
@@ -276,7 +276,7 @@ mutual
            pure (Add n xn bs', CRef fc xn :: env')
 
   evalAlt : {vars, free : _} ->
-            {auto c : Ref Ctxt Defs} ->
+            {auto c : ReadOnlyRef Ctxt Defs} ->
             {auto l : Ref LVar Int} ->
             FC -> List Name -> EEnv free vars -> Stack free -> CConAlt (vars ++ free) ->
             Core (CConAlt free)
@@ -287,7 +287,7 @@ mutual
            pure $ MkConAlt n ci t args (refsToLocals bs scEval)
 
   evalConstAlt : {vars, free : _} ->
-                 {auto c : Ref Ctxt Defs} ->
+                 {auto c : ReadOnlyRef Ctxt Defs} ->
                  {auto l : Ref LVar Int} ->
                  List Name -> EEnv free vars -> Stack free -> CConstAlt (vars ++ free) ->
                  Core (CConstAlt free)
@@ -295,7 +295,7 @@ mutual
       = MkConstAlt c <$> eval rec env stk sc
 
   pickAlt : {vars, free : _} ->
-            {auto c : Ref Ctxt Defs} ->
+            {auto c : ReadOnlyRef Ctxt Defs} ->
             {auto l : Ref LVar Int} ->
             List Name -> EEnv free vars -> Stack free ->
             CExp free -> List (CConAlt (vars ++ free)) ->
@@ -322,7 +322,7 @@ mutual
   pickAlt rec env stk _ _ _ = pure Nothing
 
   pickConstAlt : {vars, free : _} ->
-                 {auto c : Ref Ctxt Defs} ->
+                 {auto c : ReadOnlyRef Ctxt Defs} ->
                  {auto l : Ref LVar Int} ->
                  List Name -> EEnv free vars -> Stack free ->
                  CExp free -> List (CConstAlt (vars ++ free)) ->
@@ -341,7 +341,7 @@ mutual
 -- needs to be right because typically back ends need to know whether a
 -- name is under- or over-applied
 fixArityTm : {vars : _} ->
-             {auto c : Ref Ctxt Defs} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
              CExp vars -> List (CExp vars) -> Core (CExp vars)
 fixArityTm (CRef fc n) args
     = do defs <- get Ctxt
@@ -403,11 +403,11 @@ fixArityTm t args = pure $ expandToArity Z t args
 
 export
 fixArityExp : {vars : _} ->
-              {auto c : Ref Ctxt Defs} ->
+              {auto c : ReadOnlyRef Ctxt Defs} ->
               CExp vars -> Core (CExp vars)
 fixArityExp tm = fixArityTm tm []
 
-fixArity : {auto c : Ref Ctxt Defs} ->
+fixArity : {auto c : ReadOnlyRef Ctxt Defs} ->
            CDef -> Core CDef
 fixArity (MkFun args exp) = pure $ MkFun args !(fixArityTm exp [])
 fixArity (MkError exp) = pure $ MkError !(fixArityTm exp [])
@@ -449,7 +449,7 @@ mergeLambdas args exp = (args ** exp)
 ||| @ n the function name
 ||| @ exp the body of the function
 doEval : {args : _} ->
-         {auto c : Ref Ctxt Defs} ->
+         {auto c : ReadOnlyRef Ctxt Defs} ->
          (n : Name) -> (exp : CExp args) -> Core (CExp args)
 doEval n exp
     = do l <- newRef LVar (the Int 0)
@@ -458,14 +458,14 @@ doEval n exp
          log "compiler.inline.eval" 10 ("Inlined: " ++ show exp')
          pure exp'
 
-inline : {auto c : Ref Ctxt Defs} ->
+inline : {auto c : ReadOnlyRef Ctxt Defs} ->
          Name -> CDef -> Core CDef
 inline n (MkFun args def)
     = pure $ MkFun args !(doEval n def)
 inline n d = pure d
 
 -- merge lambdas from expression into top level arguments
-mergeLam : {auto c : Ref Ctxt Defs} ->
+mergeLam : {auto c : ReadOnlyRef Ctxt Defs} ->
            CDef -> Core CDef
 mergeLam (MkFun args def)
     = do let (args' ** exp') = mergeLambdas args def

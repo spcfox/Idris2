@@ -74,7 +74,7 @@ conflictMatch ((x, tm) :: ms) = conflictArgs x tm ms || conflictMatch ms
 -- Return whether any part of the type conflicts in such a way that they
 -- can't possibly be equal (i.e. mismatched constructor)
 conflict : {vars : _} ->
-           {auto c : Ref Ctxt Defs} ->
+           {auto c : ReadOnlyRef Ctxt Defs} ->
            Defs -> Env Term vars -> NF vars -> Name -> Core Bool
 conflict defs env nfty n
     = do Just gdef <- lookupCtxtExact n (gamma defs)
@@ -135,7 +135,7 @@ conflict defs env nfty n
 -- no constructors which can possibly match it.)
 export
 isEmpty : {vars : _} ->
-          {auto c : Ref Ctxt Defs} ->
+          {auto c : ReadOnlyRef Ctxt Defs} ->
           Defs -> Env Term vars -> NF vars -> Core Bool
 isEmpty defs env (NTCon fc n t a args)
   = do Just nty <- lookupDefExact n (gamma defs)
@@ -158,7 +158,7 @@ altMatch _ _ = False
 
 -- Given a type and a list of case alternatives, return the
 -- well-typed alternatives which were *not* in the list
-getMissingAlts : {auto c : Ref Ctxt Defs} ->
+getMissingAlts : {auto c : ReadOnlyRef Ctxt Defs} ->
                  {vars : _} ->
                  FC -> Defs -> NF vars -> List (CaseAlt vars) ->
                  Core (List (CaseAlt vars))
@@ -239,7 +239,7 @@ tagIsNot ts (DefaultCase _) = False
 -- Replace a default case with explicit branches for the constructors.
 -- This is easier than checking whether a default is needed when traversing
 -- the tree (just one constructor lookup up front).
-replaceDefaults : {auto c : Ref Ctxt Defs} ->
+replaceDefaults : {auto c : ReadOnlyRef Ctxt Defs} ->
                   {vars : _} ->
                   FC -> Defs -> NF vars -> List (CaseAlt vars) ->
                   Core (List (CaseAlt vars))
@@ -269,7 +269,7 @@ replaceDefaults fc defs nfty cs
 -- when we reach a leaf we know what patterns were used to get there,
 -- and return those patterns.
 -- The returned patterns are those arising from the *missing* cases
-buildArgs : {auto c : Ref Ctxt Defs} ->
+buildArgs : {auto c : ReadOnlyRef Ctxt Defs} ->
             {vars : _} ->
             FC -> Defs ->
             KnownVars vars Int -> -- Things which have definitely match
@@ -337,7 +337,7 @@ buildArgs fc defs known not ps Impossible
 -- checked
 export
 getMissing : {vars : _} ->
-             {auto c : Ref Ctxt Defs} ->
+             {auto c : ReadOnlyRef Ctxt Defs} ->
              FC -> Name -> CaseTree vars ->
              Core (List ClosedTerm)
 getMissing fc n ctree
@@ -356,7 +356,7 @@ getMissing fc n ctree
 -- Also need to go recursively into case blocks, since we only calculate
 -- references for them at the top level clause
 export
-getNonCoveringRefs : {auto c : Ref Ctxt Defs} ->
+getNonCoveringRefs : {auto c : ReadOnlyRef Ctxt Defs} ->
                      FC -> Name -> Core (List Name)
 getNonCoveringRefs fc n
    = do defs <- get Ctxt
@@ -409,7 +409,7 @@ match (TType _ _) (TType _ _) = True
 match _ _ = False
 
 -- Erase according to argument position
-eraseApps : {auto c : Ref Ctxt Defs} ->
+eraseApps : {auto c : ReadOnlyRef Ctxt Defs} ->
             Term vs -> Core (Term vs)
 eraseApps {vs} tm
     = case getFnArgs tm of
@@ -436,7 +436,7 @@ eraseApps {vs} tm
 -- if tm would be matched by trylhs, then it's not an impossible case
 -- because we've already got it. Ignore anything in erased position.
 clauseMatches : {vars : _} ->
-                {auto c : Ref Ctxt Defs} ->
+                {auto c : ReadOnlyRef Ctxt Defs} ->
                 Env Term vars -> Term vars ->
                 ClosedTerm -> Core Bool
 clauseMatches env tm trylhs
@@ -444,7 +444,7 @@ clauseMatches env tm trylhs
           pure $ match !(toResolvedNames lhs) !(toResolvedNames trylhs)
 
 export
-checkMatched : {auto c : Ref Ctxt Defs} ->
+checkMatched : {auto c : ReadOnlyRef Ctxt Defs} ->
                List Clause -> ClosedTerm -> Core (Maybe ClosedTerm)
 checkMatched cs ulhs
     = do logTerm "coverage" 5 "Checking coverage for" ulhs

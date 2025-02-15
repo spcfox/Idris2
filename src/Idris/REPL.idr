@@ -84,7 +84,7 @@ import System.File
 
 -- Do NOT remove: it can be used instead of prettyInfo in case the prettier output
 -- happens to be buggy
-showInfo : {auto c : Ref Ctxt Defs} ->
+showInfo : {auto c : ReadOnlyRef Ctxt Defs} ->
            (Name, Int, GlobalDef) -> Core ()
 showInfo (n, idx, d)
     = do coreLift_ $ putStrLn (show (fullname d) ++ " ==> " ++
@@ -108,7 +108,7 @@ showInfo (n, idx, d)
                         "Size change: " ++ showSep ", " scinfo
 
 prettyInfo : {auto c : Ref Ctxt Defs} ->
-             {auto s : Ref Syn SyntaxInfo} ->
+             {auto s : ReadOnlyRef Syn SyntaxInfo} ->
              (Name, Int, GlobalDef) -> Core (Doc IdrisDocAnn)
 prettyInfo (n, idx, d)
     = do let nm = fullname d
@@ -160,8 +160,8 @@ getEnvTerm (n :: ns) env (Bind fc x b sc)
          else (_ ** (env, Bind fc x b sc))
 getEnvTerm _ env tm = (_ ** (env, tm))
 
-displayPatTerm : {auto c : Ref Ctxt Defs} ->
-                 {auto s : Ref Syn SyntaxInfo} ->
+displayPatTerm : {auto c : ReadOnlyRef Ctxt Defs} ->
+                 {auto s : ReadOnlyRef Syn SyntaxInfo} ->
                  Defs -> ClosedTerm ->
                  Core String
 displayPatTerm defs tm
@@ -197,7 +197,7 @@ setOpt (Profile t)
 setOpt (EvalTiming t)
     = setEvalTiming t
 
-getOptions : {auto c : Ref Ctxt Defs} ->
+getOptions : {auto c : ReadOnlyRef Ctxt Defs} ->
          {auto o : Ref ROpts REPLOpts} ->
          Core (List REPLOpt)
 getOptions = do
@@ -212,8 +212,8 @@ getOptions = do
 anyAt : (a -> Bool) -> a -> b -> Bool
 anyAt p loc _ = p loc
 
-printClause : {auto c : Ref Ctxt Defs} ->
-              {auto s : Ref Syn SyntaxInfo} ->
+printClause : {auto c : ReadOnlyRef Ctxt Defs} ->
+              {auto s : ReadOnlyRef Syn SyntaxInfo} ->
               Maybe String -> Nat -> ImpClause ->
               Core String
 printClause l i (PatClause _ lhsraw rhsraw)
@@ -240,7 +240,7 @@ lookupDefTyName : Name -> Context ->
                   Core (List (Name, Int, (Def, ClosedTerm)))
 lookupDefTyName = lookupNameBy (\g => (definition g, type g))
 
-updateFile : {auto r : Ref ROpts REPLOpts} ->
+updateFile : {auto r : ReadOnlyRef ROpts REPLOpts} ->
              (List String -> List String) -> Core EditResult
 updateFile update
     = do opts <- get ROpts
@@ -394,7 +394,7 @@ record TermWithType (vars : List Name) where
   typeOf : Term vars
 
 getItDecls :
-    {auto o : Ref ROpts REPLOpts} ->
+    {auto o : ReadOnlyRef ROpts REPLOpts} ->
     Core (List ImpDecl)
 getItDecls
     = do opts <- get ROpts
@@ -414,7 +414,7 @@ inferAndElab :
   {auto u : Ref UST UState} ->
   {auto s : Ref Syn SyntaxInfo} ->
   {auto m : Ref MD Metadata} ->
-  {auto o : Ref ROpts REPLOpts} ->
+  {auto o : ReadOnlyRef ROpts REPLOpts} ->
   ElabMode ->
   PTerm ->
   Env Term vars ->
@@ -740,7 +740,7 @@ prepareExp :
     {auto u : Ref UST UState} ->
     {auto s : Ref Syn SyntaxInfo} ->
     {auto m : Ref MD Metadata} ->
-    {auto o : Ref ROpts REPLOpts} ->
+    {auto o : ReadOnlyRef ROpts REPLOpts} ->
     PTerm -> Core ClosedTerm
 prepareExp ctm
     = do ttimp <- desugar AnyExpr [] (PApp replFC (PRef replFC (UN $ Basic "unsafePerformIO")) ctm)
@@ -757,8 +757,8 @@ processLocal : {vars : _} ->
              {auto m : Ref MD Metadata} ->
              {auto u : Ref UST UState} ->
              {auto e : Ref EST (EState vars)} ->
-             {auto s : Ref Syn SyntaxInfo} ->
-             {auto o : Ref ROpts REPLOpts} ->
+             {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+             {auto o : ReadOnlyRef ROpts REPLOpts} ->
              List ElabOpt ->
              NestedNames vars -> Env Term vars ->
              List ImpDecl -> (scope : List ImpDecl) ->
@@ -771,7 +771,7 @@ execExp : {auto c : Ref Ctxt Defs} ->
           {auto u : Ref UST UState} ->
           {auto s : Ref Syn SyntaxInfo} ->
           {auto m : Ref MD Metadata} ->
-          {auto o : Ref ROpts REPLOpts} ->
+          {auto o : ReadOnlyRef ROpts REPLOpts} ->
           PTerm -> Core REPLResult
 execExp ctm
     = do Just cg <- findCG
@@ -788,7 +788,7 @@ execDecls : {auto c : Ref Ctxt Defs} ->
             {auto u : Ref UST UState} ->
             {auto s : Ref Syn SyntaxInfo} ->
             {auto m : Ref MD Metadata} ->
-            {auto o : Ref ROpts REPLOpts} ->
+            {auto o : ReadOnlyRef ROpts REPLOpts} ->
             List PDecl -> Core REPLResult
 execDecls decls = do
   traverse_ execDecl decls
@@ -806,7 +806,7 @@ compileExp : {auto c : Ref Ctxt Defs} ->
              {auto u : Ref UST UState} ->
              {auto s : Ref Syn SyntaxInfo} ->
              {auto m : Ref MD Metadata} ->
-             {auto o : Ref ROpts REPLOpts} ->
+             {auto o : ReadOnlyRef ROpts REPLOpts} ->
              PTerm -> String -> Core REPLResult
 compileExp ctm outfile
     = do Just cg <- findCG
@@ -844,7 +844,7 @@ loadMainFile f
 ||| Given a REPLEval mode for evaluation,
 ||| produce the normalization function that normalizes terms
 ||| using that evaluation mode
-replEval : {auto c : Ref Ctxt Defs} ->
+replEval : {auto c : ReadOnlyRef Ctxt Defs} ->
   {vs : _} ->
   REPLEval -> Defs -> Env Term vs -> Term vs -> Core (Term vs)
 replEval NormaliseAll = normaliseOpts ({ strategy := CBV } withAll)
@@ -855,7 +855,7 @@ inferAndNormalize : {auto c : Ref Ctxt Defs} ->
   {auto u : Ref UST UState} ->
   {auto s : Ref Syn SyntaxInfo} ->
   {auto m : Ref MD Metadata} ->
-  {auto o : Ref ROpts REPLOpts} ->
+  {auto o : ReadOnlyRef ROpts REPLOpts} ->
   REPLEval ->
   PTerm ->
   Core (TermWithType [])
@@ -1241,8 +1241,8 @@ mutual
 
   export
   displayResult : {auto c : Ref Ctxt Defs} ->
-         {auto s : Ref Syn SyntaxInfo} ->
-         {auto o : Ref ROpts REPLOpts} -> REPLResult -> Core ()
+         {auto s : ReadOnlyRef Syn SyntaxInfo} ->
+         {auto o : ReadOnlyRef ROpts REPLOpts} -> REPLResult -> Core ()
   displayResult (REPLError err) = printResult err
   displayResult (Evaluated x Nothing) = printResult $ prettyBy Syntax x
   displayResult (Evaluated x (Just y)) = printResult (prettyBy Syntax x <++> colon <++> prettyBy Syntax y)
@@ -1314,7 +1314,7 @@ mutual
   ||| assumption that the user has just entered the REPL via CLI arguments that
   ||| they may have used incorrectly.
   export
-  displayStartupErrors : {auto o : Ref ROpts REPLOpts} ->
+  displayStartupErrors : {auto o : ReadOnlyRef ROpts REPLOpts} ->
                          REPLResult -> Core ()
   displayStartupErrors (ErrorLoadingFile x err) =
     let suggestion = nearMatchOptSuggestion x
