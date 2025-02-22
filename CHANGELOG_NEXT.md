@@ -104,6 +104,9 @@ This CHANGELOG describes the merged but unreleased changes. Please see [CHANGELO
 * Totality checking will now look under data constructors, so `Just xs` will
   be considered smaller than `Just (x :: xs)`.
 
+* The totality checker now takes advantage of the fact that a nullary
+  constructor cannot be stucturally larger than any expression of this type.
+
 * LHS of `with`-applications are parsed as `PWithApp` instead of `PApp`. As a
   consequence, `IWithApp` appears in `TTImp` values in elaborator scripts instead
   of `IApp`, as it should have been.

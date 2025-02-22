@@ -150,7 +150,7 @@ mutual
                 Term vars -> -- LHS: argument it might be smaller than
                 Core SizeChange
 
-  sizeCompareCon : {auto defs : Defs} -> Nat -> Term vars -> Term vars -> Core Bool
+  sizeCompareCon : {auto defs : Defs} -> Nat -> Term vars -> Term vars -> Core SizeChange
   sizeCompareTyCon : {auto defs : Defs} -> Nat -> Term vars -> Term vars -> Core Bool
   sizeCompareConArgs : {auto defs : Defs} -> Nat -> Term vars -> List (Term vars) -> Core Bool
   sizeCompareApp : {auto defs : Defs} -> Nat -> Term vars -> Term vars -> Core SizeChange
@@ -184,9 +184,13 @@ mutual
 
   sizeCompare fuel s t
      = if !(sizeCompareTyCon fuel s t) then pure Same
-       else if !(sizeCompareCon fuel s t)
-          then pure Smaller
-          else knownOr (sizeCompareApp fuel s t) (pure $ if sizeEq s t then Same else Unknown)
+       else knownOr (sizeCompareCon fuel s t) $
+             case s of
+               -- Nullary constructor cannot be stucturally larger than
+               -- any expression and cannot be applied
+               Ref _ (DataCon _ 0) cn => pure Same
+               _ => knownOr (sizeCompareApp fuel s t)
+                            (pure $ if sizeEq s t then Same else Unknown)
 
   sizeCompareProdConArgs : {auto defs : Defs} -> Nat -> List (Term vars) -> List (Term vars) -> Core SizeChange
   sizeCompareProdConArgs _ [] [] = pure Same
@@ -212,17 +216,17 @@ mutual
         case f of
              Ref _ (DataCon t a) cn =>
                 -- if s is smaller or equal to an arg, then it is smaller than t
-                if !(sizeCompareConArgs (minus fuel 1) s args) then pure True
+                if !(sizeCompareConArgs (minus fuel 1) s args) then pure Smaller
                 else let (g, args') = getFnArgs s in
                     case (fuel, g) of
-                        (S k, Ref _ (DataCon t' a') cn') => do
+                        (S k, Ref _ (DataCon t' a') cn') =>
                                 -- if s is a matching DataCon, applied to same number of args,
                                 -- no Unknown args, and at least one Smaller
                                 if cn == cn' && length args == length args'
-                                  then (Smaller ==) <$> sizeCompareProdConArgs k args' args
-                                  else pure False
-                        _ => pure $ False
-             _ => pure False
+                                  then sizeCompareProdConArgs k args' args
+                                  else pure Unknown
+                        _ => pure Unknown
+             _ => pure Unknown
 
   sizeCompareConArgs _ s [] = pure False
   sizeCompareConArgs fuel s (t :: ts)

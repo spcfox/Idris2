@@ -1,0 +1,3 @@
+. ../../../testutils.sh
+
+check List01.idr
