@@ -107,6 +107,9 @@ This CHANGELOG describes the merged but unreleased changes. Please see [CHANGELO
 * The totality checker now takes advantage of the fact that a nullary
   constructor cannot be stucturally larger than any expression of this type.
 
+* The totality checker now finds the smallest non-terminating loop if the
+  totality check fails.
+
 * LHS of `with`-applications are parsed as `PWithApp` instead of `PApp`. As a
   consequence, `IWithApp` appears in `TTImp` values in elaborator scripts instead
   of `IApp`, as it should have been.

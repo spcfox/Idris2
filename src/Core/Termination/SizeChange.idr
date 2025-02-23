@@ -235,10 +235,15 @@ findLoops s
 findNonTerminatingLoop : SCSet -> Maybe (Name, Graph)
 findNonTerminatingLoop s = findNonTerminating (findLoops s)
     where
-      -- select first non-terminating loop
-      -- TODO: find smallest
+      min : Maybe (Name, Graph) -> Maybe (Name, Graph) -> Maybe (Name, Graph)
+      min Nothing  y        = y
+      min x        Nothing  = x
+      min (Just x) (Just y) =
+        Just $ ifThenElse (on (<=) (length . seq . snd) x y) x y
+
+      -- select the smallest non-terminating loop
       findNonTerminating : NameMap (Maybe Graph) -> Maybe (Name, Graph)
-      findNonTerminating = foldlNames (\acc, g, m => map (g,) m <+> acc) empty
+      findNonTerminating = foldlNames (\acc, n, g => map (n,) g `min` acc) empty
 
 ||| Steps in a call sequence leading to a loop are also problematic
 setPrefixTerminating : {auto c : Ref Ctxt Defs} ->
