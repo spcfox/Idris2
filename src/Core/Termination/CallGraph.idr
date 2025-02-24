@@ -151,7 +151,6 @@ mutual
                 Core SizeChange
 
   sizeCompareCon : {auto defs : Defs} -> Nat -> Term vars -> Term vars -> Core SizeChange
-  sizeCompareTyCon : {auto defs : Defs} -> Nat -> Term vars -> Term vars -> Core Bool
   sizeCompareConArgs : {auto defs : Defs} -> Nat -> Term vars -> List (Term vars) -> Core Bool
   sizeCompareApp : {auto defs : Defs} -> Nat -> Term vars -> Term vars -> Core SizeChange
 
@@ -183,14 +182,13 @@ mutual
       substMeta rhs _ _ _ = throw (InternalError ("Badly formed metavar solution \{show n}"))
 
   sizeCompare fuel s t
-     = if !(sizeCompareTyCon fuel s t) then pure Same
-       else knownOr (sizeCompareCon fuel s t) $
-             case s of
-               -- Nullary constructor cannot be stucturally larger than
-               -- any expression and cannot be applied
-               Ref _ (DataCon _ 0) cn => pure Same
-               _ => knownOr (sizeCompareApp fuel s t)
-                            (pure $ if sizeEq s t then Same else Unknown)
+     = knownOr (sizeCompareCon fuel s t) $
+         case s of
+           -- Nullary constructor cannot be stucturally larger than
+           -- any expression and cannot be applied
+           Ref _ (DataCon _ 0) cn => pure Same
+           _ => knownOr (sizeCompareApp fuel s t)
+                        (pure $ if sizeEq s t then Same else Unknown)
 
   sizeCompareProdConArgs : {auto defs : Defs} -> Nat -> List (Term vars) -> List (Term vars) -> Core SizeChange
   sizeCompareProdConArgs _ [] [] = pure Same
@@ -200,33 +198,25 @@ mutual
       t => (t |*|) <$> sizeCompareProdConArgs fuel xs ys
   sizeCompareProdConArgs _ _ _ = pure Unknown
 
-  sizeCompareTyCon fuel s t =
-    let (f, args) = getFnArgs t in
-    let (g, args') = getFnArgs s in
-    case f of
-      Ref _ (TyCon _ _) cn => case g of
-        Ref _ (TyCon _ _) cn' => if cn == cn'
-            then (Unknown /=) <$> sizeCompareProdConArgs fuel args' args
-            else pure False
-        _ => pure False
-      _ => pure False
-
   sizeCompareCon fuel s t
-      = let (f, args) = getFnArgs t in
-        case f of
-             Ref _ (DataCon t a) cn =>
-                -- if s is smaller or equal to an arg, then it is smaller than t
-                if !(sizeCompareConArgs (minus fuel 1) s args) then pure Smaller
-                else let (g, args') = getFnArgs s in
-                    case (fuel, g) of
-                        (S k, Ref _ (DataCon t' a') cn') =>
-                                -- if s is a matching DataCon, applied to same number of args,
-                                -- no Unknown args, and at least one Smaller
-                                if cn == cn' && length args == length args'
-                                  then sizeCompareProdConArgs k args' args
-                                  else pure Unknown
-                        _ => pure Unknown
-             _ => pure Unknown
+     = do let (f, args) = getFnArgs t
+          let Just cn = isCon f
+            | Nothing => pure Unknown
+          False <- sizeCompareConArgs (minus fuel 1) s args
+            | True => pure Smaller
+          let S k = fuel
+            | 0 => pure Unknown
+          let (g, args') = getFnArgs s
+          let Just cn' = isCon g
+            | Nothing => pure Unknown
+          if cn == cn' && length args == length args'
+            then sizeCompareProdConArgs k args' args
+            else pure Unknown
+    where
+      isCon : Term vars -> Maybe Name
+      isCon (Ref _ (DataCon _ _) n) = Just n
+      isCon (Ref _ (TyCon _ _) n) = Just n
+      isCon _ = Nothing
 
   sizeCompareConArgs _ s [] = pure False
   sizeCompareConArgs fuel s (t :: ts)

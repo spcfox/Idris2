@@ -110,6 +110,9 @@ This CHANGELOG describes the merged but unreleased changes. Please see [CHANGELO
 * The totality checker now finds the smallest non-terminating loop if the
   totality check fails.
 
+* One type may be smaller than the other. For example `Vect n a` will be
+  considered smaller than `Vect (S n) a`.
+
 * LHS of `with`-applications are parsed as `PWithApp` instead of `PApp`. As a
   consequence, `IWithApp` appears in `TTImp` values in elaborator scripts instead
   of `IApp`, as it should have been.
