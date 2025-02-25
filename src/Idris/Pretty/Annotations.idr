@@ -97,6 +97,10 @@ default_ : Doc IdrisSyntax
 default_ = keyword "default"
 
 export
+ifUnsolved_ : Doc IdrisSyntax
+ifUnsolved_ = keyword "ifUnsolved"
+
+export
 rewrite_ : Doc IdrisSyntax
 rewrite_ = keyword "rewrite"
 

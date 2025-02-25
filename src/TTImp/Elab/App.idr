@@ -294,6 +294,58 @@ mutual
       metavarImp InTransform = True
       metavarImp _ = False
 
+  makeIfUnsolved : {vars : _} ->
+                   {auto c : Ref Ctxt Defs} ->
+                   {auto m : Ref MD Metadata} ->
+                   {auto u : Ref UST UState} ->
+                   {auto e : Ref EST (EState vars)} ->
+                   {auto s : Ref Syn SyntaxInfo} ->
+                   {auto o : Ref ROpts REPLOpts} ->
+                   RigCount -> RigCount -> ElabInfo ->
+                   NestedNames vars -> Env Term vars ->
+                   FC -> (fntm : Term vars) ->
+                   Name -> Closure vars -> Closure vars ->
+                   (Defs -> Closure vars -> Core (NF vars)) ->
+                   (argdata : (Maybe Name, Nat)) ->
+                   (expargs : List RawImp) ->
+                   (autoargs : List RawImp) ->
+                   (namedargs : List (Name, RawImp)) ->
+                   (knownret : Bool) ->
+                   (expected : Maybe (Glued vars)) ->
+                   Core (Term vars, Glued vars)
+  makeIfUnsolved rig argRig elabinfo nest env fc tm x arg aty sc (n, argpos) expargs autoargs namedargs kr expty
+  -- on the LHS, just treat it as an implicit pattern variable.
+  -- on the RHS, TODO
+      = if metavarImp (elabMode elabinfo)
+           then do defs <- get Ctxt
+                   nm <- genMVName x
+                   empty <- clearDefs defs
+                   metaty <- quote empty env aty
+                   metaval <- metaVar fc argRig env nm metaty
+                   let fntm = App fc tm metaval
+                   fnty <- sc defs (toClosure defaultOpts env metaval)
+                   update EST $ addBindIfUnsolved nm (getLoc (getFn tm)) argRig AutoImplicit env metaval metaty
+                   checkAppWith rig elabinfo nest env fc
+                                fntm fnty (n, 1 + argpos) expargs autoargs namedargs kr expty
+           else do defs <- get Ctxt
+                   nm <- genMVName x
+                   empty <- clearDefs defs
+                   metaty <- quote empty env aty
+                   aval <- quote empty env arg
+                   metaval <- metaVar fc argRig env nm metaty
+                   addIfUnsolved (getLoc aval) env metaval aval
+                   let fntm = App fc tm metaval
+                   fnty <- sc defs (toClosure defaultOpts env metaval)
+                   when (bindingVars elabinfo) $ update EST $
+                     addBindIfUnsolved nm (getLoc (getFn tm)) argRig Implicit env metaval metaty
+                   checkAppWith rig elabinfo nest env fc
+                                 fntm fnty (n, 1 + argpos) expargs autoargs namedargs kr expty
+    where
+      metavarImp : ElabMode -> Bool
+      metavarImp (InLHS _) = True
+      metavarImp InTransform = True
+      metavarImp _ = False
+
   -- Defer elaborating anything which will be easier given a known target
   -- type (ambiguity, cases, etc)
   needsDelayExpr : {auto c : Ref Ctxt Defs} ->
@@ -523,7 +575,7 @@ mutual
                       else pure tm
              when (onLHS $ elabMode elabinfo) $
                  -- reset hole and redo it with the unexpanded definition
-                 do updateDef (Resolved idx) (const (Just (Hole 0 (holeInit False))))
+                 do updateDef (Resolved idx) (const (Just (Hole 0 (holeInit False) Nothing)))
                     ignore $ solveIfUndefined env metaval argv
              -- Mark for reduction when we finish elaborating
              updateDef (Resolved idx)
@@ -685,6 +737,18 @@ mutual
                          then checkExp rig elabinfo env fc tm (glueBack defs env ty) (Just expty_in)
                          else makeDefImplicit rig argRig elabinfo nest env fc tm x aval aty sc argdata [] [] [] kr (Just expty_in)
                 _ => makeDefImplicit rig argRig elabinfo nest env fc tm x aval aty sc argdata [] [] [] kr (Just expty_in)
+  -- Same for ifUnsolved
+  checkAppWith' rig elabinfo nest env fc tm ty@(NBind tfc x (Pi _ rigb (IfUnsolved aval) aty) sc)
+               argdata [] [] [] kr (Just expty_in)
+      = do let argRig = rig |*| rigb
+           expty <- getNF expty_in
+           defs <- get Ctxt
+           case expty of
+                NBind tfc' x' (Pi _ rigb' (IfUnsolved aval') aty') sc'
+                   => if !(convert defs env aval aval')
+                         then checkExp rig elabinfo env fc tm (glueBack defs env ty) (Just expty_in)
+                         else makeIfUnsolved rig argRig elabinfo nest env fc tm x aval aty sc argdata [] [] [] kr (Just expty_in)
+                _ => makeIfUnsolved rig argRig elabinfo nest env fc tm x aval aty sc argdata [] [] [] kr (Just expty_in)
 
   -- Check next unnamed auto implicit argument
   checkAppWith' rig elabinfo nest env fc tm (NBind tfc x (Pi _ rigb AutoImplicit aty) sc)
@@ -719,6 +783,16 @@ mutual
             case findNamed x namedargs of
                Nothing => makeDefImplicit rig argRig elabinfo nest env fc tm
                                           x arg aty sc argdata expargs autoargs namedargs kr expty
+               Just ((_, arg), namedargs') =>
+                     checkRestApp rig argRig elabinfo nest env fc
+                                  tm x aty sc argdata arg expargs autoargs namedargs' kr expty
+  -- Check next ifUnsolved argument
+  checkAppWith' rig elabinfo nest env fc tm (NBind tfc x (Pi _ rigb (IfUnsolved arg) aty) sc)
+               argdata expargs autoargs namedargs kr expty
+      = let argRig = rig |*| rigb in
+            case findNamed x namedargs of
+               Nothing => makeIfUnsolved rig argRig elabinfo nest env fc tm
+                                         x arg aty sc argdata expargs autoargs namedargs kr expty
                Just ((_, arg), namedargs') =>
                      checkRestApp rig argRig elabinfo nest env fc
                                   tm x aty sc argdata arg expargs autoargs namedargs' kr expty

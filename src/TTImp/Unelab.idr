@@ -324,6 +324,9 @@ mutual
   unelabPi umode nest env (DefImplicit t)
       = do (t', _) <- unelabTy umode nest env t
            pure (DefImplicit t')
+  unelabPi umode nest env (IfUnsolved t)
+      = do (t', _) <- unelabTy umode nest env t
+           pure (IfUnsolved t')
 
   unelabBinder : {vars : _} ->
                  {auto c : Ref Ctxt Defs} ->

@@ -104,6 +104,7 @@ record UState where
   polyConstraints : List PolyConstraint -- constraints which need to be solved
                       -- successfully to check an LHS is polymorphic enough
   dotConstraints : List (Name, DotReason, Constraint) -- dot pattern constraints
+  ifUnsolved : List (FC, (vars ** (Env Term vars, Term vars, Term vars)))
   nextName : Int
   nextConstraint : Int
   delayedElab : List (DelayReason, Int, NameMap (), Core ClosedTerm)
@@ -125,6 +126,7 @@ initUState = MkUState
   , noSolve = empty
   , polyConstraints = []
   , dotConstraints = []
+  , ifUnsolved = []
   , nextName = 0
   , nextConstraint = 0
   , delayedElab = []
@@ -315,6 +317,13 @@ addPolyConstraint fc env arg x@(NApp _ (NMeta _ _ _) _) y
     = update UST { polyConstraints $= ((MkPolyConstraint fc env arg x y) ::) }
 addPolyConstraint fc env arg x y
     = pure ()
+
+export
+addIfUnsolved : {vars : _} ->
+                {auto u : Ref UST UState} ->
+                FC -> Env Term vars -> Term vars -> Term vars -> Core ()
+addIfUnsolved fc env x y =
+    update UST { ifUnsolved $= ((fc, (vars ** (env, x, y))) ::) }
 
 mkLocal : {wkns : SnocList Name} -> FC -> Binder (Term vars) -> Term (wkns <>> x :: (vars ++ done))
 mkLocal fc b = Local fc (Just (isLet b)) _ (mkIsVarChiply (mkHasLength wkns))
@@ -666,12 +675,13 @@ dumpHole str n hole
                            ++ show !(normaliseHoles defs [] tm)
                            ++ "\n\twhen"
                      traverse_ dumpConstraint constraints
-             (Hole _ p, ty) =>
+             (Hole _ p ifUnsolved, ty) =>
                   logString str n $
                     "?" ++ show (fullname gdef) ++ " : "
                         ++ show !(normaliseHoles defs [] ty)
                         ++ if implbind p then " (ImplBind)" else ""
                         ++ if invertible gdef then " (Invertible)" else ""
+                        ++ maybe "" (const "(ifUnsolved)") ifUnsolved
              (BySearch _ _ _, ty) =>
                   logString str n $
                      "Search " ++ show hole ++ " : " ++

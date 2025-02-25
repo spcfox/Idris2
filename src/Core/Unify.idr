@@ -244,7 +244,7 @@ postpone loc mode logstr env x y
     undefinedN n
         = do defs <- get Ctxt
              pure $ case !(lookupDefExact n (gamma defs)) of
-                  Just (Hole _ _) => True
+                  Just (Hole _ _ _) => True
                   Just (BySearch _ _ _) => True
                   Just (Guess _ _ _) => True
                   _ => False
@@ -446,7 +446,7 @@ tryInstantiate : {auto c : Ref Ctxt Defs} ->
               Core Bool -- postpone if the type is yet unknown
 tryInstantiate {newvars} loc mode env mname mref num mdef locs otm tm
     = do logTerm "unify.instantiate" 5 ("Instantiating in " ++ show newvars) tm
---          let Hole _ _ = definition mdef
+--          let Hole _ _ _ = definition mdef
 --              | def => ufail {a=()} loc (show mname ++ " already resolved as " ++ show def)
          case fullname mdef of
               PV pv pi => throw (PatternVariableUnifies loc (getLoc otm) env (PV pv pi) otm)
@@ -481,7 +481,7 @@ tryInstantiate {newvars} loc mode env mname mref num mdef locs otm tm
     precise : Bool
     precise
         = case definition mdef of
-               Hole _ p => precisetype p
+               Hole _ p _ => precisetype p
                _ => False
 
     -- A solution is deemed simple enough to inline if either:
@@ -538,6 +538,9 @@ tryInstantiate {newvars} loc mode env mname mref num mdef locs otm tm
         updateIVarsPi ivs (DefImplicit t)
             = do t' <- updateIVars ivs t
                  Just (DefImplicit t')
+        updateIVarsPi ivs (IfUnsolved t)
+            = do t' <- updateIVars ivs t
+                 Just (IfUnsolved t')
 
         updateIVarsB : {vs, newvars : _} ->
                        IVars vs newvars -> Binder (Term newvars) -> Maybe (Binder (Term vs))
@@ -619,7 +622,7 @@ solveIfUndefined : {vars : _} ->
                    Env Term vars -> Term vars -> Term vars -> Core Bool
 solveIfUndefined env metavar@(Meta fc mname idx args) soln
     = do defs <- get Ctxt
-         Just (Hole _ _) <- lookupDefExact (Resolved idx) (gamma defs)
+         Just (Hole _ _ _) <- lookupDefExact (Resolved idx) (gamma defs)
               | _ => pure False
          updateSolution env metavar soln
 solveIfUndefined env (Erased _ (Dotted metavar)) soln
@@ -869,7 +872,7 @@ mutual
                 Nothing =>
                   do Just hdef <- lookupCtxtExact (Resolved mref) (gamma defs)
                         | _ => postponePatVar swap mode loc env mname mref margs margs' tmnf
-                     let Hole _ _ = definition hdef
+                     let Hole _ _ _ = definition hdef
                         | _ => postponePatVar swap mode loc env mname mref margs margs' tmnf
                      if invertible hdef
                         then unifyHoleApp swap mode loc env mname mref margs margs' tmnf
@@ -877,7 +880,7 @@ mutual
                 Just (newvars ** (locs, submv)) =>
                   do Just hdef <- lookupCtxtExact (Resolved mref) (gamma defs)
                          | _ => postponePatVar swap mode loc env mname mref margs margs' tmnf
-                     let Hole _ _ = definition hdef
+                     let Hole _ _ _ = definition hdef
                          | _ => postponeS swap loc mode "Delayed hole" env
                                           (NApp loc (NMeta mname mref margs) $ map (EmptyFC,) margs')
                                           tmnf
@@ -1527,6 +1530,7 @@ solveConstraintsAfter : {auto c : Ref Ctxt Defs} ->
                         Int -> UnifyInfo -> (smode : SolveMode) -> Core ()
 solveConstraintsAfter start umode smode
     = do ust <- get UST
+         log "unify" 10 $ "^ guesses: " ++ show (filter afterStart $ toList $ guesses ust)
          progress <- traverse (retryGuess umode smode)
                               (filter afterStart (toList (guesses ust)))
          when (any id progress) $
@@ -1550,9 +1554,9 @@ giveUpConstraints
         = do defs <- get Ctxt
              case !(lookupDefExact (Resolved hid) (gamma defs)) of
                   Just (BySearch _ _ _) =>
-                         updateDef (Resolved hid) (const (Just (Hole 0 (holeInit False))))
+                         updateDef (Resolved hid) (const (Just (Hole 0 (holeInit False) Nothing)))
                   Just (Guess _ _ _) =>
-                         updateDef (Resolved hid) (const (Just (Hole 0 (holeInit False))))
+                         updateDef (Resolved hid) (const (Just (Hole 0 (holeInit False) Nothing)))
                   _ => pure ()
 
 -- Check whether any of the given hole references have the same solution
@@ -1635,7 +1639,7 @@ checkDots
                             (\n => do Just ndef <- lookupDefExact n (gamma defs)
                                            | Nothing => undefinedName fc n
                                       pure $ case ndef of
-                                           Hole _ _ => False
+                                           Hole _ _ _ => False
                                            _ => True)
                             oldholen
 

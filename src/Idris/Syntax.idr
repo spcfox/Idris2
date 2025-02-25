@@ -876,6 +876,7 @@ parameters {0 nm : Type} (toName : nm -> Name)
   showPBinder d (MkPBinder Explicit bind) = "(\{showBasicMultiBinder bind})"
   showPBinder d (MkPBinder AutoImplicit bind) = "{auto \{showBasicMultiBinder bind}}"
   showPBinder d (MkPBinder (DefImplicit x) bind) = "{default \{showPTerm x} \{ showBasicMultiBinder bind}}"
+  showPBinder d (MkPBinder (IfUnsolved x) bind) = "{ifUnsolved \{showPTerm x} \{ showBasicMultiBinder bind}}"
 
   showPTermPrec d (PRef _ n) = showPrec d (toName n)
   showPTermPrec d (Forall (MkFCVal _ (names, scope)))
@@ -901,6 +902,10 @@ parameters {0 nm : Type} (toName : nm -> Name)
         = "{default " ++ showPTermPrec App t ++ " " ++ showCount rig ++ "_ : " ++ showPTermPrec d arg ++ "} -> " ++ showPTermPrec d ret
   showPTermPrec d (PPi _ rig (DefImplicit t) (Just n) arg ret)
         = "{default " ++ showPTermPrec App t ++ " " ++ showCount rig ++ showPrec d n ++ " : " ++ showPTermPrec d arg ++ "} -> " ++ showPTermPrec d ret
+  showPTermPrec d (PPi _ rig (IfUnsolved t) Nothing arg ret) -- shouldn't happen
+        = "{ifUnsolved " ++ showPTermPrec App t ++ " " ++ showCount rig ++ "_ : " ++ showPTermPrec d arg ++ "} -> " ++ showPTermPrec d ret
+  showPTermPrec d (PPi _ rig (IfUnsolved t) (Just n) arg ret)
+        = "{ifUnsolved " ++ showPTermPrec App t ++ " " ++ showCount rig ++ showPrec d n ++ " : " ++ showPTermPrec d arg ++ "} -> " ++ showPTermPrec d ret
   showPTermPrec d (PLam _ rig _ n (PImplicit _) sc)
         = "\\" ++ showCount rig ++ showPTermPrec d n ++ " => " ++ showPTermPrec d sc
   showPTermPrec d (PLam _ rig _ n ty sc)

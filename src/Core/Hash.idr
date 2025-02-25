@@ -129,6 +129,7 @@ Hashable t => Hashable (PiInfo t) where
   hashWithSalt h Explicit = hashWithSalt h 1
   hashWithSalt h AutoImplicit = hashWithSalt h 2
   hashWithSalt h (DefImplicit t) = h `hashWithSalt` 3 `hashWithSalt` t
+  hashWithSalt h (IfUnsolved t) = h `hashWithSalt` 4 `hashWithSalt` t
 
 export
 Hashable ty => Hashable (Binder ty) where

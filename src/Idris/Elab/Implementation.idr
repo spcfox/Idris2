@@ -109,6 +109,11 @@ getMethImps env (Bind fc x (Pi fc' c (DefImplicit def) ty) sc)
          rdef <- map (map rawName) $ unelabNoSugar env def
          ts <- getMethImps (Pi fc' c (DefImplicit def) ty :: env) sc
          pure ((x, c, Just rdef, rty) :: ts)
+getMethImps env (Bind fc x (Pi fc' c (IfUnsolved def) ty) sc)
+    = do rty <- map (map rawName) $ unelabNoSugar env ty
+         rdef <- map (map rawName) $ unelabNoSugar env def
+         ts <- getMethImps (Pi fc' c (IfUnsolved def) ty :: env) sc
+         pure ((x, c, Just rdef, rty) :: ts)
 getMethImps env tm = pure []
 
 export
@@ -347,6 +352,8 @@ elabImplementation {vars} ifc vis opts_in pass env nest is cons iname ps named i
     applyTo tm ((x, c, Implicit) :: xs)
         = applyTo (INamedApp EmptyFC tm x (IVar EmptyFC x)) xs
     applyTo tm ((x, c, DefImplicit _) :: xs)
+        = applyTo (INamedApp EmptyFC tm x (IVar EmptyFC x)) xs
+    applyTo tm ((x, c, IfUnsolved _) :: xs)
         = applyTo (INamedApp EmptyFC tm x (IVar EmptyFC x)) xs
 
     -- When applying the method in the field for the record, eta expand

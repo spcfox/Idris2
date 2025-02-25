@@ -623,6 +623,7 @@ keywordsDoc =
   :: "public" ::= visibility
   :: "export" ::= visibility
   :: "private" ::= visibility
+  :: "ifUnsolved" ::= totality
   :: "infixl" ::= fixity
   :: "infixr" ::= fixity
   :: "infix" ::= fixity

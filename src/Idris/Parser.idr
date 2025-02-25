@@ -738,6 +738,24 @@ mutual
            pure (MkPBinderScope b.val scope)
            )
 
+  ||| An default implicit pi-type
+  ||| BNF:
+  ||| defaultImplicitPi := '{' 'ifUnsolved' simpleExpr pibindListName '}' '->' typeExpr
+  ifUnsolvedPi : OriginDesc -> IndentInfo -> Rule PTerm
+  ifUnsolvedPi fname indents
+      = NewPi <$> fcBounds (do
+           b <- bounds $ curly fname $ do
+                  decoratedKeyword fname "ifUnsolved"
+                  commit
+                  t <- simpleExpr fname indents
+                  binders <- pibindListName fname indents
+                  pure (MkPBinder (IfUnsolved t) binders)
+           mustWorkBecause b.bounds "Cannot return a default implicit argument"
+             $ decoratedSymbol fname "->"
+           scope <- mustWork $ typeExpr pdef fname indents
+           pure (MkPBinderScope b.val scope)
+           )
+
   ||| Forall definition that automatically binds the names
   ||| BNF:
   ||| forall_ := 'forall' name (, name)* '.' typeExpr
@@ -1027,6 +1045,7 @@ mutual
   binder fname indents
       = autoImplicitPi fname indents
     <|> defaultImplicitPi fname indents
+    <|> ifUnsolvedPi fname indents
     <|> forall_ fname indents
     <|> implicitPi fname indents
     <|> autobindOp pdef fname indents
@@ -1680,6 +1699,13 @@ defImplicitField fname indents = do
   commit
   t <- simpleExpr fname indents
   pure (DefImplicit t)
+
+-- ifUnsolvedField : OriginDesc -> IndentInfo -> Rule (PiInfo PTerm)
+-- ifUnsolvedField fname indents = do
+--   decoratedKeyword fname "ifUnsolved"
+--   commit
+--   t <- simpleExpr fname indents
+--   pure (IfUnsolved t)
 
 constraints : OriginDesc -> IndentInfo -> EmptyRule (List (Maybe Name, PTerm))
 constraints fname indents

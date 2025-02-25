@@ -515,6 +515,7 @@ mutual
       mapPiInfo Implicit        = pure   Implicit
       mapPiInfo AutoImplicit    = pure   AutoImplicit
       mapPiInfo (DefImplicit p) = pure $ DefImplicit !(toPTerm startPrec p)
+      mapPiInfo (IfUnsolved p)  = pure $ IfUnsolved !(toPTerm startPrec p)
 
   toPFnOpt : {auto c : Ref Ctxt Defs} ->
              {auto s : Ref Syn SyntaxInfo} ->

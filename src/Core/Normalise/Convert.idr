@@ -63,6 +63,7 @@ tryUpdate ms (Bind fc x b sc)
     tryUpdatePi Implicit = pure Implicit
     tryUpdatePi AutoImplicit = pure AutoImplicit
     tryUpdatePi (DefImplicit t) = pure $ DefImplicit !(tryUpdate ms t)
+    tryUpdatePi (IfUnsolved t) = pure $ IfUnsolved !(tryUpdate ms t)
 
     tryUpdateB : Binder (Term vars) -> Maybe (Binder (Term vars'))
     tryUpdateB (Lam fc r p t) = pure $ Lam fc r !(tryUpdatePi p) !(tryUpdate ms t)

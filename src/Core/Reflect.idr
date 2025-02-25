@@ -741,6 +741,9 @@ Reify t => Reify (PiInfo t) where
              (UN (Basic "DefImplicit"), [_, (_, t)])
                  => do t' <- reify defs !(evalClosure defs t)
                        pure (DefImplicit t')
+             (UN (Basic "IfUnsolved"), [_, (_, t)])
+                 => do t' <- reify defs !(evalClosure defs t)
+                       pure (IfUnsolved t')
              _ => cantReify val "PiInfo"
   reify defs val = cantReify val "PiInfo"
 
@@ -755,6 +758,9 @@ Reflect t => Reflect (PiInfo t) where
   reflect fc defs lhs env (DefImplicit t)
       = do t' <- reflect fc defs lhs env t
            appCon fc defs (reflectiontt "DefImplicit") [Erased fc Placeholder, t']
+  reflect fc defs lhs env (IfUnsolved t)
+      = do t' <- reflect fc defs lhs env t
+           appCon fc defs (reflectiontt "IfUnsolved") [Erased fc Placeholder, t']
 
 export
 Reify LazyReason where

@@ -76,7 +76,7 @@ export
 isHole : GlobalDef -> Maybe Nat
 isHole def
     = case definition def of
-           Hole locs _ => Just locs
+           Hole locs _ _ => Just locs
            PMDef pi _ _ _ _ =>
                  case holeInfo pi of
                       NotHole => Nothing

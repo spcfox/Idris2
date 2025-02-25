@@ -194,6 +194,9 @@ mutual
     prettyPrec d (NewPi (MkFCVal fc (MkPBinderScope (MkPBinder (DefImplicit x) bind) scope))) =
       lcurly <+> default_ <++> prettyPrec appPrec x
       <++> pretty bind <+> rcurly <++> arrow <++> prettyPrec d scope
+    prettyPrec d (NewPi (MkFCVal fc (MkPBinderScope (MkPBinder (IfUnsolved x) bind) scope))) =
+      lcurly <+> ifUnsolved_ <++> prettyPrec appPrec x
+      <++> pretty bind <+> rcurly <++> arrow <++> prettyPrec d scope
     prettyPrec d (Forall (MkFCVal fc (names, scope))) =
       parenthesise (d > startPrec) $ group $
         forall_ <++> commaSep (map (prettyBinder . val) (forget names)) <++> dot <++> pretty scope
@@ -240,6 +243,17 @@ mutual
     prettyPrec d (PPi _ rig (DefImplicit t) (Just n) arg ret) =
       parenthesise (d > startPrec) $ group $
         braces (default_ <++> prettyPrec appPrec t
+             <++> prettyRig rig <+> prettyBinder n
+             <++> colon <++> pretty arg)
+             <++> arrow <+> softline <+> pretty ret
+    prettyPrec d (PPi _ rig (IfUnsolved t) Nothing arg ret) =
+      parenthesise (d > startPrec) $ group $
+        braces (ifUnsolved_ <++> prettyPrec appPrec t <++> prettyRig rig <+> "_"
+             <++> colon <++> pretty arg)
+             <++> arrow <+> softline <+> pretty ret
+    prettyPrec d (PPi _ rig (IfUnsolved t) (Just n) arg ret) =
+      parenthesise (d > startPrec) $ group $
+        braces (ifUnsolved_ <++> prettyPrec appPrec t
              <++> prettyRig rig <+> prettyBinder n
              <++> colon <++> pretty arg)
              <++> arrow <+> softline <+> pretty ret

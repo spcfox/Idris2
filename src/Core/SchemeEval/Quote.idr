@@ -28,6 +28,9 @@ mutual
   quotePi q bound env (DefImplicit t)
       = do t' <- quoteGen q bound env t
            pure (DefImplicit t')
+  quotePi q bound env (IfUnsolved t)
+      = do t' <- quoteGen q bound env t
+           pure (IfUnsolved t')
 
   quoteBinder : {auto c : Ref Ctxt Defs} ->
                 {bound, free : _} ->

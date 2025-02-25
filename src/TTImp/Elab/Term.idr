@@ -52,6 +52,8 @@ insertImpLam {vars} env tm (Just ty) = bindLam tm ty
         = pure (Just tm)
     bindLamTm tm@(ILam _ _ (DefImplicit _) _ _ _) (Bind fc n (Pi _ _ (DefImplicit _) _) sc)
         = pure (Just tm)
+    bindLamTm tm@(ILam _ _ (IfUnsolved _) _ _ _) (Bind fc n (Pi _ _ (IfUnsolved _) _) sc)
+        = pure (Just tm)
     bindLamTm tm (Bind fc n (Pi _ c Implicit ty) sc)
         = do n' <- genVarName (nameRoot n)
              Just sc' <- bindLamTm tm sc
@@ -67,6 +69,12 @@ insertImpLam {vars} env tm (Just ty) = bindLam tm ty
              Just sc' <- bindLamTm tm sc
                  | Nothing => pure Nothing
              pure $ Just (ILam fc c (DefImplicit (Implicit fc False))
+                                    (Just n') (Implicit fc False) sc')
+    bindLamTm tm (Bind fc n (Pi _ c (IfUnsolved _) ty) sc)
+        = do n' <- genVarName (nameRoot n)
+             Just sc' <- bindLamTm tm sc
+                 | Nothing => pure Nothing
+             pure $ Just (ILam fc c (IfUnsolved (Implicit fc False))
                                     (Just n') (Implicit fc False) sc')
     bindLamTm tm exp
         = case getFn exp of
@@ -98,6 +106,13 @@ insertImpLam {vars} env tm (Just ty) = bindLam tm ty
              sctm <- sc defs (toClosure defaultOpts env (Ref fc Bound n'))
              sc' <- bindLamNF tm sctm
              pure $ ILam fc c (DefImplicit (Implicit fc False))
+                              (Just n') (Implicit fc False) sc'
+    bindLamNF tm (NBind fc n (Pi _ c (IfUnsolved _) ty) sc)
+        = do defs <- get Ctxt
+             n' <- genVarName (nameRoot n)
+             sctm <- sc defs (toClosure defaultOpts env (Ref fc Bound n'))
+             sc' <- bindLamNF tm sctm
+             pure $ ILam fc c (IfUnsolved (Implicit fc False))
                               (Just n') (Implicit fc False) sc'
     bindLamNF tm sc = pure tm
 
@@ -134,6 +149,7 @@ checkTerm rig elabinfo nest env (IPi fc r p Nothing argTy retTy) exp
                    Implicit => genVarName "impArg"
                    AutoImplicit => genVarName "conArg"
                    (DefImplicit _) => genVarName "defArg"
+                   (IfUnsolved _) => genVarName "ifUnsArg"
          checkPi rig elabinfo nest env fc r p n argTy retTy exp
 checkTerm rig elabinfo nest env (IPi fc r p (Just (UN Underscore)) argTy retTy) exp
     = checkTerm rig elabinfo nest env (IPi fc r p Nothing argTy retTy) exp

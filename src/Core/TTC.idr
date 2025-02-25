@@ -155,6 +155,7 @@ TTC t => TTC (PiInfo t) where
   toBuf b Explicit = tag 1
   toBuf b AutoImplicit = tag 2
   toBuf b (DefImplicit r) = do tag 3; toBuf b r
+  toBuf b (IfUnsolved r) = do tag 4; toBuf b r
 
   fromBuf b
       = case !getTag of
@@ -162,6 +163,7 @@ TTC t => TTC (PiInfo t) where
              1 => pure Explicit
              2 => pure AutoImplicit
              3 => do t <- fromBuf b; pure (DefImplicit t)
+             4 => do t <- fromBuf b; pure (IfUnsolved t)
              _ => corrupt "PiInfo"
 
 export
@@ -990,8 +992,8 @@ TTC Def where
       = do tag 5; toBuf b t; toBuf b arity; toBuf b parampos
            toBuf b detpos; toBuf b u; toBuf b ms; toBuf b datacons
            toBuf b dets
-  toBuf b (Hole locs p)
-      = do tag 6; toBuf b locs; toBuf b (implbind p)
+  toBuf b (Hole locs p ifUnsolved)
+      = do tag 6; toBuf b locs; toBuf b (implbind p); toBuf b ifUnsolved
   toBuf b (BySearch c depth def)
       = do tag 7; toBuf b c; toBuf b depth; toBuf b def
   toBuf b (Guess guess envb constraints)
@@ -1023,7 +1025,8 @@ TTC Def where
                      pure (TCon t a ps dets u ms cs detags)
              6 => do l <- fromBuf b
                      p <- fromBuf b
-                     pure (Hole l (holeInit p))
+                     ifUnsolved <- fromBuf b
+                     pure (Hole l (holeInit p) ifUnsolved)
              7 => do c <- fromBuf b; depth <- fromBuf b
                      def <- fromBuf b
                      pure (BySearch c depth def)

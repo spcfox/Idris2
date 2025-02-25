@@ -138,7 +138,7 @@ mutual
                 | Nothing => updateHoleUsageArgs useInHole var zs args
            -- only update for holes with no definition yet
            case definition gdef of
-                Hole _ _ =>
+                Hole _ _ _ =>
                    do let ty = type gdef
                       ty' <- updateHoleType useInHole var zs ty args
                       updateTy i ty'
@@ -233,7 +233,7 @@ mutual
               then expandMeta rig erase env n idx (definition gdef) args
               else do let ty : ClosedTerm
                              = case definition gdef of
-                                    Hole _ _ => unusedHoleArgs args (type gdef)
+                                    Hole _ _ _ => unusedHoleArgs args (type gdef)
                                     _ => type gdef
                       nty <- nf defs env (embed ty)
                       lcheckMeta rig erase env fc n idx args [] nty

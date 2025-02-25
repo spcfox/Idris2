@@ -613,7 +613,7 @@ toCDef n _ _ (TCon tag arity _ _ _ _ _ _)
     = pure $ MkCon Nothing arity Nothing
 -- We do want to be able to compile these, but also report an error at run time
 -- (and, TODO: warn at compile time)
-toCDef n ty _ (Hole _ _)
+toCDef n ty _ (Hole _ _ _)
     = pure $ MkError $ CCrash emptyFC ("Encountered unimplemented hole " ++
                                        show !(getFullName n))
 toCDef n ty _ (Guess _ _ _)

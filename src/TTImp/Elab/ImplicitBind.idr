@@ -158,7 +158,7 @@ bindUnsolved {vars} fc elabmode _
                      (Env Term vars', PiInfo (Term vars'), Term vars', Term vars', Thin outer vars'))) ->
                  Core ()
     mkImplicit defs outerEnv subEnv (n, loc, rig, (vs ** (env, p, tm, exp, sub)))
-        = do Just (Hole _ _) <- lookupDefExact n (gamma defs)
+        = do Just (Hole _ _ _) <- lookupDefExact n (gamma defs)
                   | _ => pure ()
              bindtm <- makeBoundVar n loc rig p outerEnv
                                     sub subEnv
@@ -305,7 +305,7 @@ implicitBind : {auto c : Ref Ctxt Defs} ->
                Name -> Core ()
 implicitBind n
     = do defs <- get Ctxt
-         Just (Hole _ _) <- lookupDefExact n (gamma defs)
+         Just (Hole _ _ _) <- lookupDefExact n (gamma defs)
              | _ => pure ()
          updateDef n (const (Just ImpBind))
          removeHoleName n

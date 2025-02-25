@@ -16,6 +16,7 @@ parameters (f : RawImp' nm -> RawImp' nm)
   mapPiInfo Explicit = Explicit
   mapPiInfo AutoImplicit = AutoImplicit
   mapPiInfo (DefImplicit t) = DefImplicit (mapTTImp t)
+  mapPiInfo (IfUnsolved t) = IfUnsolved (mapTTImp t)
 
   export
   mapImpClause : ImpClause' nm -> ImpClause' nm

@@ -23,7 +23,8 @@ data PiInfo t =
   ||| Default Pi types (e.g. {default True flag : Bool} -> ...)
   ||| The argument is set to the default value if nothing is
   ||| passed explicitly
-  DefImplicit t
+  DefImplicit t |
+  IfUnsolved t
 
 %name PiInfo pinfo
 
@@ -56,6 +57,7 @@ forgetDef Explicit = Explicit
 forgetDef Implicit = Implicit
 forgetDef AutoImplicit = AutoImplicit
 forgetDef (DefImplicit t) = Implicit
+forgetDef (IfUnsolved t) = Implicit
 
 export
 Show t => Show (PiInfo t) where
@@ -63,6 +65,7 @@ Show t => Show (PiInfo t) where
   show Explicit = "Explicit"
   show AutoImplicit = "AutoImplicit"
   show (DefImplicit t) = "DefImplicit " ++ show t
+  show (IfUnsolved t) = "IfUnsolved " ++ show t
 
 export
 Eq t => Eq (PiInfo t) where
@@ -168,7 +171,8 @@ Functor PiInfo where
   map func Explicit = Explicit
   map func Implicit = Implicit
   map func AutoImplicit = AutoImplicit
-  map func (DefImplicit t) = (DefImplicit (func t))
+  map func (DefImplicit t) = DefImplicit (func t)
+  map func (IfUnsolved t) = IfUnsolved (func t)
 
 export
 Foldable PiInfo where
@@ -176,6 +180,7 @@ Foldable PiInfo where
   foldr f acc Explicit = acc
   foldr f acc AutoImplicit = acc
   foldr f acc (DefImplicit x) = f x acc
+  foldr f acc (IfUnsolved x) = f x acc
 
 export
 Traversable PiInfo where
@@ -183,6 +188,7 @@ Traversable PiInfo where
   traverse f Explicit = pure Explicit
   traverse f AutoImplicit = pure AutoImplicit
   traverse f (DefImplicit x) = map DefImplicit (f x)
+  traverse f (IfUnsolved x) = map DefImplicit (f x)
 
 export
 Functor Binder where

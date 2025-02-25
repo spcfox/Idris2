@@ -370,7 +370,7 @@ metaVar : {vars : _} ->
           FC -> RigCount ->
           Env Term vars -> Name -> Term vars -> Core (Term vars)
 metaVar fc rig env n ty
-    = do (_, tm) <- newMeta fc rig env n ty (Hole (length env) (holeInit False)) True
+    = do (_, tm) <- newMeta fc rig env n ty (Hole (length env) (holeInit False) Nothing) True
          pure tm
 
 export
@@ -380,7 +380,7 @@ implBindVar : {vars : _} ->
               FC -> RigCount ->
               Env Term vars -> Name -> Term vars -> Core (Term vars)
 implBindVar fc rig env n ty
-    = do (_, tm) <- newMeta fc rig env n ty (Hole (length env) (holeInit True)) True
+    = do (_, tm) <- newMeta fc rig env n ty (Hole (length env) (holeInit True) Nothing) True
          pure tm
 
 export
@@ -396,7 +396,7 @@ metaVarI fc rig env n ty
                          NApp _ (NMeta _ _ _) _ =>
                               { precisetype := True } (holeInit False)
                          _ => holeInit False
-         newMeta fc rig env n ty (Hole (length env) hinf) True
+         newMeta fc rig env n ty (Hole (length env) hinf Nothing) True
 
 export
 argVar : {vars : _} ->
@@ -405,7 +405,7 @@ argVar : {vars : _} ->
          FC -> RigCount ->
          Env Term vars -> Name -> Term vars -> Core (Int, Term vars)
 argVar fc rig env n ty
-    = newMetaLets fc rig env n ty (Hole (length env) (holeInit False)) False True
+    = newMetaLets fc rig env n ty (Hole (length env) (holeInit False) Nothing) False True
 
 export
 uniVar : {auto c : Ref Ctxt Defs} ->

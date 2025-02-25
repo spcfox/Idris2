@@ -293,7 +293,7 @@ getCompileDataWith exports doLazyAnnots phase_in tm_in
                                     [ "Couldn't find"
                                     , show metanm
                                     , "(probably impossible)"]
-                let Hole _ _ = definition gdef
+                let Hole _ _ _ = definition gdef
                   | _ => pure ()
                 let fulln = fullname gdef
                 let cexp = MkError $ CCrash emptyFC
