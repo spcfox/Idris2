@@ -181,7 +181,7 @@ searchIfHole fc opts hints topty env arg
                  defs <- get Ctxt
                  Just gdef <- lookupCtxtExact (Resolved hole) (gamma defs)
                       | Nothing => noResult
-                 let Hole _ _ _ = definition gdef
+                 let Hole _ _ = definition gdef
                       | _ => one (!(normaliseHoles defs env (metaApp arg)), [])
                                 -- already solved
                  res <- search fc rig ({ depth := k,
@@ -336,7 +336,7 @@ getSuccessful {vars} fc rig opts mkHole env ty topty all
                                             (recData opts)
                            hn <- uniqueBasicName defs (map nameRoot vars) base
                            (idx, tm) <- newMeta fc rig env (UN $ Basic hn) ty
-                                                (Hole (length env) (holeInit False) Nothing)
+                                                (Hole (length env) (holeInit False))
                                                 False
                            one (tm, [])
                    else noResult
@@ -787,7 +787,7 @@ search fc rig opts hints topty n_in
                    -- The definition should be 'BySearch' at this stage,
                    -- if it's arising from an auto implicit
                    case definition gdef of
-                        Hole locs _ _ => searchHole fc rig opts hints n locs topty defs gdef
+                        Hole locs _ => searchHole fc rig opts hints n locs topty defs gdef
                         BySearch _ _ _ => searchHole fc rig opts hints n
                                                    !(getArity defs [] (type gdef))
                                                    topty defs gdef
@@ -855,7 +855,7 @@ exprSearchOpts opts fc n_in hints
              | Nothing => undefinedName fc n_in
          -- the REPL does this step, but doing it here too because
          -- expression search might be invoked some other way
-         let Hole _ _ _ = definition gdef
+         let Hole _ _ = definition gdef
              | PMDef pi [] (STerm _ tm) _ _
                  => do raw <- unelab [] !(toFullNames !(normaliseHoles defs [] tm))
                        one (map rawName raw)

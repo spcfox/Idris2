@@ -77,7 +77,7 @@ normaliseHoleTypes
     normaliseH defs i
         = whenJust !(lookupCtxtExact (Resolved i) (gamma defs)) $ \ gdef =>
             case definition gdef of
-              Hole _ _ _ => updateType defs i gdef
+              Hole _ _ => updateType defs i gdef
               _ => pure ()
 
 export
@@ -153,7 +153,7 @@ elabTermSub {vars} defining mode opts nest env env' sub tm ty
               -- otherwise, this last go is most likely just to give us more
               -- helpful errors.
               ust <- get UST
-              for_ ust.ifUnsolved $ \(_, (_ ** (env, metaval, aval))) =>
+              for_ ust.ifUnsolvedConstraints $ \(_ ** (env, metaval, aval)) =>
                 ignore $ solveIfUndefined env metaval aval
               solveConstraintsAfter constart solvemode LastChance
 

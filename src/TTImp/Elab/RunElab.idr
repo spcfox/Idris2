@@ -200,6 +200,9 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
                        -- We ensure that all of the constraints introduced during the elab script
                        -- have been solved. This guarantees that we do not mistakenly succeed even
                        -- though e.g. a proof search got delayed.
+                       ust <- get UST
+                       for_ ust.ifUnsolvedConstraints $ \(_ ** (env, metaval, aval)) =>
+                         ignore $ solveIfUndefined env metaval aval
                        solveConstraintsAfter constart inTerm LastChance
                        pure res)
                    (elabScript rig fc nest env !(evalClosure defs elab2) exp)

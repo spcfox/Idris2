@@ -738,9 +738,9 @@ mutual
            pure (MkPBinderScope b.val scope)
            )
 
-  ||| An default implicit pi-type
+  ||| An ifUnsolved implicit pi-type
   ||| BNF:
-  ||| defaultImplicitPi := '{' 'ifUnsolved' simpleExpr pibindListName '}' '->' typeExpr
+  ||| ifUnsolvedImplicitPi := '{' 'ifUnsolved' simpleExpr pibindListName '}' '->' typeExpr
   ifUnsolvedPi : OriginDesc -> IndentInfo -> Rule PTerm
   ifUnsolvedPi fname indents
       = NewPi <$> fcBounds (do
@@ -1700,12 +1700,12 @@ defImplicitField fname indents = do
   t <- simpleExpr fname indents
   pure (DefImplicit t)
 
--- ifUnsolvedField : OriginDesc -> IndentInfo -> Rule (PiInfo PTerm)
--- ifUnsolvedField fname indents = do
---   decoratedKeyword fname "ifUnsolved"
---   commit
---   t <- simpleExpr fname indents
---   pure (IfUnsolved t)
+ifUnsolvedField : OriginDesc -> IndentInfo -> Rule (PiInfo PTerm)
+ifUnsolvedField fname indents = do
+  decoratedKeyword fname "ifUnsolved"
+  commit
+  t <- simpleExpr fname indents
+  pure (IfUnsolved t)
 
 constraints : OriginDesc -> IndentInfo -> EmptyRule (List (Maybe Name, PTerm))
 constraints fname indents
@@ -1846,10 +1846,10 @@ parameters {auto fname : OriginDesc} {auto indents : IndentInfo}
            pure $ MkPBinder Explicit params
     <|> do decoratedSymbol fname "{"
            commit
-           info <-
-                    (pure  AutoImplicit <* decoratedKeyword fname "auto"
-                <|> (decoratedKeyword fname "default" *> DefImplicit <$> simpleExpr fname indents)
-                <|> pure      Implicit)
+           info <- pure  AutoImplicit <* decoratedKeyword fname "auto"
+               <|> decoratedKeyword fname "default" *> DefImplicit <$> simpleExpr fname indents
+               <|> decoratedKeyword fname "ifUnsolved" *> DefImplicit <$> simpleExpr fname indents
+               <|> pure Implicit
            params <- pibindListName fname indents
            decoratedSymbol fname "}"
            pure $ MkPBinder info params

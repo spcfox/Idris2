@@ -546,7 +546,7 @@ compileBody _ n (TCon tag arity parampos detpos flags mutwith datacons detagabbl
     mkArgNs : Int -> Nat -> List Name
     mkArgNs i Z = []
     mkArgNs i (S k) = MN "arg" i :: mkArgNs (i+1) k
-compileBody _ n (Hole numlocs x _) = pure $ blockedMetaApp n
+compileBody _ n (Hole numlocs x) = pure $ blockedMetaApp n
 compileBody _ n (BySearch x maxdepth defining) = pure $ blockedMetaApp n
 compileBody _ n (Guess guess envbind constraints) = pure $ blockedMetaApp n
 compileBody _ n ImpBind = pure $ blockedMetaApp n

@@ -204,7 +204,7 @@ findUniqueBindableNames fc arg env used t
                                 -- do not warn about holes: `?a` is not actually
                                 -- getting shadowed as it will not become a
                                 -- toplevel declaration
-                                 Hole _ _ _ => Nothing
+                                 Hole _ _ => Nothing
                                  _ => pure n
                     pure $ MkPair n <$> fromList ns
             whenJust (fromList ns) $ recordWarning . ShadowingGlobalDefs fc

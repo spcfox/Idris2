@@ -1303,7 +1303,7 @@ getUserHoles
                   | Nothing => pure True
              pure $ case definition def of
                   None => True
-                  Hole _ _ _ => True
+                  Hole _ _ => True
                   _ => False
 
 export
@@ -1315,7 +1315,7 @@ addDef n def
          put Ctxt ({ gamma := gam' } defs)
          case definition def of
               None => pure ()
-              Hole _ _ _ => pure ()
+              Hole _ _ => pure ()
               _ => clearUserHole (fullname def)
          pure idx
 

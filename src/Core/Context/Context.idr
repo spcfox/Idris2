@@ -110,7 +110,6 @@ data Def : Type where
     Hole : (numlocs : Nat) -> -- Number of locals in scope at binding point
                               -- (mostly to help display)
            HoleFlags ->
-           (ifUnsolved : Maybe ClosedTerm) ->
            Def
     BySearch : RigCount -> (maxdepth : Nat) -> (defining : Name) -> Def
     -- Constraints are integer references into the current map of
@@ -163,7 +162,7 @@ Show Def where
   show (ForeignDef a cs) = "<foreign def with arity " ++ show a ++
                            " " ++ show cs ++">"
   show (Builtin {arity} _) = "<builtin with arith " ++ show arity ++ ">"
-  show (Hole _ p _) = "Hole" ++ if implbind p then " [impl]" else ""
+  show (Hole _ p) = "Hole" ++ if implbind p then " [impl]" else ""
   show (BySearch c depth def) = "Search in " ++ show def
   show (Guess tm _ cs) = "Guess " ++ show tm ++ " when " ++ show cs
   show (UniverseLevel i) = "Universe level #" ++ show i

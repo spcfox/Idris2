@@ -333,7 +333,7 @@ mutual
                    metaty <- quote empty env aty
                    aval <- quote empty env arg
                    metaval <- metaVar fc argRig env nm metaty
-                   addIfUnsolved (getLoc aval) env metaval aval
+                   addIfUnsolved env metaval aval
                    let fntm = App fc tm metaval
                    fnty <- sc defs (toClosure defaultOpts env metaval)
                    when (bindingVars elabinfo) $ update EST $
@@ -575,7 +575,7 @@ mutual
                       else pure tm
              when (onLHS $ elabMode elabinfo) $
                  -- reset hole and redo it with the unexpanded definition
-                 do updateDef (Resolved idx) (const (Just (Hole 0 (holeInit False) Nothing)))
+                 do updateDef (Resolved idx) (const (Just (Hole 0 (holeInit False))))
                     ignore $ solveIfUndefined env metaval argv
              -- Mark for reduction when we finish elaborating
              updateDef (Resolved idx)

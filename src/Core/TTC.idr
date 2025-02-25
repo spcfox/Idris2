@@ -992,8 +992,8 @@ TTC Def where
       = do tag 5; toBuf b t; toBuf b arity; toBuf b parampos
            toBuf b detpos; toBuf b u; toBuf b ms; toBuf b datacons
            toBuf b dets
-  toBuf b (Hole locs p ifUnsolved)
-      = do tag 6; toBuf b locs; toBuf b (implbind p); toBuf b ifUnsolved
+  toBuf b (Hole locs p)
+      = do tag 6; toBuf b locs; toBuf b (implbind p)
   toBuf b (BySearch c depth def)
       = do tag 7; toBuf b c; toBuf b depth; toBuf b def
   toBuf b (Guess guess envb constraints)
@@ -1025,8 +1025,7 @@ TTC Def where
                      pure (TCon t a ps dets u ms cs detags)
              6 => do l <- fromBuf b
                      p <- fromBuf b
-                     ifUnsolved <- fromBuf b
-                     pure (Hole l (holeInit p) ifUnsolved)
+                     pure (Hole l (holeInit p))
              7 => do c <- fromBuf b; depth <- fromBuf b
                      def <- fromBuf b
                      pure (BySearch c depth def)

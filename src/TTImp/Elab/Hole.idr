@@ -23,7 +23,7 @@ mkPrecise : {auto c : Ref Ctxt Defs} ->
 mkPrecise (NApp _ (NMeta n i _) _)
     = updateDef (Resolved i)
                 (\case
-                    Hole i p ifUnsolved => Just (Hole i ({ precisetype := True} p) ifUnsolved)
+                    Hole i p => Just (Hole i ({ precisetype := True} p))
                     d => Nothing)
 mkPrecise _ = pure ()
 

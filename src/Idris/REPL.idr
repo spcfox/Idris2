@@ -502,7 +502,7 @@ processEdit (Intro upd line hole)
          -- Grab the hole's definition (and check it is not a solved hole)
          [(h, hidx, hgdef)] <- lookupCtxtName hole (gamma defs)
            | _ => pure $ EditError ("Could not find hole named" <++> pretty0 hole)
-         let Hole args _ _ = definition hgdef
+         let Hole args _ = definition hgdef
            | _ => pure $ EditError (pretty0 hole <++> "is not a refinable hole")
          let (lhsCtxt ** (env, htyInLhsCtxt)) = underPis (cast args) [] (type hgdef)
 
@@ -524,7 +524,7 @@ processEdit (Refine upd line hole e)
          -- We grab the LHS it lives in as well as its type in that context.
          [(h, hidx, hgdef)] <- lookupCtxtName hole (gamma defs)
            | _ => pure $ EditError ("Could not find hole named" <++> pretty0 hole)
-         let Hole args _ _ = definition hgdef
+         let Hole args _ = definition hgdef
            | _ => pure $ EditError (pretty0 hole <++> "is not a refinable hole")
          let (lhsCtxt ** (env, htyInLhsCtxt)) = underPis (cast args) [] (type hgdef)
 
@@ -621,7 +621,7 @@ processEdit (ExprSearch upd line name hints)
          syn <- get Syn
          let brack = elemBy (\x, y => dropNS x == dropNS y) name (bracketholes syn)
          case !(lookupDefName name (gamma defs)) of
-              [(n, nidx, Hole locs _ _)] =>
+              [(n, nidx, Hole locs _)] =>
                   do let searchtm = exprSearch replFC name hints
                      update ROpts { psResult := Just (name, searchtm) }
                      Just (_, restm) <- nextProofSearch
@@ -649,7 +649,7 @@ processEdit ExprSearchNext
          syn <- get Syn
          Just (name, restm) <- nextProofSearch
               | Nothing => pure $ EditError "No more results"
-         [(n, nidx, Hole locs _ _)] <- lookupDefName name (gamma defs)
+         [(n, nidx, Hole locs _)] <- lookupDefName name (gamma defs)
               | _ => pure $ EditError "Not a searchable hole"
          let brack = elemBy (\x, y => dropNS x == dropNS y) name (bracketholes syn)
          let tm' = dropLams locs restm
@@ -695,7 +695,7 @@ processEdit (MakeLemma upd line name)
          syn <- get Syn
          let brack = elemBy (\x, y => dropNS x == dropNS y) name (bracketholes syn)
          case !(lookupDefTyName name (gamma defs)) of
-              [(n, nidx, Hole locs _ _, ty)] =>
+              [(n, nidx, Hole locs _, ty)] =>
                   do (lty, lapp) <- makeLemma replFC name locs ty
                      pty <- pterm $ map defaultKindedName lty -- hack
                      papp <- pterm $ map defaultKindedName lapp -- hack

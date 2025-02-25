@@ -70,7 +70,7 @@ namespace Raw
   prettyDef (Builtin {arity} _) =
         vcat $ header "Builtin" :: map (indent 2)
           [ "arity:" <++> byShow arity ]
-  prettyDef (Hole numlocs hf _) =
+  prettyDef (Hole numlocs hf) =
         vcat $ header "Hole" :: map (indent 2)
           ("Implicitly bound name" <$ guard (implbind hf))
   prettyDef (BySearch rig depth def) =
@@ -122,7 +122,7 @@ namespace Resugared
   prettyDef (Builtin {arity} _) = pure $
         vcat $ header "Builtin" :: map (indent 2)
           [ "arity:" <++> byShow arity ]
-  prettyDef (Hole numlocs hf _) = pure $
+  prettyDef (Hole numlocs hf) = pure $
         vcat $ header "Hole" :: map (indent 2)
           ("Implicitly bound name" <$ guard (implbind hf))
   prettyDef (BySearch rig depth def) = pure $
