@@ -467,6 +467,14 @@ tryInstantiate {newvars} loc mode env mname mref num mdef locs otm tm
                log "unify.instantiate" 5 "Postponed"
                pure False
 
+         ust <- get UST
+         for_ ust.ifUnsolvedConstraints $ \(_ ** (_, metaval, aval)) =>
+           case metaval of
+             Meta _ _ idx _ =>
+               when (mref == idx) $
+                 addIfUnsolved env otm $ believe_me aval
+             _ => pure ()
+
          logTerm "unify.instantiate" 5 "Definition" rhs
          let simpleDef = MkPMDefInfo (SolvedHole num)
                                      (not (isUserName mname) && isSimple rhs)
