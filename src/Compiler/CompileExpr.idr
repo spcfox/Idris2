@@ -29,6 +29,8 @@ rev : SnocList a -> SnocList a
 rev [<] = [<]
 rev (xs :< x) = [<x] ++ rev xs
 
+%transform "rev/reverse" rev = reverse
+
 data Args
     = NewTypeBy Nat Nat
     | EraseArgs Nat (List Nat)

@@ -125,6 +125,8 @@ rev : SnocList a -> SnocList a
 rev [<] = [<]
 rev (xs :< x) = [<x] ++ rev xs
 
+%transform "rev/reverse" rev = reverse
+
 snoc : NamedPats vars ns -> PatInfo pvar vars -> NamedPats vars ([<pvar] ++ ns)
 snoc [] p = [p]
 snoc (n :: ns) p = n :: snoc ns p
