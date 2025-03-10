@@ -1222,7 +1222,7 @@ mkPat args orig (Ref fc (DataCon t a) n) = pure $ PCon fc n t a (rev args)
 mkPat args orig (Ref fc (TyCon t a) n) = pure $ PTyCon fc n a (rev args)
 mkPat args orig (Ref fc Func n)
   = do prims <- getPrimitiveNames
-       mtm <- normalisePrims (const True) isPConst True prims n args orig [<]
+       mtm <- normalisePrims (const True) isPConst True prims n (cast args) orig [<]
        case mtm of
          Just tm => if tm /= orig -- check we made progress; if there's an
                                   -- unresolved interface, we might be stuck
