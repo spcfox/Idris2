@@ -264,6 +264,9 @@ weakenNs ns (p :: ps)
 FreelyEmbeddable (PatInfo p) where
 
 FreelyEmbeddable ArgType where
+  embed Unknown = Unknown
+  embed (Stuck t) = Stuck (embed t)
+  embed (Known c t) = Known c (embed t)
 
 GenWeaken (PatInfo p) where
   genWeakenNs p q (MkInfo {idx} {name} pat loc at) = do
@@ -1280,12 +1283,7 @@ mkPatClause fc fn args ty pid (ps, rhs)
     mkNames (args :< r) (ps :< p) (SnocMatch eq) (f :: fs) Z
         = do rest <- mkNames args ps eq fs Z
              rewrite Extra.revOnto [<r] args
-             pure (snoc (weaken rest) (MkInfo p First (embed' f)))
-      where
-        embed' : ArgType [<] -> ArgType more
-        embed' Unknown = Unknown
-        embed' (Stuck t) = Stuck (embed {outer = more} t)
-        embed' (Known c t) = Known c (embed {outer = more} t)
+             pure (snoc (weaken rest) (MkInfo p First (embed f)))
 
 export
 patCompile : {auto c : Ref Ctxt Defs} ->
