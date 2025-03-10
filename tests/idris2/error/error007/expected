@@ -1,5 +1,5 @@
 1/1: Building CongErr (CongErr.idr)
-Error: While processing right hand side of fsprf. Can't solve constraint between: ?_ x and FS x.
+Error: While processing right hand side of fsprf. Can't solve constraint between: ?_ y and FS y.
 
 CongErr:4:11--4:19
  1 | import Data.Fin
