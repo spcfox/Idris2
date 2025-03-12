@@ -1,5 +1,6 @@
 module Libraries.Data.SnocList.Extra
 
+import Data.Nat
 import Data.SnocList
 
 public export
@@ -28,3 +29,15 @@ revOnto xs (vs :< v)
     = rewrite Extra.revOnto (xs :< v) vs in
         rewrite Extra.revOnto [<v] vs in
           rewrite appendAssociative xs [<v] (reverse vs) in Refl
+
+export
+reverseOntoLength : (sx, acc : SnocList a) ->
+  length (reverseOnto acc sx) = length acc + length sx
+reverseOntoLength [<] acc = rewrite plusZeroRightNeutral (length acc) in Refl
+reverseOntoLength (sx :< x) acc =
+  rewrite reverseOntoLength sx (acc :< x) in
+    plusSuccRightSucc (length acc) (length sx)
+
+export
+reverseLength : (sx : SnocList a) -> length (reverse sx) = length sx
+reverseLength sx = reverseOntoLength sx [<]
