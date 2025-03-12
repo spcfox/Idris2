@@ -46,3 +46,15 @@ lengthDistributesOverFish sx (y :: ys) = Calc $
   ~~ S (length sx) + length ys    ...( Refl )
   ~~ length sx + S (length ys)    ...( plusSuccRightSucc _ _ )
   ~~ length sx + length (y :: ys) ...( Refl )
+
+export
+reverseOntoLength : (sx, acc : SnocList a) ->
+  length (reverseOnto acc sx) = length acc + length sx
+reverseOntoLength [<] acc = rewrite plusZeroRightNeutral (length acc) in Refl
+reverseOntoLength (sx :< x) acc =
+  rewrite reverseOntoLength sx (acc :< x) in
+    plusSuccRightSucc (length acc) (length sx)
+
+export
+reverseLength : (sx : SnocList a) -> length (reverse sx) = length sx
+reverseLength sx = reverseOntoLength sx [<]

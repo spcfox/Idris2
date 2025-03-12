@@ -249,8 +249,7 @@ Weaken (PatInfo p) where
   weaken (MkInfo p el fty) = MkInfo p (Later el) (weaken fty)
 
 -- FIXME: perhaps 'vars' should be second argument so we can use Weaken interface
-weaken : {x, vars : _} ->
-         NamedPats vars todo -> NamedPats (vars :< x) todo
+weaken : NamedPats vars todo -> NamedPats (vars :< x) todo
 weaken [] = []
 weaken (p :: ps) = weaken p :: weaken ps
 
@@ -262,6 +261,10 @@ weakenNs ns (p :: ps)
     = weakenNs ns p :: weakenNs ns ps
 
 FreelyEmbeddable (PatInfo p) where
+
+embed : NamedPats vars todo -> NamedPats (outer ++ vars) todo
+embed [] = []
+embed (x :: xs) = embed x :: embed xs
 
 FreelyEmbeddable ArgType where
   embed Unknown = Unknown
@@ -1259,31 +1262,29 @@ mkPatClause fc fn args ty pid (ps, rhs)
                   -- read what we know off 'nty', and reverse it
                   argTys <- logQuiet $ getArgTys [<] (reverse args) (Just nty)
                   log "compile.casetree" 20 $ "mkPatClause args: " ++ show (toList args) ++ ", argTys: " ++ show argTys
-                  ns <- logQuiet $ mkNames args ps eq (reverse argTys) (length args `minus` length argTys)
+                  ns <- logQuiet $ mkNames (reverse args) (reverse ps) (reverse eq) argTys
                   log "compile.casetree" 20 $
                     "Make pat clause for names " ++ show ns
                      ++ " in LHS " ++ show (toList ps)
-                  pure (MkPatClause [] ns pid
+                  pure (MkPatClause []
+                          (replace {p = \x => NamedPats x (reverse args)} (reverseInvolutive _) ns)
+                          pid
                           (rewrite sym (appendLinLeftNeutral args) in
                                    (weakenNs (mkSizeOf args) rhs))))
             (checkLengthMatch args ps)
   where
     mkNames : (vars : SnocList Name) -> (ps : SnocList Pat) ->
-              (0 _ : LengthMatch vars ps) -> List (ArgType [<]) -> (skip : Nat) ->
-              Core (NamedPats vars (reverse vars))
-    mkNames [<] [<] LinMatch fty _ = pure []
-    mkNames (args :< r) (ps :< p) (SnocMatch eq) fs (S n)
-        = do rest <- mkNames args ps eq fs n
-             rewrite Extra.revOnto [<r] args
-             pure (snoc (weaken rest) (MkInfo p First Unknown))
-    mkNames (args :< r) (ps :< p) (SnocMatch eq) [] Z
-        = do rest <- mkNames args ps eq [] Z
-             rewrite Extra.revOnto [<r] args
-             pure (snoc (weaken rest) (MkInfo p First Unknown))
-    mkNames (args :< r) (ps :< p) (SnocMatch eq) (f :: fs) Z
-        = do rest <- mkNames args ps eq fs Z
-             rewrite Extra.revOnto [<r] args
-             pure (snoc (weaken rest) (MkInfo p First (embed f)))
+              (0 _ : LengthMatch vars ps) -> List (ArgType [<]) ->
+              Core (NamedPats (reverse vars) vars)
+    mkNames [<] [<] LinMatch _ = pure []
+    mkNames (args :< r) (ps :< p) (SnocMatch eq) []
+      = do rest <- mkNames args ps eq []
+           pure (MkInfo p (reverseIsVar {vars=args :< r} First) Unknown ::
+                 rewrite Extra.revOnto [<r] args in embed rest)
+    mkNames (args :< r) (ps :< p) (SnocMatch eq) (f :: fs)
+      = do rest <- mkNames args ps eq fs
+           pure (MkInfo p (reverseIsVar {vars=args :< r} First) (embed f) ::
+                 rewrite Extra.revOnto [<r] args in embed rest)
 
 export
 patCompile : {auto c : Ref Ctxt Defs} ->
