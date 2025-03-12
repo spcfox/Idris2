@@ -13,16 +13,15 @@ import Core.Value
 
 import Idris.Pretty.Annotations
 
+import Data.DPair
 import Data.List
 import Data.SnocList
 import Data.String
 import Data.Vect
-import Libraries.Data.List.SizeOf
 import Libraries.Data.List.LengthMatch
 import Libraries.Data.SortedSet
 import Libraries.Data.SnocList.SizeOf
 import Libraries.Data.SnocList.LengthMatch
-import Libraries.Data.SnocList.HasLength
 import Libraries.Data.SnocList.Extra
 
 import Decidable.Equality
@@ -119,11 +118,6 @@ data NamedPats : SnocList Name -> -- pattern variables still to process
             -- and its type. The type has no variable names; any names it
             -- refers to are explicit
             NamedPats vars ns -> NamedPats vars (ns :< pvar)
-
--- For ease of type level reasoning!
-rev : SnocList a -> SnocList a
-rev [<] = [<]
-rev (xs :< x) = [<x] ++ rev xs
 
 snoc : NamedPats vars ns -> PatInfo pvar vars -> NamedPats vars ([<pvar] ++ ns)
 snoc [] p = [p]
@@ -444,7 +438,7 @@ data Group : SnocList Name -> -- variables in scope
              Type where
      ConGroup : {newargs : _} ->
                 Name -> (tag : Int) ->
-                List (PatClause (vars ++ newargs) (todo ++ rev newargs)) ->
+                List (PatClause (vars ++ newargs) (todo ++ reverse newargs)) ->
                 Group vars todo
      DelayGroup : {tyarg, valarg : _} ->
                   List (PatClause (vars :< tyarg :< valarg)
@@ -460,7 +454,7 @@ covering
   show (ConstGroup c cs) = "Const " ++ show c ++ ": " ++ show cs
 
 data GroupMatch : ConType -> SnocList Pat -> Group vars todo -> Type where
-  ConMatch : {tag : Int} -> LengthMatch ps newargs ->
+  ConMatch : {tag : Int} -> (0 _ : LengthMatch ps newargs) ->
              GroupMatch (CName n tag) ps
                (ConGroup {newargs} n tag (MkPatClause pvs pats pid rhs :: rest))
   DelayMatch : GroupMatch CDelay [<]
@@ -520,65 +514,43 @@ nextNames' : {vars : _} ->
              FC ->
              (pats : SnocList Pat) ->
              (ns : SnocList Name) ->
-             LengthMatch pats ns ->
+             (0 _ : LengthMatch pats ns) ->
              List (ArgType vars) ->
-             (args ** (SizeOf args, NamedPats (vars ++ args) (rev args)))
+             (args ** (SizeOf args, NamedPats (vars ++ args) (reverse args)))
 nextNames' fc [<] [<] LinMatch argtys = ([<] ** (zero, []))
 nextNames' fc (pats :< p) (ns :< n) (SnocMatch prf) (argTy :: as)
     = let (args ** (l, ps)) = nextNames' fc pats ns prf as
           argTy' : ArgType ((vars ++ args) :< n)
              := weakenNs (mkSizeOf (args :< n)) argTy
-      in (args :< n ** (suc l, snoc (weaken ps) (MkInfo p First argTy')))
+      in (args :< n ** (suc l, rewrite Extra.revOnto [<n] args
+                               in snoc (weaken ps) (MkInfo p First argTy')))
 nextNames' fc (pats :< p) (ns :< n) (SnocMatch prf) argtys
     = let (args ** (l, ps)) = nextNames' fc pats ns prf argtys
-      in (args :< n ** (suc l, snoc (weaken ps) (MkInfo p First Unknown)))
-
-snocLMatch : LengthMatch xs ys -> LengthMatch ([<x] ++ xs) ([<y] ++ ys)
-snocLMatch LinMatch = SnocMatch LinMatch
-snocLMatch (SnocMatch z)
-    = let z' = snocLMatch z in
-          SnocMatch z'
-
-revLMatch : LengthMatch xs ys -> LengthMatch (rev xs) (rev ys)
-revLMatch LinMatch = LinMatch
-revLMatch (SnocMatch x)
-    = let x' = revLMatch x in
-          snocLMatch x'
-
-snocRMatch : LengthMatch xs ys -> LengthMatch (xs :< x) ([<y] ++ ys)
-snocRMatch LinMatch = SnocMatch LinMatch
-snocRMatch (SnocMatch z)
-    = let z' = snocRMatch z in
-          SnocMatch z'
-
-revRMatch : LengthMatch xs ys -> LengthMatch xs (rev ys)
-revRMatch LinMatch = LinMatch
-revRMatch (SnocMatch x)
-    = let x' = revRMatch x in
-          snocRMatch x'
+      in (args :< n ** (suc l, rewrite Extra.revOnto [<n] args
+                               in snoc (weaken ps) (MkInfo p First Unknown)))
 
 nextNames : {vars : _} ->
             {auto i : Ref PName Int} ->
             {auto c : Ref Ctxt Defs} ->
             FC -> String -> SnocList Pat -> Maybe (NF vars) ->
-            Core (args ** (SizeOf args, NamedPats (vars ++ args) (rev args)))
+            Core (args ** (SizeOf args, NamedPats (vars ++ args) (reverse args)))
 nextNames fc root [<] _ = pure ([<] ** (zero, []))
 nextNames {vars} fc root pats m_nty
-     = do (args ** lprf) <- mkNames pats
+     = do (Element args lprf) <- mkNames pats
           let env = mkEnv fc vars
           argTys <- logQuiet $ getArgTys env args m_nty
-          pure $ nextNames' fc pats (rev args) (revRMatch lprf) (reverse argTys)
+          pure $ nextNames' fc pats (reverse args) (reverseRight lprf) (reverse argTys)
   where
     mkNames : (vars : SnocList a) ->
-                Core (ns : SnocList Name ** LengthMatch vars ns)
-    mkNames [<] = pure ([<] ** LinMatch)
+                Core $ Subset (SnocList Name) (LengthMatch vars)
+    mkNames [<] = pure (Element [<] LinMatch)
     mkNames (xs :< x)
         = do n <- nextName root
-             (ns ** p) <- mkNames xs
-             pure (ns :< n ** SnocMatch p)
+             (Element ns p) <- mkNames xs
+             pure $ Element (ns :< n) (SnocMatch p)
 
 -- replace the prefix of patterns with 'pargs'
-newPats : (pargs : SnocList Pat) -> LengthMatch pargs ns ->
+newPats : (pargs : SnocList Pat) -> (0 _ : LengthMatch pargs ns) ->
           NamedPats vars (todo ++ ns) ->
           NamedPats vars ns
 newPats [<] LinMatch rest = []
@@ -651,7 +623,7 @@ groupCons fc fn pvars cs
              -- explicit dependencies in types accurate)
              let pats' = updatePatNames (updateNames (zip patnames pargs))
                                         (weakenNs l pats)
-             let clause = MkPatClause {todo = todo' ++ rev patnames}
+             let clause = MkPatClause {todo = todo' ++ reverse patnames}
                               pvars
                               (newargs ++ pats')
                               pid (weakenNs l rhs)
@@ -660,11 +632,11 @@ groupCons fc fn pvars cs
       addConG {vars'} {todo'} n tag pargs pats pid rhs
               ((ConGroup {newargs} n tag ((MkPatClause pvars ps tid tm) :: rest)) :: gs)
                    | (ConMatch {newargs} lprf)
-        = do let newps = newPats (rev pargs) (revLMatch lprf) ps
+        = do let newps = newPats (reverse pargs) (reverse lprf) ps
              let l = mkSizeOf newargs
              let pats' = updatePatNames (updateNames (zip newargs pargs))
                                         (weakenNs l pats)
-             let newclause : PatClause (vars' ++ newargs) (todo' ++ rev newargs)
+             let newclause : PatClause (vars' ++ newargs) (todo' ++ reverse newargs)
                    = MkPatClause pvars
                                  (newps ++ pats')
                                  pid
@@ -849,7 +821,8 @@ consScoreHeuristic scorePat (Scored xs ys) =
   where
     -- also returns NamePats of remaining columns while its in there
     -- scoring the first column.
-    scoreFirstColumn : (nps : List (NamedPats ns (ps' :< p'))) -> (res : List (NamedPats ns ps') ** (LengthMatch nps res, Vect (length nps) Int))
+    scoreFirstColumn : (nps : List (NamedPats ns (ps' :< p'))) ->
+                       (res : List (NamedPats ns ps') ** (LengthMatch nps res, Vect (length nps) Int))
     scoreFirstColumn [] = ([] ** (NilMatch, []))
     scoreFirstColumn ((w :: ws) :: nps) =
       let (ws' ** (prf, scores)) = scoreFirstColumn nps
@@ -1218,8 +1191,8 @@ mutual
 export
 mkPat : {auto c : Ref Ctxt Defs} -> SnocList Pat -> ClosedTerm -> ClosedTerm -> Core Pat
 mkPat [<] orig (Ref fc Bound n) = pure $ PLoc fc n
-mkPat args orig (Ref fc (DataCon t a) n) = pure $ PCon fc n t a (rev args)
-mkPat args orig (Ref fc (TyCon t a) n) = pure $ PTyCon fc n a (rev args)
+mkPat args orig (Ref fc (DataCon t a) n) = pure $ PCon fc n t a (reverse args)
+mkPat args orig (Ref fc (TyCon t a) n) = pure $ PTyCon fc n a (reverse args)
 mkPat args orig (Ref fc Func n)
   = do prims <- getPrimitiveNames
        mtm <- normalisePrims (const True) isPConst True prims n (cast args) orig [<]
@@ -1271,7 +1244,7 @@ mkPatClause : {auto c : Ref Ctxt Defs} ->
               FC -> Name ->
               (args : SnocList Name) -> ClosedTerm ->
               Int -> (SnocList Pat, ClosedTerm) ->
-              Core (PatClause args (rev args))
+              Core (PatClause args (reverse args))
 mkPatClause fc fn args ty pid (ps, rhs)
     = maybe (throw (CaseCompile fc fn DifferingArgNumbers))
             (\eq =>
@@ -1281,7 +1254,7 @@ mkPatClause fc fn args ty pid (ps, rhs)
                   log "compile.casetree" 20 $ "mkPatClause nty: " ++ show nty
                   -- The arguments are in reverse order, so we need to
                   -- read what we know off 'nty', and reverse it
-                  argTys <- logQuiet $ getArgTys [<] (rev args) (Just nty)
+                  argTys <- logQuiet $ getArgTys [<] (reverse args) (Just nty)
                   log "compile.casetree" 20 $ "mkPatClause args: " ++ show (toList args) ++ ", argTys: " ++ show argTys
                   ns <- logQuiet $ mkNames args ps eq (reverse argTys) (length args `minus` length argTys)
                   log "compile.casetree" 20 $
@@ -1293,17 +1266,20 @@ mkPatClause fc fn args ty pid (ps, rhs)
             (checkLengthMatch args ps)
   where
     mkNames : (vars : SnocList Name) -> (ps : SnocList Pat) ->
-              LengthMatch vars ps -> List (ArgType [<]) -> (skip : Nat) ->
-              Core (NamedPats vars (rev vars))
+              (0 _ : LengthMatch vars ps) -> List (ArgType [<]) -> (skip : Nat) ->
+              Core (NamedPats vars (reverse vars))
     mkNames [<] [<] LinMatch fty _ = pure []
-    mkNames (args :< _) (ps :< p) (SnocMatch eq) fs (S n)
+    mkNames (args :< r) (ps :< p) (SnocMatch eq) fs (S n)
         = do rest <- mkNames args ps eq fs n
+             rewrite Extra.revOnto [<r] args
              pure (snoc (weaken rest) (MkInfo p First Unknown))
-    mkNames (args :< _) (ps :< p) (SnocMatch eq) [] Z
+    mkNames (args :< r) (ps :< p) (SnocMatch eq) [] Z
         = do rest <- mkNames args ps eq [] Z
+             rewrite Extra.revOnto [<r] args
              pure (snoc (weaken rest) (MkInfo p First Unknown))
-    mkNames (args :< _) (ps :< p) (SnocMatch eq) (f :: fs) Z
+    mkNames (args :< r) (ps :< p) (SnocMatch eq) (f :: fs) Z
         = do rest <- mkNames args ps eq fs Z
+             rewrite Extra.revOnto [<r] args
              pure (snoc (weaken rest) (MkInfo p First (embed' f)))
       where
         embed' : ArgType [<] -> ArgType more
@@ -1324,7 +1300,7 @@ patCompile fc fn phase _ [] def
 patCompile fc fn phase ty (p :: ps) def
     = do let (ns ** n) = getNames 0 (reverse $ fst p)
          log "compile.casetree" 25 $ "ns: " ++ show (asList ns)
-         pats <- mkPatClausesFrom 0 (rev ns) (p :: ps)
+         pats <- mkPatClausesFrom 0 (reverse ns) (p :: ps)
          -- low verbosity level: pretty print fully resolved names
          logC "compile.casetree" 5 $ do
            pats <- traverse toFullNames pats
@@ -1339,7 +1315,7 @@ patCompile fc fn phase ty (p :: ps) def
   where
     mkPatClausesFrom : Int -> (args : SnocList Name) ->
                        List (SnocList Pat, ClosedTerm) ->
-                       Core (List (PatClause args (rev args)))
+                       Core (List (PatClause args (reverse args)))
     mkPatClausesFrom i ns [] = pure []
     mkPatClausesFrom i ns (p :: ps)
         = do p' <- mkPatClause fc fn ns ty i p

@@ -1,5 +1,7 @@
 module Libraries.Data.SnocList.LengthMatch
 
+import Libraries.Data.SnocList.HasLength
+
 %default total
 
 public export
@@ -22,11 +24,34 @@ lengthsMatch LinMatch = Refl
 lengthsMatch (SnocMatch x) = cong S (lengthsMatch x)
 
 export
-reverseOnto : LengthMatch sx sy -> LengthMatch sx' sy' ->
-  LengthMatch (reverseOnto sx sx') (reverseOnto sy sy')
-reverseOnto p LinMatch = p
-reverseOnto p (SnocMatch x) = reverseOnto (SnocMatch p) x
+hasLengthLeft : LengthMatch xs ys -> HasLength (length xs) xs
+hasLengthLeft LinMatch = Z
+hasLengthLeft (SnocMatch x) = S $ hasLengthLeft x
+
+export
+hasLengthRight : LengthMatch xs ys -> HasLength (length ys) ys
+hasLengthRight LinMatch = Z
+hasLengthRight (SnocMatch x) = S $ hasLengthRight x
+
+export
+lengthMatchSameLength : HasLength n sx -> HasLength n sy -> LengthMatch sx sy
+lengthMatchSameLength  Z     Z    = LinMatch
+lengthMatchSameLength (S n) (S m) = SnocMatch $ lengthMatchSameLength n m
+
+export
+symmetric : LengthMatch sx sy -> LengthMatch sy sx
+symmetric p = lengthMatchSameLength (hasLengthRight p) $
+                rewrite sym $ lengthsMatch p in hasLengthLeft p
+
+export
+reverseRight : LengthMatch sx sy -> LengthMatch sx (reverse sy)
+reverseRight p = lengthMatchSameLength (hasLengthLeft p) $
+                   rewrite lengthsMatch p in hlReverse $ hasLengthRight p
+
+export
+reverseLeft : LengthMatch sx sy -> LengthMatch (reverse sx) sy
+reverseLeft = symmetric . reverseRight . symmetric
 
 export
 reverse : LengthMatch sx sy -> LengthMatch (reverse sx) (reverse sy)
-reverse = reverseOnto LinMatch
+reverse = reverseLeft . reverseRight
