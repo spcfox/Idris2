@@ -361,17 +361,17 @@ normalisePrims : {auto c : Ref Ctxt Defs} -> {vs : _} ->
                  -- list of primitives
                  List Name ->
                  -- view of the potential redex
-                 (n : Name) ->          -- function name
-                 (args : List arg) ->   -- arguments from inside out (arg1, ..., argk)
+                 (n : Name) ->              -- function name
+                 (args : SnocList arg) ->   -- arguments in reversed order [<arg1, ..., argk]
                  -- actual term to evaluate if needed
-                 (tm : Term vs) ->      -- original term (n arg1 ... argk)
-                 Env Term vs ->         -- evaluation environment
+                 (tm : Term vs) ->          -- original term (n arg1 ... argk)
+                 Env Term vs ->             -- evaluation environment
                  -- output only evaluated if primitive
                  Core (Maybe (Term vs))
 normalisePrims boundSafe viewConstant all prims n args tm env
    = do let True = isPrimName prims !(getFullName n) -- is a primitive
               | _ => pure Nothing
-        let (mc :: _) = args -- with at least one argument
+        let (_ :< mc) = args -- with at least one argument
               | _ => pure Nothing
         let (Just c) = viewConstant mc -- that is a constant
               | _ => pure Nothing

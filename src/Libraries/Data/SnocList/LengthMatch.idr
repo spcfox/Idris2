@@ -2,6 +2,16 @@ module Libraries.Data.SnocList.LengthMatch
 
 import Libraries.Data.SnocList.HasLength
 
+---------------------------------------
+-- horrible hack
+import Libraries.Data.List.LengthMatch as L
+
+public export
+LLengthMatch : List a -> List b -> Type
+LLengthMatch = L.LengthMatch
+%hide L.LengthMatch
+---------------------------------------
+
 %default total
 
 public export
@@ -55,3 +65,8 @@ reverseLeft = symmetric . reverseRight . symmetric
 export
 reverse : LengthMatch sx sy -> LengthMatch (reverse sx) (reverse sy)
 reverse = reverseLeft . reverseRight
+
+export
+fromListLengthMatch : LLengthMatch xs ys -> LengthMatch ([<] <>< xs) ([<] <>< ys)
+fromListLengthMatch p = lengthMatchSameLength (hlFish Z (hasLengthLeft p)) $
+                          rewrite lengthsMatch p in (hlFish Z (hasLengthRight p))
