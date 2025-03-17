@@ -1296,9 +1296,9 @@ patCompile fc fn phase _ [] def
             (\e => pure ([<] ** e))
             def
 patCompile fc fn phase ty (p :: ps) def
-    = do let (ns ** n) = getNames 0 (reverse $ fst p)
-         log "compile.casetree" 25 $ "ns: " ++ show (asList ns)
-         pats <- mkPatClausesFrom 0 (reverse ns) (p :: ps)
+    = do let ns = getNames 0 (fst p)
+         log "compile.casetree" 25 $ "ns: " ++ show ns
+         pats <- mkPatClausesFrom 0 (cast ns) (p :: ps)
          -- low verbosity level: pretty print fully resolved names
          logC "compile.casetree" 5 $ do
            pats <- traverse toFullNames pats
@@ -1320,11 +1320,9 @@ patCompile fc fn phase ty (p :: ps) def
              ps' <- mkPatClausesFrom (i + 1) ns ps
              pure (p' :: ps')
 
-    getNames : Int -> SnocList Pat -> (ns : SnocList Name ** SizeOf ns)
-    getNames i [<] = ([<] ** zero)
-    getNames i (xs :< x) =
-      let (ns ** n) = getNames (i + 1) xs
-      in (ns :< MN "arg" i ** suc n)
+    getNames : Int -> SnocList Pat -> List Name
+    getNames i [<] = []
+    getNames i (xs :< x) = MN "arg" i :: getNames (i + 1) xs
 
 toPatClause : {auto c : Ref Ctxt Defs} ->
               FC -> Name -> (ClosedTerm, ClosedTerm) ->
