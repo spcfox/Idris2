@@ -99,8 +99,7 @@ mutual
 public export
 data Pat : Type where
      PAs : FC -> Name -> Pat -> Pat
-     PCon : FC -> Name -> (tag : Int) -> (arity : Nat) ->
-            SnocList Pat -> Pat
+     PCon : FC -> Name -> (tag : Int) -> (arity : Nat) -> SnocList Pat -> Pat
      PTyCon : FC -> Name -> (arity : Nat) -> SnocList Pat -> Pat
      PConst : FC -> (c : Constant) -> Pat
      PArrow : FC -> (x : Name) -> Pat -> Pat -> Pat
@@ -278,10 +277,10 @@ mkTerm : (vars : SnocList Name) -> Pat -> Term vars
 mkTerm vars (PAs fc x y) = mkTerm vars y
 mkTerm vars (PCon fc x tag arity xs)
     = applySpine fc (Ref fc (DataCon tag arity) x)
-               (map (mkTerm vars) xs)
+                    (map (mkTerm vars) xs)
 mkTerm vars (PTyCon fc x arity xs)
     = applySpine fc (Ref fc (TyCon 0 arity) x)
-               (map (mkTerm vars) xs)
+                    (map (mkTerm vars) xs)
 mkTerm vars (PConst fc c) = PrimVal fc c
 mkTerm vars (PArrow fc x s t)
     = Bind fc x (Pi fc top Explicit (mkTerm vars s)) (mkTerm (vars :< x) t)
