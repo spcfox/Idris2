@@ -381,7 +381,7 @@ clauseType phase (MkPatClause pvars (MkInfo arg _ ty :: rest) pid rhs)
   where
     -- used when we are tempted to split on a constructor: is
     -- this actually a fully applied one?
-    splitCon : Nat -> SnocList Pat -> ClauseType
+    splitCon : Nat -> List Pat -> ClauseType
     splitCon arity xs
       = if arity == length xs then ConClause else VarClause
 
@@ -724,11 +724,11 @@ groupCons fc fn pvars cs
          = addGroup p pprf pats pid (substName zero n (Local fc (Just True) _ pprf) rhs) acc
     addGroup (PCon cfc n t a pargs) pprf pats pid rhs acc
          = if a == length pargs
-              then addConG n t pargs pats pid rhs acc
+              then addConG n t (reverse $ cast pargs) pats pid rhs acc
               else throw (CaseCompile cfc fn (NotFullyApplied n))
     addGroup (PTyCon cfc n a pargs) pprf pats pid rhs acc
          = if a == length pargs
-           then addConG n 0 pargs pats pid rhs acc
+           then addConG n 0 (reverse $ cast pargs) pats pid rhs acc
            else throw (CaseCompile cfc fn (NotFullyApplied n))
     addGroup (PArrow _ _ s t) pprf pats pid rhs acc
          = addConG (UN $ Basic "->") 0 [<s, t] pats pid rhs acc
@@ -1195,8 +1195,8 @@ mutual
 export
 mkPat : {auto c : Ref Ctxt Defs} -> SnocList Pat -> ClosedTerm -> ClosedTerm -> Core Pat
 mkPat [<] orig (Ref fc Bound n) = pure $ PLoc fc n
-mkPat args orig (Ref fc (DataCon t a) n) = pure $ PCon fc n t a (reverse args)
-mkPat args orig (Ref fc (TyCon t a) n) = pure $ PTyCon fc n a (reverse args)
+mkPat args orig (Ref fc (DataCon t a) n) = pure $ PCon fc n t a (cast args)
+mkPat args orig (Ref fc (TyCon t a) n) = pure $ PTyCon fc n a (cast args)
 mkPat args orig (Ref fc Func n)
   = do prims <- getPrimitiveNames
        mtm <- normalisePrims (const True) isPConst True prims n (cast args) orig [<]
@@ -1231,9 +1231,9 @@ mkPat args orig (As fc _ _ ptm)
 mkPat args orig (TDelay fc r ty p)
     = pure $ PDelay fc r !(mkPat [<] orig ty) !(mkPat [<] orig p)
 mkPat args orig (PrimVal fc $ PrT c) -- Primitive type constant
-    = pure $ PTyCon fc (UN (Basic $ show c)) 0 [<]
+    = pure $ PTyCon fc (UN (Basic $ show c)) 0 []
 mkPat args orig (PrimVal fc c) = pure $ PConst fc c -- Non-type constant
-mkPat args orig (TType fc _) = pure $ PTyCon fc (UN $ Basic "Type") 0 [<]
+mkPat args orig (TType fc _) = pure $ PTyCon fc (UN $ Basic "Type") 0 []
 mkPat args orig tm
    = do log "compile.casetree" 10 $
           "Catchall: marking " ++ show tm ++ " as unmatchable"
