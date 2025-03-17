@@ -119,10 +119,6 @@ data NamedPats : SnocList Name -> -- the pattern variables still to process,
             -- refers to are explicit
             NamedPats ns vars -> NamedPats (ns :< pvar) vars
 
-snoc : NamedPats ns vars -> PatInfo pvar vars -> NamedPats ([<pvar] ++ ns) vars
-snoc [] p = [p]
-snoc (n :: ns) p = n :: snoc ns p
-
 getPatInfo : NamedPats todo vars -> List Pat
 getPatInfo [] = []
 getPatInfo (x :: xs) = pat x :: getPatInfo xs
@@ -286,6 +282,14 @@ tail (x :: xs) = xs
 take : (as : SnocList Name) -> NamedPats (bs ++ as) vars -> NamedPats as vars
 take [<] ps = []
 take (xs :< x) (p :: ps) = p :: take xs ps
+
+reverseOnto : NamedPats todoAcc vars -> NamedPats todo vars ->
+              NamedPats (reverseOnto todoAcc todo) vars
+reverseOnto acc []        = acc
+reverseOnto acc (p :: ps) = reverseOnto (p :: acc) ps
+
+reverse : NamedPats todo vars -> NamedPats (reverse todo) vars
+reverse = reverseOnto []
 
 data PatClause : (vars : SnocList Name) -> (todo : SnocList Name) -> Type where
      MkPatClause : List Name -> -- names matched so far (from original lhs)
@@ -512,18 +516,16 @@ nextNames' : {vars : _} ->
              (ns : SnocList Name) ->
              (0 _ : LengthMatch pats ns) ->
              List (ArgType vars) ->
-             (args ** (SizeOf args, NamedPats (reverse args) (vars ++ args)))
+             (args ** (SizeOf args, NamedPats args (vars ++ args)))
 nextNames' fc [<] [<] LinMatch argtys = ([<] ** (zero, []))
 nextNames' fc (pats :< p) (ns :< n) (SnocMatch prf) (argTy :: as)
     = let (args ** (l, ps)) = nextNames' fc pats ns prf as
           argTy' : ArgType ((vars ++ args) :< n)
              := weakenNs (mkSizeOf (args :< n)) argTy
-      in (args :< n ** (suc l, rewrite Extra.revOnto [<n] args
-                               in snoc (weaken ps) (MkInfo p First argTy')))
+      in (args :< n ** (suc l, MkInfo p First argTy' :: weaken ps))
 nextNames' fc (pats :< p) (ns :< n) (SnocMatch prf) argtys
     = let (args ** (l, ps)) = nextNames' fc pats ns prf argtys
-      in (args :< n ** (suc l, rewrite Extra.revOnto [<n] args
-                               in snoc (weaken ps) (MkInfo p First Unknown)))
+      in (args :< n ** (suc l, MkInfo p First Unknown :: weaken ps))
 
 nextNames : {vars : _} ->
             {auto i : Ref PName Int} ->
@@ -535,10 +537,11 @@ nextNames {vars} fc root pats m_nty
      = do (Element args lprf) <- mkNames pats
           let env = mkEnv fc vars
           argTys <- logQuiet $ getArgTys env args m_nty
-          pure $ nextNames' fc pats (reverse args) (reverseRight lprf) (reverse argTys)
+          let (args ** (l, pats)) = nextNames' fc pats (reverse args) (reverseRight lprf) (reverse argTys)
+          pure $ (args ** (l, reverse pats))
   where
     mkNames : (vars : SnocList a) ->
-                Core $ Subset (SnocList Name) (LengthMatch vars)
+              Core $ Subset (SnocList Name) (LengthMatch vars)
     mkNames [<] = pure (Element [<] LinMatch)
     mkNames (xs :< x)
         = do n <- nextName root
@@ -551,7 +554,7 @@ newPats : (pargs : SnocList Pat) -> (0 _ : LengthMatch pargs ns) ->
           NamedPats ns vars
 newPats [<] LinMatch rest = []
 newPats (xs :< newpat) (SnocMatch w) (pi :: rest)
-  = { pat := newpat} pi :: newPats xs w rest
+  = { pat := newpat } pi :: newPats xs w rest
 
 updateNames : SnocList (Name, Pat) -> SnocList (Name, Name)
 updateNames = mapMaybe update
