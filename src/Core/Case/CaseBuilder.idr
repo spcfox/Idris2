@@ -458,28 +458,28 @@ covering
   show (DelayGroup cs) = "Delay: " ++ show cs
   show (ConstGroup c cs) = "Const " ++ show c ++ ": " ++ show cs
 
-data GroupMatch : ConType -> SnocList Pat -> Group vars todo -> Type where
-  ConMatch : {tag : Int} -> (0 _ : LengthMatch ps newargs) ->
+data GroupMatch : ConType -> List Pat -> Group vars todo -> Type where
+  ConMatch : {tag : Int} -> (0 _ : LengthMatch (cast {to=SnocList Pat} ps) newargs) ->
              GroupMatch (CName n tag) ps
                (ConGroup {newargs} n tag (MkPatClause pvs pats pid rhs :: rest))
-  DelayMatch : GroupMatch CDelay [<]
+  DelayMatch : GroupMatch CDelay []
                (DelayGroup {tyarg} {valarg} (MkPatClause pvs pats pid rhs :: rest))
-  ConstMatch : GroupMatch (CConst c) [<]
+  ConstMatch : GroupMatch (CConst c) []
                   (ConstGroup c (MkPatClause pvs pats pid rhs :: rest))
   NoMatch : GroupMatch ct ps g
 
-checkGroupMatch : (c : ConType) -> (ps : SnocList Pat) -> (g : Group vars todo) ->
+checkGroupMatch : (c : ConType) -> (ps : List Pat) -> (g : Group vars todo) ->
                   GroupMatch c ps g
 checkGroupMatch (CName x tag) ps (ConGroup {newargs} x' tag' (MkPatClause pvs pats pid rhs :: rest))
-    = case checkLengthMatch ps newargs of
+    = case checkLengthMatch (cast {to=SnocList Pat} ps) newargs of
            Nothing => NoMatch
            Just prf => case (nameEq x x', decEq tag tag') of
                             (Just Refl, Yes Refl) => ConMatch prf
                             _ => NoMatch
 checkGroupMatch (CName x tag) ps _ = NoMatch
-checkGroupMatch CDelay [<] (DelayGroup (MkPatClause pvs pats pid rhs :: rest))
+checkGroupMatch CDelay [] (DelayGroup (MkPatClause pvs pats pid rhs :: rest))
     = DelayMatch
-checkGroupMatch (CConst c) [<] (ConstGroup c' (MkPatClause pvs pats pid rhs :: rest))
+checkGroupMatch (CConst c) [] (ConstGroup c' (MkPatClause pvs pats pid rhs :: rest))
     = case constantEq c c' of
            Nothing => NoMatch
            Just Refl => ConstMatch
@@ -517,27 +517,28 @@ nextNames' : {vars : _} ->
              {auto i : Ref PName Int} ->
              {auto c : Ref Ctxt Defs} ->
              FC ->
-             (pats : SnocList Pat) ->
+             (pats : List Pat) ->
              (ns : SnocList Name) ->
-             (0 _ : LengthMatch pats ns) ->
+             (0 _ : LengthMatch (cast {to=SnocList Pat} pats) ns) ->
              List (ArgType vars) ->
              (args ** (SizeOf args, NamedPats args (vars ++ args)))
-nextNames' fc [<] [<] LinMatch argtys = ([<] ** (zero, []))
-nextNames' fc (pats :< p) (ns :< n) (SnocMatch prf) (argTy :: as)
-    = let (args ** (l, ps)) = nextNames' fc pats ns prf as
+nextNames' fc [] [<] LinMatch argtys = ([<] ** (zero, []))
+nextNames' fc (p :: pats) (ns :< n) prf (argTy :: as)
+    = let (args ** (l, ps)) = nextNames' fc pats ns (believe_me prf) as
           argTy' : ArgType ((vars ++ args) :< n)
              := weakenNs (mkSizeOf (args :< n)) argTy
       in (args :< n ** (suc l, MkInfo p First argTy' :: weaken ps))
-nextNames' fc (pats :< p) (ns :< n) (SnocMatch prf) argtys
-    = let (args ** (l, ps)) = nextNames' fc pats ns prf argtys
+nextNames' fc (p :: pats) (ns :< n) prf argtys
+    = let (args ** (l, ps)) = nextNames' fc pats ns (believe_me prf) argtys
       in (args :< n ** (suc l, MkInfo p First Unknown :: weaken ps))
+nextNames' fc _ _ _ _ = believe_me () -- TODO: remove
 
 nextNames : {vars : _} ->
             {auto i : Ref PName Int} ->
             {auto c : Ref Ctxt Defs} ->
-            FC -> String -> SnocList Pat -> Maybe (NF vars) ->
+            FC -> String -> List Pat -> Maybe (NF vars) ->
             Core (args ** (SizeOf args, NamedPats (reverse args) (vars ++ args)))
-nextNames fc root [<] _ = pure ([<] ** (zero, []))
+nextNames fc root [] _ = pure ([<] ** (zero, []))
 nextNames {vars} fc root pats m_nty
      = do (Element args lprf) <- mkNames pats
           let env = mkEnv fc vars
@@ -545,13 +546,13 @@ nextNames {vars} fc root pats m_nty
           let (args ** (l, pats)) = nextNames' fc pats (reverse args) (reverseRight lprf) (reverse argTys)
           pure $ (args ** (l, reverse pats))
   where
-    mkNames : (vars : SnocList a) ->
-              Core $ Subset (SnocList Name) (LengthMatch vars)
-    mkNames [<] = pure (Element [<] LinMatch)
-    mkNames (xs :< x)
+    mkNames : (vars : List a) ->
+              Core $ Subset (SnocList Name) (LengthMatch (cast {to=SnocList a} vars))
+    mkNames [] = pure (Element [<] LinMatch)
+    mkNames (x :: xs)
         = do n <- nextName root
              (Element ns p) <- mkNames xs
-             pure $ Element (ns :< n) (SnocMatch p)
+             pure $ Element (ns :< n) (believe_me $ SnocMatch {x} {y=n} p)
 
 -- replace the prefix of patterns with 'pargs'
 newPats : (pargs : SnocList Pat) -> (0 _ : LengthMatch pargs ns) ->
@@ -600,7 +601,7 @@ groupCons fc fn pvars cs
   where
     addConG : {vars', todo' : _} ->
               Name -> (tag : Int) ->
-              SnocList Pat -> NamedPats todo' vars' ->
+              List Pat -> NamedPats todo' vars' ->
               Int -> (rhs : Term vars') ->
               (acc : List (Group vars' todo')) ->
               Core (List (Group vars' todo'))
@@ -618,14 +619,14 @@ groupCons fc fn pvars cs
                                    | Nothing => pure (NErased fc Placeholder)
                               nf defs (mkEnv fc vars') (embed t)
              (patnames ** (l, newargs)) <- logDepth $ do
-                log "compile.casetree" 25 $ "addConG nextNames for " ++ show (toList pargs)
+                log "compile.casetree" 25 $ "addConG nextNames for " ++ show pargs
                 logNF "compile.casetree" 25 "addConG nextNames cty" (mkEnv fc vars') cty
                 nextNames {vars=vars'} fc "e" pargs (Just cty)
              log "compile.casetree" 25 $ "addConG patnames  " ++ show (toList patnames)
              log "compile.casetree" 25 $ "addConG newargs  " ++ show newargs
              -- Update non-linear names in remaining patterns (to keep
              -- explicit dependencies in types accurate)
-             let pats' = updatePatNames (updateNames (zip patnames pargs))
+             let pats' = updatePatNames (updateNames (zip patnames (reverse $ cast {to=SnocList Pat} pargs)))
                                         (weakenNs l pats)
              let clause = MkPatClause {todo = todo' ++ reverse patnames}
                               pvars
@@ -636,9 +637,9 @@ groupCons fc fn pvars cs
       addConG {vars'} {todo'} n tag pargs pats pid rhs
               ((ConGroup {newargs} n tag ((MkPatClause pvars ps tid tm) :: rest)) :: gs)
                    | (ConMatch {newargs} lprf)
-        = do let newps = newPats (reverse pargs) (reverse lprf) ps
+        = do let newps = newPats (cast pargs) (reverseRight lprf) ps
              let l = mkSizeOf newargs
-             let pats' = updatePatNames (updateNames (zip newargs pargs))
+             let pats' = updatePatNames (updateNames (zip newargs (reverse $ cast {to=SnocList Pat} pargs)))
                                         (weakenNs l pats)
              let newclause : PatClause (vars' ++ newargs) (todo' ++ reverse newargs)
                    = MkPatClause pvars
@@ -668,7 +669,7 @@ groupCons fc fn pvars cs
                             do a' <- evalClosure d a
                                pure (NBind fc (MN "x" 0) (Pi fc top Explicit a)
                                        (\dv, av => pure (NDelayed fc LUnknown a'))))
-             ([<tyname, argname] ** (l, newargs)) <- nextNames {vars=vars'} fc "e" [<pty, parg]
+             ([<tyname, argname] ** (l, newargs)) <- nextNames {vars=vars'} fc "e" [parg, pty]
                                                   (Just dty)
                 | _ => throw (InternalError "Error compiling Delay pattern match")
              let pats' = updatePatNames (updateNames [<(tyname, pty), (argname, parg)])
@@ -677,7 +678,7 @@ groupCons fc fn pvars cs
                              pvars (newargs ++  pats')
                                    pid (weakenNs l rhs)
              pure [DelayGroup [clause]]
-    addDelayG {vars'} {todo'} pty parg pats pid rhs (g :: gs) with (checkGroupMatch CDelay [<] g)
+    addDelayG {vars'} {todo'} pty parg pats pid rhs (g :: gs) with (checkGroupMatch CDelay [] g)
       addDelayG {vars'} {todo'} pty parg pats pid rhs
           ((DelayGroup {tyarg} {valarg} ((MkPatClause pvars ps tid tm) :: rest)) :: gs)
                  | (DelayMatch {tyarg} {valarg})
@@ -702,7 +703,7 @@ groupCons fc fn pvars cs
                 Core (List (Group vars' todo'))
     addConstG c pats pid rhs []
         = pure [ConstGroup c [MkPatClause pvars pats pid rhs]]
-    addConstG {todo'} {vars'} c pats pid rhs (g :: gs) with (checkGroupMatch (CConst c) [<] g)
+    addConstG {todo'} {vars'} c pats pid rhs (g :: gs) with (checkGroupMatch (CConst c) [] g)
       addConstG {todo'} {vars'} c pats pid rhs
               ((ConstGroup c ((MkPatClause pvars ps tid tm) :: rest)) :: gs) | ConstMatch
           = let newclause : PatClause vars' todo'
@@ -724,14 +725,14 @@ groupCons fc fn pvars cs
          = addGroup p pprf pats pid (substName zero n (Local fc (Just True) _ pprf) rhs) acc
     addGroup (PCon cfc n t a pargs) pprf pats pid rhs acc
          = if a == length pargs
-              then addConG n t (reverse $ cast pargs) pats pid rhs acc
+              then addConG n t pargs pats pid rhs acc
               else throw (CaseCompile cfc fn (NotFullyApplied n))
     addGroup (PTyCon cfc n a pargs) pprf pats pid rhs acc
          = if a == length pargs
-           then addConG n 0 (reverse $ cast pargs) pats pid rhs acc
+           then addConG n 0 pargs pats pid rhs acc
            else throw (CaseCompile cfc fn (NotFullyApplied n))
     addGroup (PArrow _ _ s t) pprf pats pid rhs acc
-         = addConG (UN $ Basic "->") 0 [<s, t] pats pid rhs acc
+         = addConG (UN $ Basic "->") 0 [t, s] pats pid rhs acc
     -- Go inside the delay; we'll flag the case as needing to force its
     -- scrutinee (need to check in 'caseGroups below)
     addGroup (PDelay _ _ pty parg) pprf pats pid rhs acc
