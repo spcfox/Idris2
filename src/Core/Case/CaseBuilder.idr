@@ -15,6 +15,7 @@ import Idris.Pretty.Annotations
 
 import Data.DPair
 import Data.List
+import Data.List.HasLength
 import Data.SnocList
 import Data.String
 import Data.Vect
@@ -873,6 +874,11 @@ record NVarL {0 a : Type} (nm : a) (vars : List a) where
   {nvarIdx : Nat}
   0 nvarPrf : IsVarL nm nvarIdx vars
 
+0 isVarFishy : IsVarL nm n inner -> IsVar nm (length inner `minus ` S n) (outer <>< inner)
+isVarFishy {inner = nm :: inner} First =
+  rewrite minusZeroRight (length inner) in fishyIsVar (hasLength inner)
+isVarFishy (Later p) = isVarFishy p
+
 ||| Based only on the heuristic-score of columns, get the index of
 ||| the column that should be processed next.
 |||
@@ -1262,9 +1268,9 @@ argToPat tm = mkPat [<] tm tm
 
 mkPatClause : {auto c : Ref Ctxt Defs} ->
               FC -> Name ->
-              (args : SnocList Name) -> ClosedTerm ->
+              (args : List Name) -> ClosedTerm ->
               Int -> (List Pat, ClosedTerm) ->
-              Core (PatClause args (cast args))
+              Core (PatClause (cast args) args)
 mkPatClause fc fn args ty pid (ps, rhs)
     = maybe (throw (CaseCompile fc fn DifferingArgNumbers))
             (\eq =>
@@ -1274,14 +1280,14 @@ mkPatClause fc fn args ty pid (ps, rhs)
                   log "compile.casetree" 20 $ "mkPatClause nty: " ++ show nty
                   -- The arguments are in reverse order, so we need to
                   -- read what we know off 'nty', and reverse it
-                  argTys <- logQuiet $ getArgTys [<] (cast args) (Just nty)
+                  argTys <- logQuiet $ getArgTys [<] args (Just nty)
                   log "compile.casetree" 20 $ "mkPatClause args: " ++ show (toList args) ++ ", argTys: " ++ show argTys
-                  ns <- logQuiet $ mkNames (cast args) ps (believe_me eq) argTys
+                  ns <- logQuiet $ mkNames args ps (believe_me eq) argTys
                   log "compile.casetree" 20 $
                     "Make pat clause for names " ++ show ns
                      ++ " in LHS " ++ show ps
                   pure (MkPatClause [] (believe_me ns) pid (believe_me rhs)))
-            (checkLengthMatch (toList args) ps)
+            (checkLengthMatch args ps)
   where
     mkNames : (vars : List Name) -> (ps : List Pat) ->
               (0 _ : LengthMatch vars ps) -> List (ArgType [<]) ->
@@ -1289,11 +1295,11 @@ mkPatClause fc fn args ty pid (ps, rhs)
     mkNames [] [] NilMatch _ = pure []
     mkNames (r :: args) (p :: ps) (ConsMatch eq) []
       = do rest <- mkNames args ps eq []
-           let info = MkInfo {name=r} {idx=length args} p (believe_me Var.First) Unknown
+           let info = MkInfo p (isVarFishy {outer=[<]} {inner=r :: args} First) Unknown
            pure (info :: rewrite fishAsSnocAppend [<r] args in embed rest)
     mkNames (r :: args) (p :: ps) (ConsMatch eq) (f :: fs)
       = do rest <- mkNames args ps eq fs
-           let info = MkInfo {name=r} {idx=length args} p (believe_me Var.First) (embed f)
+           let info = MkInfo p (isVarFishy {outer=[<]} {inner=r :: args} First) (embed f)
            pure (info :: rewrite fishAsSnocAppend [<r] args in embed rest)
 
 export
@@ -1309,7 +1315,7 @@ patCompile fc fn phase _ [] def
 patCompile fc fn phase ty (p :: ps) def
     = do let ns = getNames 0 (fst p)
          log "compile.casetree" 25 $ "ns: " ++ show ns
-         pats <- mkPatClausesFrom 0 (cast ns) (p :: ps)
+         pats <- mkPatClausesFrom 0 ns (p :: ps)
          -- low verbosity level: pretty print fully resolved names
          logC "compile.casetree" 5 $ do
            pats <- traverse toFullNames pats
@@ -1322,9 +1328,9 @@ patCompile fc fn phase ty (p :: ps) def
          cases <- match fc fn phase pats (embed @{MaybeFreelyEmbeddable} def)
          pure (_ ** cases)
   where
-    mkPatClausesFrom : Int -> (args : SnocList Name) ->
+    mkPatClausesFrom : Int -> (args : List Name) ->
                        List (SnocList Pat, ClosedTerm) ->
-                       Core (List (PatClause args (cast args)))
+                       Core (List (PatClause (cast args) args))
     mkPatClausesFrom i ns [] = pure []
     mkPatClausesFrom i ns (p :: ps)
         = do p' <- mkPatClause fc fn ns ty i (mapFst cast p)
