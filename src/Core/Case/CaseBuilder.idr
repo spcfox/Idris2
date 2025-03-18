@@ -622,7 +622,7 @@ groupCons fc fn pvars cs
                 log "compile.casetree" 25 $ "addConG nextNames for " ++ show (reverse pargs)
                 logNF "compile.casetree" 25 "addConG nextNames cty" (mkEnv fc vars') cty
                 nextNames {vars=vars'} fc "e" pargs (Just cty)
-             log "compile.casetree" 25 $ "addConG patnames  " ++ show (toList patnames)
+             log "compile.casetree" 25 $ "addConG patnames  " ++ show patnames
              log "compile.casetree" 25 $ "addConG newargs  " ++ show newargs
              -- Update non-linear names in remaining patterns (to keep
              -- explicit dependencies in types accurate)
@@ -1282,11 +1282,11 @@ mkPatClause fc fn args ty pid (ps, rhs)
                   -- read what we know off 'nty', and reverse it
                   argTys <- logQuiet $ getArgTys [<] args (Just nty)
                   log "compile.casetree" 20 $ "mkPatClause args: " ++ show (toList args) ++ ", argTys: " ++ show argTys
-                  ns <- logQuiet $ mkNames args ps (believe_me eq) argTys
+                  ns <- logQuiet $ mkNames args ps eq argTys
                   log "compile.casetree" 20 $
                     "Make pat clause for names " ++ show ns
                      ++ " in LHS " ++ show ps
-                  pure (MkPatClause [] (believe_me ns) pid (believe_me rhs)))
+                  pure (MkPatClause [] ns pid (weakensN (mkSizeOf args) rhs)))
             (checkLengthMatch args ps)
   where
     mkNames : (vars : List Name) -> (ps : List Pat) ->
