@@ -618,7 +618,7 @@ groupCons fc fn pvars cs
                                    | Nothing => pure (NErased fc Placeholder)
                               nf defs (mkEnv fc vars') (embed t)
              (patnames ** (l, newargs)) <- logDepth $ do
-                log "compile.casetree" 25 $ "addConG nextNames for " ++ show pargs
+                log "compile.casetree" 25 $ "addConG nextNames for " ++ show (reverse pargs)
                 logNF "compile.casetree" 25 "addConG nextNames cty" (mkEnv fc vars') cty
                 nextNames {vars=vars'} fc "e" pargs (Just cty)
              log "compile.casetree" 25 $ "addConG patnames  " ++ show (toList patnames)
@@ -633,10 +633,9 @@ groupCons fc fn pvars cs
       addConG {vars'} {todo'} n tag pargs pats pid rhs
               ((ConGroup {newargs} n tag ((MkPatClause pvars ps tid tm) :: rest)) :: gs)
                    | (ConMatch {newargs} lprf)
-        = do let newps = newPats pargs lprf ps
+        = do let newps = newPats (reverse pargs) (believe_me lprf) ps
              let l = mkSizeOf newargs
-             let pats'
-                = updatePatNames (updateNames (zip newargs pargs))
+             let pats' = updatePatNames (updateNames (zip newargs pargs))
                                         (weakensN l pats)
              let newclause = MkPatClause pvars (newps ++ pats') pid (weakensN l rhs)
              -- put the new clause at the end of the group, since we
@@ -674,7 +673,7 @@ groupCons fc fn pvars cs
           ((DelayGroup {tyarg} {valarg} ((MkPatClause pvars ps tid tm) :: rest)) :: gs)
                  | (DelayMatch {tyarg} {valarg})
          = do let l = mkSizeOf [tyarg, valarg]
-              let newps = newPats [parg, pty] (ConsMatch (ConsMatch NilMatch)) ps
+              let newps = newPats [pty, parg] (ConsMatch (ConsMatch NilMatch)) ps
               let pats' = updatePatNames (updateNames [(valarg, parg), (tyarg, pty)])
                                          (weakensN l pats)
               let newclause : PatClause (vars' :< tyarg :< valarg)
