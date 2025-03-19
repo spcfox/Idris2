@@ -259,11 +259,9 @@ GenWeaken (PatInfo p) where
     let at' = genWeakenNs p q at
     MkInfo pat loc' at'
 
--- TODO: remove
--- genWeakenNs : {0 local, ns, outer : Scope} ->
---   SizeOf outer -> SizeOf ns -> NamedPats todo (local ++ outer) -> NamedPats todo (local ++ ns ++ outer)
--- genWeakenNs p q Nil = Nil
--- genWeakenNs p q (pi :: np) = genWeakenNs p q pi :: genWeakenNs p q np
+GenWeaken (NamedPats todo) where
+  genWeakenNs p q [] = []
+  genWeakenNs p q  (pi :: np) = genWeakenNs p q pi :: genWeakenNs p q np
 
 (++) : NamedPats ms vars -> NamedPats ns vars -> NamedPats (ms ++ ns) vars
 (++) [] ys = ys
@@ -271,11 +269,6 @@ GenWeaken (PatInfo p) where
 
 tail : NamedPats (p :: ps) vars -> NamedPats ps vars
 tail (x :: xs) = xs
-
--- TODO: remove
--- take : (as : List Name) -> NamedPats (as ++ bs) vars -> NamedPats as vars
--- take [] ps = []
--- take (x :: xs) (p :: ps) = p :: take xs ps
 
 reverseOnto : NamedPats todoAcc vars -> NamedPats todo vars ->
               NamedPats (reverseOnto todoAcc todo) vars
@@ -504,26 +497,20 @@ getArgTys env (_ :: _) (Just t)
          pure [Stuck !(quote empty env t)]
 getArgTys _ _ _ = pure []
 
-nextNames' : {vars : _} ->
-             {auto i : Ref PName Int} ->
-             {auto c : Ref Ctxt Defs} ->
-             FC ->
-             (pats : SnocList Pat) ->
-             (ns : SnocList Name) ->
-             (0 _ : LengthMatch pats ns) ->
-             SnocList (ArgType vars) ->
-             (args ** (SizeOf args, NamedPats (asList args) (vars ++ args)))
-nextNames' fc [<] [<] LinMatch _ = ([<] ** (zero, []))
-nextNames' fc (pats :< p) (ns :< n) (SnocMatch prf) (as :< argTy)
-    = let (args ** (l, ps)) = nextNames' fc pats ns prf as
-       in (args :< n ** (suc l, rewrite chipsAsListAppend args [n] in
-                                rewrite sym $ revAppend (cast args) [n] in
-                                MkInfo p First (weakenNs (suc l) argTy) :: weaken ps))
-nextNames' fc (pats :< p) (ns :< n) (SnocMatch prf) [<]
-    = let (args ** (l, ps)) = nextNames' fc pats ns prf [<]
-       in (args :< n ** (suc l, rewrite chipsAsListAppend args [n] in
-                                rewrite sym $ revAppend (cast args) [n] in
-                                MkInfo p First Unknown :: weaken ps))
+nextNames' : (pats : List Pat) ->
+               (ns : List Name) ->
+               (0 _ : LengthMatch pats ns) ->
+               List (ArgType vars) ->
+               (args ** (SizeOf args, NamedPats args (vars <>< args)))
+nextNames' [] [] NilMatch _ = ([] ** (zero, []))
+nextNames' (p :: pats) (n :: ns) (ConsMatch prf) (argTy :: as)
+  = let (args ** (l, ps)) = nextNames' pats ns prf as
+     in (n :: args ** (suc l, weakensN l (MkInfo p First (weaken argTy)) ::
+                              genWeakenFishily l ps))
+nextNames' (p :: pats) (n :: ns) (ConsMatch prf) []
+  = let (args ** (l, ps)) = nextNames' pats ns prf []
+     in (n :: args ** (suc l, weakensN l (MkInfo p First Unknown) ::
+                              genWeakenFishily l ps))
 
 nextNames : {vars : _} ->
             {auto i : Ref PName Int} ->
@@ -535,11 +522,10 @@ nextNames {vars} fc root pats m_nty
      = do (Element args p) <- mkNames pats
           let env = mkEnv fc vars
           argTys <- logQuiet $ getArgTys env args m_nty
-          let (args ** (l, pats)) = nextNames' fc (cast pats)
-                                                  (cast args)
-                                                  (fromListLengthMatch p)
-                                                  (cast argTys)
-          pure (args ** (l, replace {p=flip NamedPats _} (reverseInvolutive _) (reverse pats)))
+          let (args ** (l, pats)) = nextNames' pats args p argTys
+          pure (cast args ** (cast l, rewrite toListCast args in
+                                      rewrite sym $ fishAsSnocAppend vars (cast args) in
+                                      pats))
   where
     mkNames : (vars : List a) -> Core $ Subset (List Name) (LengthMatch vars)
     mkNames [] = pure (Element [] NilMatch)
