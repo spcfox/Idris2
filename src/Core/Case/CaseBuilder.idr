@@ -270,14 +270,6 @@ GenWeaken (NamedPats todo) where
 tail : NamedPats (p :: ps) vars -> NamedPats ps vars
 tail (x :: xs) = xs
 
-reverseOnto : NamedPats todoAcc vars -> NamedPats todo vars ->
-              NamedPats (reverseOnto todoAcc todo) vars
-reverseOnto acc []        = acc
-reverseOnto acc (p :: ps) = reverseOnto (p :: acc) ps
-
-reverse : NamedPats todo vars -> NamedPats (reverse todo) vars
-reverse = reverseOnto []
-
 data PatClause : (vars : SnocList Name) -> (todo : List Name) -> Type where
      MkPatClause : List Name -> -- names matched so far (from original lhs)
                    NamedPats todo vars ->
@@ -606,10 +598,7 @@ groupCons fc fn pvars cs
              let pats' = updatePatNames (updateNames (zip patnames pargs))
                                         (weakensN l pats)
              let clause = MkPatClause pvars (newargs ++ pats') pid (weakensN l rhs)
-             pure [ConGroup {newargs=cast patnames} n tag [clause]]
-            --  pure [ConGroup {newargs=cast patnames} n tag
-            --         [rewrite fishAsSnocAppend vars' (cast patnames) in
-            --          rewrite castToList patnames in clause]]
+             pure [ConGroup n tag [clause]]
     addConG {vars'} {todo'} n tag pargs pats pid rhs (g :: gs) with (checkGroupMatch (CName n tag) pargs g)
       addConG {vars'} {todo'} n tag pargs pats pid rhs
               ((ConGroup {newargs} n tag ((MkPatClause pvars ps tid tm) :: rest)) :: gs)
@@ -743,12 +732,6 @@ weakenIsVarL (MkSizeOf (S k) (S l)) p =  Later (weakenIsVarL (MkSizeOf k l) p)
 
 weakenNVarL : SizeOf ns -> NVarL nm inner -> NVarL nm (ns ++ inner)
 weakenNVarL s (MkNVarL p) = MkNVarL (weakenIsVarL s p)
-
--- TODO: take `SizeOf inner`
-0 isVarFishy : IsVarL nm n inner -> IsVar nm (length inner `minus ` S n) (outer <>< inner)
-isVarFishy {inner = nm :: inner} First =
-  rewrite minusZeroRight (length inner) in fishyIsVar (hasLength inner)
-isVarFishy (Later p) = isVarFishy p
 
 ||| Store scores alongside rows of named patterns. These scores are used to determine
 ||| which column of patterns to switch on first. One score per column.
@@ -1269,7 +1252,7 @@ mkPatClause fc fn args ty pid (ps, rhs)
                   -- read what we know off 'nty', and reverse it
                   argTys <- logQuiet $ getArgTys [<] args (Just nty)
                   log "compile.casetree" 20 $ "mkPatClause args: " ++ show args ++ ", argTys: " ++ show argTys
-                  ns <- logQuiet $ mkNames args ps eq argTys
+                  ns <- logQuiet $ mkNames args ps eq (mkSizeOf args) argTys
                   log "compile.casetree" 20 $
                     "Make pat clause for names " ++ show ns
                      ++ " in LHS " ++ show ps
@@ -1277,16 +1260,16 @@ mkPatClause fc fn args ty pid (ps, rhs)
             (checkLengthMatch args ps)
   where
     mkNames : (vars : List Name) -> (ps : List Pat) ->
-              (0 _ : LengthMatch vars ps) -> List (ArgType [<]) ->
+              (0 _ : LengthMatch vars ps) -> SizeOf vars -> List (ArgType [<]) ->
               Core (NamedPats vars (cast vars))
-    mkNames [] [] NilMatch _ = pure []
-    mkNames (r :: args) (p :: ps) (ConsMatch eq) []
-      = do rest <- mkNames args ps eq []
-           let info = MkInfo p (isVarFishy {outer=[<]} {inner=r :: args} First) Unknown
+    mkNames [] [] NilMatch _ _ = pure []
+    mkNames (r :: args) (p :: ps) (ConsMatch eq) (MkSizeOf (S n) (S s)) []
+      = do rest <- mkNames args ps eq (MkSizeOf n s) []
+           let info = MkInfo {name=r} p (fishyIsVar {outer=[<]} s) Unknown
            pure (info :: rewrite fishAsSnocAppend [<r] args in embed rest)
-    mkNames (r :: args) (p :: ps) (ConsMatch eq) (f :: fs)
-      = do rest <- mkNames args ps eq fs
-           let info = MkInfo p (isVarFishy {outer=[<]} {inner=r :: args} First) (embed f)
+    mkNames (r :: args) (p :: ps) (ConsMatch eq) (MkSizeOf (S n) (S s)) (f :: fs)
+      = do rest <- mkNames args ps eq (MkSizeOf n s) fs
+           let info = MkInfo {name=r} p (fishyIsVar {outer=[<]} s) (embed f)
            pure (info :: rewrite fishAsSnocAppend [<r] args in embed rest)
 
 export
