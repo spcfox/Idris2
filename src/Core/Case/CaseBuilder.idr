@@ -370,7 +370,7 @@ clauseType phase (MkPatClause pvars (MkInfo arg _ ty :: rest) pid rhs)
   where
     -- used when we are tempted to split on a constructor: is
     -- this actually a fully applied one?
-    splitCon : Nat -> List Pat -> ClauseType
+    splitCon : Nat -> SnocList Pat -> ClauseType
     splitCon arity xs
       = if arity == length xs then ConClause else VarClause
 
@@ -504,13 +504,6 @@ getArgTys env (n :: ns) (Just t)
          pure [Stuck !(quote empty env t)]
 getArgTys _ _ _ = pure []
 
-revOnto : (xs, vs : List a) -> reverseOnto xs vs = reverse vs ++ xs
-revOnto _ [] = Refl
-revOnto xs (v :: vs)
-    = rewrite revOnto (v :: xs) vs in
-        rewrite appendAssociative (reverse vs) [v] xs in
-                                  rewrite revOnto [v] vs in Refl
-
 nextNames' : {vars : _} ->
              {auto i : Ref PName Int} ->
              {auto c : Ref Ctxt Defs} ->
@@ -541,10 +534,10 @@ nextNames : {vars : _} ->
             Core (args ** (SizeOf args, NamedPats args (vars <>< args)))
 nextNames fc root [] _ = pure ([] ** (zero, []))
 nextNames {vars} fc root pats m_nty
-     = do (Element args lprf) <- mkNames pats
+     = do (Element args lprf) <- mkNames (reverse pats)
           let env = mkEnv fc vars
           argTys <- logQuiet $ getArgTys env args m_nty
-          let (args ** pats) = nextNames' fc pats (reverse args) (believe_me lprf) (reverse argTys)
+          let (args ** pats) = nextNames' fc (reverse pats) (reverse args) (believe_me lprf) (reverse argTys)
           pure (cast args ** (mkSizeOf (cast args), believe_me $ reverse pats))
   where
     mkNames : (vars : List a) -> Core $ Subset (List Name) (LengthMatch vars)
@@ -619,14 +612,14 @@ groupCons fc fn pvars cs
                                    | Nothing => pure (NErased fc Placeholder)
                               nf defs (mkEnv fc vars') (embed t)
              (patnames ** (l, newargs)) <- logDepth $ do
-                log "compile.casetree" 25 $ "addConG nextNames for " ++ show (reverse pargs)
+                log "compile.casetree" 25 $ "addConG nextNames for " ++ show pargs
                 logNF "compile.casetree" 25 "addConG nextNames cty" (mkEnv fc vars') cty
                 nextNames {vars=vars'} fc "e" pargs (Just cty)
              log "compile.casetree" 25 $ "addConG patnames  " ++ show patnames
              log "compile.casetree" 25 $ "addConG newargs  " ++ show newargs
              -- Update non-linear names in remaining patterns (to keep
              -- explicit dependencies in types accurate)
-             let pats' = updatePatNames (updateNames (zip patnames pargs))
+             let pats' = updatePatNames (updateNames (zip (reverse patnames) pargs))
                                         (weakensN l pats)
              let clause = MkPatClause pvars (newargs ++ pats') pid (weakensN l rhs)
              pure [ConGroup n tag [clause]]
@@ -634,7 +627,7 @@ groupCons fc fn pvars cs
       addConG {vars'} {todo'} n tag pargs pats pid rhs
               ((ConGroup {newargs} n tag ((MkPatClause pvars ps tid tm) :: rest)) :: gs)
                    | (ConMatch {newargs} lprf)
-        = do let newps = newPats (reverse pargs) (believe_me lprf) ps
+        = do let newps = newPats pargs lprf ps
              let l = mkSizeOf newargs
              let pats' = updatePatNames (updateNames (zip newargs pargs))
                                         (weakensN l pats)
@@ -662,7 +655,7 @@ groupCons fc fn pvars cs
                             do a' <- evalClosure d a
                                pure (NBind fc (MN "x" 0) (Pi fc top Explicit a)
                                        (\dv, av => pure (NDelayed fc LUnknown a'))))
-             ([tyname, argname] ** (l, newargs)) <- nextNames {vars=vars'} fc "e" [parg, pty]
+             ([tyname, argname] ** (l, newargs)) <- nextNames {vars=vars'} fc "e" [pty, parg]
                                                   (Just dty)
                 | _ => throw (InternalError "Error compiling Delay pattern match")
              let pats' = updatePatNames (updateNames [(argname, parg), (tyname, pty)])
@@ -716,14 +709,14 @@ groupCons fc fn pvars cs
          = addGroup p pprf pats pid (substName zero n (Local fc (Just True) _ pprf) rhs) acc
     addGroup (PCon cfc n t a pargs) pprf pats pid rhs acc
          = if a == length pargs
-              then addConG n t pargs pats pid rhs acc
+              then addConG n t (cast pargs) pats pid rhs acc
               else throw (CaseCompile cfc fn (NotFullyApplied n))
     addGroup (PTyCon cfc n a pargs) pprf pats pid rhs acc
          = if a == length pargs
-           then addConG n 0 pargs pats pid rhs acc
+           then addConG n 0 (cast pargs) pats pid rhs acc
            else throw (CaseCompile cfc fn (NotFullyApplied n))
     addGroup (PArrow _ _ s t) pprf pats pid rhs acc
-         = addConG (UN $ Basic "->") 0 [t, s] pats pid rhs acc
+         = addConG (UN $ Basic "->") 0 [s, t] pats pid rhs acc
     -- Go inside the delay; we'll flag the case as needing to force its
     -- scrutinee (need to check in 'caseGroups below)
     addGroup (PDelay _ _ pty parg) pprf pats pid rhs acc
@@ -1215,18 +1208,18 @@ mutual
       = pure err
 
 export
-mkPat : {auto c : Ref Ctxt Defs} -> SnocList Pat -> ClosedTerm -> ClosedTerm -> Core Pat
-mkPat [<] orig (Ref fc Bound n) = pure $ PLoc fc n
+mkPat : {auto c : Ref Ctxt Defs} -> List Pat -> ClosedTerm -> ClosedTerm -> Core Pat
+mkPat [] orig (Ref fc Bound n) = pure $ PLoc fc n
 mkPat args orig (Ref fc (DataCon t a) n) = pure $ PCon fc n t a (cast args)
 mkPat args orig (Ref fc (TyCon t a) n) = pure $ PTyCon fc n a (cast args)
 mkPat args orig (Ref fc Func n)
   = do prims <- getPrimitiveNames
-       mtm <- normalisePrims (const True) isPConst True prims n (cast args) orig [<]
+       mtm <- normalisePrims (const True) isPConst True prims n (reverse args) orig [<]
        case mtm of
          Just tm => if tm /= orig -- check we made progress; if there's an
                                   -- unresolved interface, we might be stuck
                                   -- and we'd loop forever
-                       then mkPat [<] tm tm
+                       then mkPat [] tm tm
                        else -- Possibly this should be an error instead?
                             pure $ PUnmatchable (getLoc orig) orig
          Nothing =>
@@ -1240,22 +1233,22 @@ mkPat args orig (Bind fc x (Pi _ _ _ s) t)
 
     -- For (b:Nat) -> b, the codomain looks like b [__], but we want `b` as the pattern
     = case subst (Erased fc Placeholder) t of
-        App _ t'@(Ref fc Bound n) (Erased _ _) =>  pure $ PArrow fc x !(mkPat [<] s s) !(mkPat [<] t' t')
-        t' =>  pure $ PArrow fc x !(mkPat [<] s s) !(mkPat [<] t' t')
+        App _ t'@(Ref fc Bound n) (Erased _ _) =>  pure $ PArrow fc x !(mkPat [] s s) !(mkPat [] t' t')
+        t' =>  pure $ PArrow fc x !(mkPat [] s s) !(mkPat [] t' t')
 mkPat args orig (App fc fn arg)
-    = do parg <- mkPat [<] arg arg
-         mkPat (args :< parg) orig fn
+    = do parg <- mkPat [] arg arg
+         mkPat (parg :: args) orig fn
 -- Assumption is that clauses are converted to explicit names
 mkPat args orig (As fc _ (Ref _ Bound n) ptm)
-    = pure $ PAs fc n !(mkPat [<] ptm ptm)
+    = pure $ PAs fc n !(mkPat [] ptm ptm)
 mkPat args orig (As fc _ _ ptm)
-    = mkPat [<] orig ptm
+    = mkPat [] orig ptm
 mkPat args orig (TDelay fc r ty p)
-    = pure $ PDelay fc r !(mkPat [<] orig ty) !(mkPat [<] orig p)
+    = pure $ PDelay fc r !(mkPat [] orig ty) !(mkPat [] orig p)
 mkPat args orig (PrimVal fc $ PrT c) -- Primitive type constant
-    = pure $ PTyCon fc (UN (Basic $ show c)) 0 []
+    = pure $ PTyCon fc (UN (Basic $ show c)) 0 [<]
 mkPat args orig (PrimVal fc c) = pure $ PConst fc c -- Non-type constant
-mkPat args orig (TType fc _) = pure $ PTyCon fc (UN $ Basic "Type") 0 []
+mkPat args orig (TType fc _) = pure $ PTyCon fc (UN $ Basic "Type") 0 [<]
 mkPat args orig tm
    = do log "compile.casetree" 10 $
           "Catchall: marking " ++ show tm ++ " as unmatchable"
@@ -1263,7 +1256,7 @@ mkPat args orig tm
 
 export
 argToPat : {auto c : Ref Ctxt Defs} -> ClosedTerm -> Core Pat
-argToPat tm = mkPat [<] tm tm
+argToPat tm = mkPat [] tm tm
 
 
 mkPatClause : {auto c : Ref Ctxt Defs} ->
@@ -1281,7 +1274,7 @@ mkPatClause fc fn args ty pid (ps, rhs)
                   -- The arguments are in reverse order, so we need to
                   -- read what we know off 'nty', and reverse it
                   argTys <- logQuiet $ getArgTys [<] args (Just nty)
-                  log "compile.casetree" 20 $ "mkPatClause args: " ++ show (toList args) ++ ", argTys: " ++ show argTys
+                  log "compile.casetree" 20 $ "mkPatClause args: " ++ show args ++ ", argTys: " ++ show argTys
                   ns <- logQuiet $ mkNames args ps eq argTys
                   log "compile.casetree" 20 $
                     "Make pat clause for names " ++ show ns
