@@ -498,10 +498,10 @@ getArgTys env (_ :: _) (Just t)
 getArgTys _ _ _ = pure []
 
 nextNames' : (pats : List Pat) ->
-               (ns : List Name) ->
-               (0 _ : LengthMatch pats ns) ->
-               List (ArgType vars) ->
-               (args ** (SizeOf args, NamedPats args (vars <>< args)))
+             (ns : List Name) ->
+             (0 _ : LengthMatch pats ns) ->
+             List (ArgType vars) ->
+             (args ** (SizeOf args, NamedPats args (vars <>< args)))
 nextNames' [] [] NilMatch _ = ([] ** (zero, []))
 nextNames' (p :: pats) (n :: ns) (ConsMatch prf) (argTy :: as)
   = let (args ** (l, ps)) = nextNames' pats ns prf as
@@ -516,16 +516,13 @@ nextNames : {vars : _} ->
             {auto i : Ref PName Int} ->
             {auto c : Ref Ctxt Defs} ->
             FC -> String -> List Pat -> Maybe (NF vars) ->
-            Core (args ** (SizeOf args, NamedPats (cast args) (vars ++ args)))
-nextNames fc root [] _ = pure ([<] ** (zero, []))
+            Core (args ** (SizeOf args, NamedPats args (vars <>< args)))
+nextNames _ _ [] _ = pure ([] ** (zero, []))
 nextNames {vars} fc root pats m_nty
      = do (Element args p) <- mkNames pats
           let env = mkEnv fc vars
           argTys <- logQuiet $ getArgTys env args m_nty
-          let (args ** (l, pats)) = nextNames' pats args p argTys
-          pure (cast args ** (cast l, rewrite toListCast args in
-                                      rewrite sym $ fishAsSnocAppend vars (cast args) in
-                                      pats))
+          pure $ nextNames' pats args p argTys
   where
     mkNames : (vars : List a) -> Core $ Subset (List Name) (LengthMatch vars)
     mkNames [] = pure (Element [] NilMatch)
@@ -606,12 +603,13 @@ groupCons fc fn pvars cs
              log "compile.casetree" 25 $ "addConG newargs  " ++ show newargs
              -- Update non-linear names in remaining patterns (to keep
              -- explicit dependencies in types accurate)
-             let pats' = updatePatNames (updateNames (zip (cast patnames) pargs))
-                                        (weakenNs l pats)
-             let clause = MkPatClause pvars (newargs ++ pats') pid (weakenNs l rhs)
-             pure [ConGroup {newargs=cast patnames} n tag
-                    [rewrite fishAsSnocAppend vars' (cast patnames) in
-                     rewrite castToList patnames in clause]]
+             let pats' = updatePatNames (updateNames (zip patnames pargs))
+                                        (weakensN l pats)
+             let clause = MkPatClause pvars (newargs ++ pats') pid (weakensN l rhs)
+             pure [ConGroup {newargs=cast patnames} n tag [clause]]
+            --  pure [ConGroup {newargs=cast patnames} n tag
+            --         [rewrite fishAsSnocAppend vars' (cast patnames) in
+            --          rewrite castToList patnames in clause]]
     addConG {vars'} {todo'} n tag pargs pats pid rhs (g :: gs) with (checkGroupMatch (CName n tag) pargs g)
       addConG {vars'} {todo'} n tag pargs pats pid rhs
               ((ConGroup {newargs} n tag ((MkPatClause pvars ps tid tm) :: rest)) :: gs)
@@ -644,12 +642,12 @@ groupCons fc fn pvars cs
                             do a' <- evalClosure d a
                                pure (NBind fc (MN "x" 0) (Pi fc top Explicit a)
                                        (\dv, av => pure (NDelayed fc LUnknown a'))))
-             ([<tyname, argname] ** (l, newargs)) <- nextNames {vars=vars'} fc "e" [pty, parg]
+             ([tyname, argname] ** (l, newargs)) <- nextNames {vars=vars'} fc "e" [pty, parg]
                                                   (Just dty)
                 | _ => throw (InternalError "Error compiling Delay pattern match")
-             let pats' = updatePatNames (updateNames [(argname, parg), (tyname, pty)])
-                                        (weakenNs l pats)
-             let clause = MkPatClause pvars (newargs ++ pats') pid (weakenNs l rhs)
+             let pats' = updatePatNames (updateNames [(tyname, pty), (argname, parg)])
+                                        (weakensN l pats)
+             let clause = MkPatClause pvars (newargs ++ pats') pid (weakensN l rhs)
              pure [DelayGroup [clause]]
     addDelayG {vars'} {todo'} pty parg pats pid rhs (g :: gs) with (checkGroupMatch CDelay [] g)
       addDelayG {vars'} {todo'} pty parg pats pid rhs
@@ -746,6 +744,7 @@ weakenIsVarL (MkSizeOf (S k) (S l)) p =  Later (weakenIsVarL (MkSizeOf k l) p)
 weakenNVarL : SizeOf ns -> NVarL nm inner -> NVarL nm (ns ++ inner)
 weakenNVarL s (MkNVarL p) = MkNVarL (weakenIsVarL s p)
 
+-- TODO: take `SizeOf inner`
 0 isVarFishy : IsVarL nm n inner -> IsVar nm (length inner `minus ` S n) (outer <>< inner)
 isVarFishy {inner = nm :: inner} First =
   rewrite minusZeroRight (length inner) in fishyIsVar (hasLength inner)
