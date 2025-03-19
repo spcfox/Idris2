@@ -744,123 +744,6 @@ getFirstPat (p :: _) = pat p
 getFirstArgType : NamedPats (p :: ps) ns -> ArgType ns
 getFirstArgType (p :: _) = argType p
 
--- ||| Store scores alongside rows of named patterns. These scores are used to determine
--- ||| which column of patterns to switch on first. One score per column.
--- data ScoredPats : SnocList Name -> SnocList Name -> Type where
---  Scored : List (NamedPats (ps :< p) ns) -> Vect (length (ps :< p)) Int -> ScoredPats ns (ps :< p)
-
--- {ps : _} -> Show (ScoredPats ns ps) where
---   show (Scored xs ys) = (show ps) ++ "//" ++ (show ys)
-
--- zeroedScore : {ps : _} -> List (NamedPats (ps :< p) ns) -> ScoredPats ns (ps :< p)
--- zeroedScore nps = Scored nps (replicate (S $ length ps) 0)
-
--- ||| Proof that a value `v` inserted in the middle of a snoc list with
--- ||| prefix `ps` and suffix `qs` can equivalently be consed with
--- ||| `ps` or consed with `qs` before appending `qs` to `ps`.
--- elemInsertedMiddle : (v : a) -> (ps,qs : SnocList a) -> ((qs :< v) ++ ps) = (qs ++ (v `cons` ps))
--- elemInsertedMiddle v [<] qs = Refl
--- elemInsertedMiddle v (xs :< x) qs = rewrite elemInsertedMiddle v xs qs in Refl
-
--- ||| Helper to find a single highest scoring name (or none at all) while
--- ||| retaining the context of all names processed.
--- highScore : {prev : SnocList Name} ->
---             (names : SnocList Name) ->
---             (scores : Vect (length names) Int) ->
---             (highVal : Int) ->
---             (highIdx : (n ** NVar n (names ++ prev))) ->
---             (duped : Bool) ->
---             Maybe (n ** NVar n (names ++ prev))
--- highScore [<] [] high idx True = Nothing
--- highScore [<] [] high idx False = Just idx
--- highScore (xs :< x) (y :: ys) high idx duped =
---   let next = highScore {prev = x `cons` prev} xs ys
---       prf = elemInsertedMiddle x prev xs
---   in  rewrite prf in
---         case compare y high of
---              LT => next high (rewrite sym $ prf in idx) duped
---              EQ => next high (rewrite sym $ prf in idx) True
---              GT => next y (x ** rewrite sym $ prf in weakenNVar (mkSizeOf prev) (MkNVar First)) False
-
--- ||| Get the index of the highest scoring column if there is one.
--- ||| If no column has a higher score than all other columns then
--- ||| the result is Nothing indicating we need to apply more scoring
--- ||| to break the tie.
--- ||| Suggested heuristic application order: f, b, a.
--- highScoreIdx : {p : _} -> {ps : _} -> ScoredPats ns (ps :< p) -> Maybe (n ** NVar n (ps :< p))
--- highScoreIdx (Scored xs (y :: ys)) = highScore {prev = [<]} (ps :< p) (y :: ys) (y - 1) (p ** MkNVar First) False
-
--- ||| Apply the penalty function to the head constructor's
--- ||| arity. Produces 0 for all non-head-constructors.
--- headConsPenalty : (penality : Nat -> Int) -> Pat -> Int
--- headConsPenalty p (PAs _ _ w)        = headConsPenalty p w
--- headConsPenalty p (PCon _ n _ arity pats) = p arity
--- headConsPenalty p (PTyCon _ _ arity _)    = p arity
--- headConsPenalty _ (PConst _ _)       = 0
--- headConsPenalty _ (PArrow _ _ _ _)   = 0
--- headConsPenalty p (PDelay _ _ _ w)   = headConsPenalty p w
--- headConsPenalty _ (PLoc _ _)         = 0
--- headConsPenalty _ (PUnmatchable _ _) = 0
-
--- ||| Apply the given function that scores a pattern to all patterns and then
--- ||| sum up the column scores and add to the ScoredPats passed in.
--- consScoreHeuristic : {ps : _} -> (scorePat : Pat -> Int) -> ScoredPats ns ps -> ScoredPats ns ps
--- consScoreHeuristic _ sps@(Scored [] _) = sps -- can't update scores without any patterns
--- consScoreHeuristic scorePat (Scored xs ys) =
---   let columnScores = sum <$> scoreColumns xs
---       ys' = zipWith (+) ys columnScores
---   in  Scored xs ys'
---   where
---     -- also returns NamePats of remaining columns while its in there
---     -- scoring the first column.
---     scoreFirstColumn : (nps : List (NamedPats (ps' :< p') ns)) ->
---                        (res : List (NamedPats ps' ns) ** (LengthMatch nps res, Vect (length nps) Int))
---     scoreFirstColumn [] = ([] ** (NilMatch, []))
---     scoreFirstColumn ((w :: ws) :: nps) =
---       let (ws' ** (prf, scores)) = scoreFirstColumn nps
---       in  (ws :: ws' ** (ConsMatch prf, scorePat (pat w) :: scores))
-
---     scoreColumns : {ps' : _} -> (nps : List (NamedPats ps' ns)) -> Vect (length ps') (Vect (length nps) Int)
---     scoreColumns {ps' = [<]} nps = []
---     scoreColumns {ps' = (ws :< w)} nps =
---       let (rest ** (prf, firstColScore)) = scoreFirstColumn nps
---       in  firstColScore :: (rewrite lengthsMatch prf in scoreColumns rest)
-
--- ||| Add 1 to each non-default pat in the first row.
--- ||| This favors constructive matching first and reduces tree depth on average.
--- heuristicF : {ps : _} -> ScoredPats ns (ps :< p) -> ScoredPats ns (ps :< p)
--- heuristicF sps@(Scored [] _) = sps
--- heuristicF (Scored (x :: xs) ys) =
---   let columnScores = scores x
---       ys' = zipWith (+) ys columnScores
---   in  Scored (x :: xs) ys'
---   where
---     isBlank : Pat -> Bool
---     isBlank (PLoc _ _) = True
---     isBlank _ = False
-
---     scores : NamedPats ps' ns' -> Vect (length ps') Int
---     scores [] = []
---     scores (y :: ys) = let score : Int = if isBlank (pat y) then 0 else 1
---                        in  score :: scores ys
-
--- ||| Subtract 1 from each column for each pat that represents a head constructor.
--- ||| This favors pats that produce less branching.
--- heuristicB : {ps : _} -> ScoredPats ns ps -> ScoredPats ns ps
--- heuristicB = consScoreHeuristic (headConsPenalty (\arity => if arity == 0 then 0 else -1))
-
--- ||| Subtract the sum of the arities of constructors in each column.
--- heuristicA : {ps : _} -> ScoredPats ns ps -> ScoredPats ns ps
--- heuristicA = consScoreHeuristic (headConsPenalty (negate . cast))
-
--- applyHeuristics : {p : _} ->
---                   {ps : _} ->
---                   ScoredPats ns (ps :< p) ->
---                   List (ScoredPats ns (ps :< p) -> ScoredPats ns (ps :< p)) ->
---                   Maybe (n ** NVar n (ps :< p))
--- applyHeuristics x [] = highScoreIdx x
--- applyHeuristics x (f :: fs) = highScoreIdx x <|> applyHeuristics (f x) fs
-
 data IsVarL : a -> Nat -> List a -> Type where
     First : IsVarL n Z (n :: ns)
     Later : IsVarL n i ns -> IsVarL n (S i) (m :: ns)
@@ -870,10 +753,134 @@ record NVarL {0 a : Type} (nm : a) (vars : List a) where
   {nvarIdx : Nat}
   0 nvarPrf : IsVarL nm nvarIdx vars
 
+0 weakenIsVarL : forall idx. (s : SizeOf ns) -> IsVarL x idx xs -> IsVarL x (size s + idx) (ns ++ xs)
+weakenIsVarL (MkSizeOf Z Z) p =  p
+weakenIsVarL (MkSizeOf (S k) (S l)) p =  Later (weakenIsVarL (MkSizeOf k l) p)
+
+weakenNVarL : SizeOf ns -> NVarL nm inner -> NVarL nm (ns ++ inner)
+weakenNVarL s (MkNVarL p) = MkNVarL (weakenIsVarL s p)
+
 0 isVarFishy : IsVarL nm n inner -> IsVar nm (length inner `minus ` S n) (outer <>< inner)
 isVarFishy {inner = nm :: inner} First =
   rewrite minusZeroRight (length inner) in fishyIsVar (hasLength inner)
 isVarFishy (Later p) = isVarFishy p
+
+||| Store scores alongside rows of named patterns. These scores are used to determine
+||| which column of patterns to switch on first. One score per column.
+data ScoredPats : SnocList Name -> List Name -> Type where
+ Scored : List (NamedPats (p :: ps) ns) -> Vect (length (p :: ps)) Int -> ScoredPats ns (p :: ps)
+
+{ps : _} -> Show (ScoredPats ns ps) where
+  show (Scored xs ys) = (show ps) ++ "//" ++ (show ys)
+
+zeroedScore : {ps : _} -> List (NamedPats (p :: ps) ns) -> ScoredPats ns (p :: ps)
+zeroedScore nps = Scored nps (replicate (S $ length ps) 0)
+
+||| Proof that a value `v` inserted in the middle of a list with
+||| prefix `ps` and suffix `qs` can equivalently be snoced with
+||| `ps` or consed with `qs` before appending `qs` to `ps`.
+elemInsertedMiddle : (v : a) -> (ps,qs : List a) -> (ps ++ (v :: qs)) = ((ps `snoc` v) ++ qs)
+elemInsertedMiddle v [] qs = Refl
+elemInsertedMiddle v (x :: xs) qs = rewrite elemInsertedMiddle v xs qs in Refl
+
+||| Helper to find a single highest scoring name (or none at all) while
+||| retaining the context of all names processed.
+highScore : {prev : List Name} ->
+            (names : List Name) ->
+            (scores : Vect (length names) Int) ->
+            (highVal : Int) ->
+            (highIdx : (n ** NVarL n (prev ++ names))) ->
+            (duped : Bool) ->
+            Maybe (n ** NVarL n (prev ++ names))
+highScore [] [] high idx True = Nothing
+highScore [] [] high idx False = Just idx
+highScore (x :: xs) (y :: ys) high idx duped =
+  let next = highScore {prev = prev `snoc` x} xs ys
+      prf = elemInsertedMiddle x prev xs
+  in  rewrite prf in
+        case compare y high of
+             LT => next high (rewrite sym $ prf in idx) duped
+             EQ => next high (rewrite sym $ prf in idx) True
+             GT => next y (x ** rewrite sym $ prf in weakenNVarL (mkSizeOf prev) (MkNVarL First)) False
+
+||| Get the index of the highest scoring column if there is one.
+||| If no column has a higher score than all other columns then
+||| the result is Nothing indicating we need to apply more scoring
+||| to break the tie.
+||| Suggested heuristic application order: f, b, a.
+highScoreIdx : {p : _} -> {ps : _} -> ScoredPats ns (p :: ps) -> Maybe (n ** NVarL n (p :: ps))
+highScoreIdx (Scored xs (y :: ys)) = highScore {prev = []} (p :: ps) (y :: ys) (y - 1) (p ** MkNVarL First) False
+
+||| Apply the penalty function to the head constructor's
+||| arity. Produces 0 for all non-head-constructors.
+headConsPenalty : (penality : Nat -> Int) -> Pat -> Int
+headConsPenalty p (PAs _ _ w)        = headConsPenalty p w
+headConsPenalty p (PCon _ n _ arity pats) = p arity
+headConsPenalty p (PTyCon _ _ arity _)    = p arity
+headConsPenalty _ (PConst _ _)       = 0
+headConsPenalty _ (PArrow _ _ _ _)   = 0
+headConsPenalty p (PDelay _ _ _ w)   = headConsPenalty p w
+headConsPenalty _ (PLoc _ _)         = 0
+headConsPenalty _ (PUnmatchable _ _) = 0
+
+||| Apply the given function that scores a pattern to all patterns and then
+||| sum up the column scores and add to the ScoredPats passed in.
+consScoreHeuristic : {ps : _} -> (scorePat : Pat -> Int) -> ScoredPats ns ps -> ScoredPats ns ps
+consScoreHeuristic _ sps@(Scored [] _) = sps -- can't update scores without any patterns
+consScoreHeuristic scorePat (Scored xs ys) =
+  let columnScores = sum <$> scoreColumns xs
+      ys' = zipWith (+) ys columnScores
+  in  Scored xs ys'
+  where
+    -- also returns NamePats of remaining columns while its in there
+    -- scoring the first column.
+    scoreFirstColumn : (nps : List (NamedPats (p' :: ps') ns)) ->
+                       (res : List (NamedPats ps' ns) ** (LengthMatch nps res, Vect (length nps) Int))
+    scoreFirstColumn [] = ([] ** (NilMatch, []))
+    scoreFirstColumn ((w :: ws) :: nps) =
+      let (ws' ** (prf, scores)) = scoreFirstColumn nps
+      in  (ws :: ws' ** (ConsMatch prf, scorePat (pat w) :: scores))
+
+    scoreColumns : {ps' : _} -> (nps : List (NamedPats ps' ns)) -> Vect (length ps') (Vect (length nps) Int)
+    scoreColumns {ps' = []} nps = []
+    scoreColumns {ps' = (w :: ws)} nps =
+      let (rest ** (prf, firstColScore)) = scoreFirstColumn nps
+      in  firstColScore :: (rewrite lengthsMatch prf in scoreColumns rest)
+
+||| Add 1 to each non-default pat in the first row.
+||| This favors constructive matching first and reduces tree depth on average.
+heuristicF : {ps : _} -> ScoredPats ns (p :: ps) -> ScoredPats ns (p :: ps)
+heuristicF sps@(Scored [] _) = sps
+heuristicF (Scored (x :: xs) ys) =
+  let columnScores = scores x
+      ys' = zipWith (+) ys columnScores
+  in  Scored (x :: xs) ys'
+  where
+    isBlank : Pat -> Bool
+    isBlank (PLoc _ _) = True
+    isBlank _ = False
+
+    scores : NamedPats ps' ns' -> Vect (length ps') Int
+    scores [] = []
+    scores (y :: ys) = let score : Int = if isBlank (pat y) then 0 else 1
+                       in  score :: scores ys
+
+||| Subtract 1 from each column for each pat that represents a head constructor.
+||| This favors pats that produce less branching.
+heuristicB : {ps : _} -> ScoredPats ns ps -> ScoredPats ns ps
+heuristicB = consScoreHeuristic (headConsPenalty (\arity => if arity == 0 then 0 else -1))
+
+||| Subtract the sum of the arities of constructors in each column.
+heuristicA : {ps : _} -> ScoredPats ns ps -> ScoredPats ns ps
+heuristicA = consScoreHeuristic (headConsPenalty (negate . cast))
+
+applyHeuristics : {p : _} ->
+                  {ps : _} ->
+                  ScoredPats ns (p :: ps) ->
+                  List (ScoredPats ns (p :: ps) -> ScoredPats ns (p :: ps)) ->
+                  Maybe (n ** NVarL n (p :: ps))
+applyHeuristics x [] = highScoreIdx x
+applyHeuristics x (f :: fs) = highScoreIdx x <|> applyHeuristics (f x) fs
 
 ||| Based only on the heuristic-score of columns, get the index of
 ||| the column that should be processed next.
@@ -886,12 +893,11 @@ nextIdxByScore : {p : _} ->
                  Phase ->
                  List (NamedPats (p :: ps) ns) ->
                  (n ** NVarL n (p :: ps))
-nextIdxByScore _ _ _ = (_ ** MkNVarL First)
--- nextIdxByScore False _ _            = (_ ** (MkNVar First))
--- nextIdxByScore _ (CompileTime _) _  = (_ ** (MkNVar First))
--- nextIdxByScore True RunTime xs      =
---   fromMaybe (_ ** (MkNVar First)) $
---     applyHeuristics (zeroedScore xs) [heuristicF, heuristicB, heuristicA]
+nextIdxByScore False _ _            = (_ ** (MkNVarL First))
+nextIdxByScore _ (CompileTime _) _  = (_ ** (MkNVarL First))
+nextIdxByScore True RunTime xs      =
+  fromMaybe (_ ** (MkNVarL First)) $
+    applyHeuristics (zeroedScore xs) [heuristicF, heuristicB, heuristicA]
 
 -- Check whether all the initial patterns have the same concrete, known
 -- and matchable type, which is multiplicity > 0.
