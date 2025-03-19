@@ -499,7 +499,7 @@ getArgTys {vars} env (n :: ns) (Just t@(NBind pfc _ (Pi _ c _ fargc) fsc))
          scty <- fsc defs (toClosure defaultOpts env (Ref pfc Bound n))
          rest <- getArgTys env ns (Just scty)
          pure (argty :: rest)
-getArgTys env (n :: ns) (Just t)
+getArgTys env (_ :: _) (Just t)
     = do empty <- clearDefs =<< get Ctxt
          pure [Stuck !(quote empty env t)]
 getArgTys _ _ _ = pure []
@@ -512,20 +512,18 @@ nextNames' : {vars : _} ->
              (ns : SnocList Name) ->
              (0 _ : LengthMatch pats ns) ->
              SnocList (ArgType vars) ->
-             (args ** NamedPats (asList args) (vars ++ args))
-nextNames' fc [<] [<] LinMatch _ = ([<] ** [])
+             (args ** (SizeOf args, NamedPats (asList args) (vars ++ args)))
+nextNames' fc [<] [<] LinMatch _ = ([<] ** (zero, []))
 nextNames' fc (pats :< p) (ns :< n) (SnocMatch prf) (as :< argTy)
-    = let (args ** ps) = nextNames' fc pats ns prf as
-          argTy' : ArgType ((vars ++ args) :< n)
-             := weakenNs (mkSizeOf (args :< n)) argTy
-      in (args :< n ** rewrite chipsAsListAppend args [n] in
-                       rewrite sym $ revAppend (cast args) [n] in
-                       MkInfo {pvar=n} p First argTy' :: weaken ps)
+    = let (args ** (l, ps)) = nextNames' fc pats ns prf as
+       in (args :< n ** (suc l, rewrite chipsAsListAppend args [n] in
+                                rewrite sym $ revAppend (cast args) [n] in
+                                MkInfo p First (weakenNs (suc l) argTy) :: weaken ps))
 nextNames' fc (pats :< p) (ns :< n) (SnocMatch prf) [<]
-    = let (args ** ps) = nextNames' fc pats ns prf [<]
-      in (args :< n ** rewrite chipsAsListAppend args [n] in
-                       rewrite sym $ revAppend (cast args) [n] in
-                       MkInfo {pvar=n} p First Unknown :: weaken ps)
+    = let (args ** (l, ps)) = nextNames' fc pats ns prf [<]
+       in (args :< n ** (suc l, rewrite chipsAsListAppend args [n] in
+                                rewrite sym $ revAppend (cast args) [n] in
+                                MkInfo p First Unknown :: weaken ps))
 
 nextNames : {vars : _} ->
             {auto i : Ref PName Int} ->
@@ -534,15 +532,21 @@ nextNames : {vars : _} ->
             Core (args ** (SizeOf args, NamedPats (cast args) (vars ++ args)))
 nextNames fc root [] _ = pure ([<] ** (zero, []))
 nextNames {vars} fc root pats m_nty
-     = do args <- mkNames ([<] <>< pats)
+     = do (Element args p) <- mkNames pats
           let env = mkEnv fc vars
           argTys <- logQuiet $ getArgTys env args m_nty
-          let (args ** pats) = nextNames' fc (cast pats) (cast args) (believe_me ()) ([<] <>< argTys)
-          pure (args ** (mkSizeOf args, believe_me $ reverse pats))
+          let (args ** (l, pats)) = nextNames' fc (cast pats)
+                                                  (cast args)
+                                                  (fromListLengthMatch p)
+                                                  (cast argTys)
+          pure (args ** (l, replace {p=flip NamedPats _} (reverseInvolutive _) (reverse pats)))
   where
-    mkNames : (vars : SnocList a) -> Core (List Name)
-    mkNames [<] = pure []
-    mkNames (xs :< x) = [| nextName root :: mkNames xs |]
+    mkNames : (vars : List a) -> Core $ Subset (List Name) (LengthMatch vars)
+    mkNames [] = pure (Element [] NilMatch)
+    mkNames (x :: xs)
+        = do n <- nextName root
+             (Element ns p) <- mkNames xs
+             pure $ Element (n :: ns) (ConsMatch p)
 
 -- replace the prefix of patterns with 'pargs'
 newPats : (pargs : List Pat) -> (0 _ : LengthMatch pargs ns) ->
@@ -619,7 +623,9 @@ groupCons fc fn pvars cs
              let pats' = updatePatNames (updateNames (zip (cast patnames) pargs))
                                         (weakenNs l pats)
              let clause = MkPatClause pvars (newargs ++ pats') pid (weakenNs l rhs)
-             pure [ConGroup {newargs=cast patnames} n tag [believe_me clause]]
+             pure [ConGroup {newargs=cast patnames} n tag
+                    [rewrite fishAsSnocAppend vars' (cast patnames) in
+                     rewrite castToList patnames in clause]]
     addConG {vars'} {todo'} n tag pargs pats pid rhs (g :: gs) with (checkGroupMatch (CName n tag) pargs g)
       addConG {vars'} {todo'} n tag pargs pats pid rhs
               ((ConGroup {newargs} n tag ((MkPatClause pvars ps tid tm) :: rest)) :: gs)

@@ -1,11 +1,23 @@
 module Libraries.Data.List.LengthMatch
 
+import Data.List.HasLength
+
 %default total
 
 public export
 data LengthMatch : List a -> List b -> Type where
      NilMatch : LengthMatch [] []
      ConsMatch : LengthMatch xs ys -> LengthMatch (x :: xs) (y :: ys)
+
+export
+hasLengthLeft : LengthMatch xs ys -> HasLength (length xs) xs
+hasLengthLeft NilMatch = Z
+hasLengthLeft (ConsMatch x) = S $ hasLengthLeft x
+
+export
+hasLengthRight : LengthMatch xs ys -> HasLength (length ys) ys
+hasLengthRight NilMatch = Z
+hasLengthRight (ConsMatch x) = S $ hasLengthRight x
 
 export
 checkLengthMatch : (xs : List a) -> (ys : List b) -> Maybe (LengthMatch xs ys)
