@@ -1344,7 +1344,7 @@ simpleCase fc phase fn ty def clauses
                        byShow (fst lrhs) <++> pretty "=" <++> byShow (snd lrhs))
          ps <- traverse (toPatClause fc fn) clauses
          defs <- get Ctxt
-         log "compile.casetree" 5 $ "ps: " ++ show (mapFst toList <$> ps)
+         log "compile.casetree" 5 $ "ps: " ++ show ps
          patCompile fc fn phase ty ps def
 
 mutual
