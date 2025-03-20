@@ -11,7 +11,6 @@ import Core.Name
 import Core.Name.Scoped
 import Core.Name.CompatibleVars
 
-import Libraries.Data.SnocList.Extra
 import Libraries.Data.SnocList.HasLength
 import Libraries.Data.SnocList.SizeOf
 
@@ -111,23 +110,6 @@ export
 0 embedIsVar : IsVar x idx vars -> IsVar x idx (more ++ vars)
 embedIsVar First = First
 embedIsVar (Later p) = Later (embedIsVar p)
-
-export
-0 headIsVar : IsVar n (length vars) (cons n vars)
-headIsVar {vars=[<]} = First
-headIsVar {vars=xs :< _} = Later headIsVar
-
-export
-0 reverseIsVar : IsVar x idx vars -> IsVar x (length vars `minus` idx + 1) (reverse vars)
-reverseIsVar {vars=xs :< n} First = do
-  rewrite minusZeroRight (length xs)
-  rewrite Extra.revOnto [<n] xs
-  rewrite sym $ Extra.reverseLength xs
-  headIsVar
-reverseIsVar {vars=[<_]} (Later p) impossible
-reverseIsVar {vars=xs@(_ :< _) :< n} (Later {i} p) = do
-  rewrite Extra.revOnto [<n] xs
-  embedIsVar (reverseIsVar p)
 
 ||| Throw in extra variables on the local end of the context.
 ||| This is slow so we ensure it's only used in a runtime irrelevant manner

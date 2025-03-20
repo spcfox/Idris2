@@ -23,8 +23,6 @@ import Libraries.Data.List.LengthMatch
 import Libraries.Data.List.SizeOf
 import Libraries.Data.SortedSet
 import Libraries.Data.SnocList.SizeOf
-import Libraries.Data.SnocList.LengthMatch
-import Libraries.Data.SnocList.Extra
 
 import Decidable.Equality
 

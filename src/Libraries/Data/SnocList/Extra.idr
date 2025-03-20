@@ -32,11 +32,6 @@ revOnto xs (vs :< v)
           rewrite appendAssociative xs [<v] (reverse vs) in Refl
 
 export
-lookup : Eq a => a -> SnocList (a, b) -> Maybe b
-lookup n [<] = Nothing
-lookup n (ns :< (x, n')) = if x == n then Just n' else lookup n ns
-
-export
 lengthDistributesOverFish : (sx : SnocList a) -> (ys : List a) ->
                             length (sx <>< ys) === length sx + length ys
 lengthDistributesOverFish sx [] = sym $ plusZeroRightNeutral _
@@ -46,15 +41,3 @@ lengthDistributesOverFish sx (y :: ys) = Calc $
   ~~ S (length sx) + length ys    ...( Refl )
   ~~ length sx + S (length ys)    ...( plusSuccRightSucc _ _ )
   ~~ length sx + length (y :: ys) ...( Refl )
-
-export
-reverseOntoLength : (sx, acc : SnocList a) ->
-  length (reverseOnto acc sx) = length acc + length sx
-reverseOntoLength [<] acc = rewrite plusZeroRightNeutral (length acc) in Refl
-reverseOntoLength (sx :< x) acc =
-  rewrite reverseOntoLength sx (acc :< x) in
-    plusSuccRightSucc (length acc) (length sx)
-
-export
-reverseLength : (sx : SnocList a) -> length (reverse sx) = length sx
-reverseLength sx = reverseOntoLength sx [<]
