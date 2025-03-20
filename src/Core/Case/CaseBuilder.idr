@@ -493,14 +493,13 @@ nextNames' : (pats : List Pat) ->
              List (ArgType vars) ->
              (args ** (SizeOf args, NamedPats args (vars <>< args)))
 nextNames' [] [] NilMatch _ = ([] ** (zero, []))
-nextNames' (p :: pats) (n :: ns) (ConsMatch prf) (argTy :: as)
-  = let (args ** (l, ps)) = nextNames' pats ns prf as
-     in (n :: args ** (suc l, weakensN l (MkInfo p First (weaken argTy)) ::
-                              genWeakenFishily l ps))
-nextNames' (p :: pats) (n :: ns) (ConsMatch prf) []
-  = let (args ** (l, ps)) = nextNames' pats ns prf []
-     in (n :: args ** (suc l, weakensN l (MkInfo p First Unknown) ::
-                              genWeakenFishily l ps))
+nextNames' (p :: pats) (n :: ns) (ConsMatch prf) as
+  = do let (ty, as) : (ArgType (vars :< n), List (ArgType vars))
+           := case as of
+                [] => (Unknown, [])
+                (a :: as) => (weaken a, as)
+       let (args ** (l, ps)) = nextNames' pats ns prf as
+       (n :: args ** (suc l, weakensN l (MkInfo p First ty) :: genWeakenFishily l ps))
 
 nextNames : {vars : _} ->
             {auto i : Ref PName Int} ->
@@ -1242,13 +1241,13 @@ mkPatClause fc fn args s ty pid (ps, rhs)
               List (ArgType [<]) ->
               Core (NamedPats vars (cast vars))
     mkNames [] [] NilMatch _ _ = pure []
-    mkNames (r :: args) (p :: ps) (ConsMatch eq) (S h) []
-      = do rest <- mkNames args ps eq h []
-           let info = MkInfo {name=r} p (fishyIsVar {outer=[<]} h) Unknown
-           pure (info :: rewrite fishAsSnocAppend [<r] args in embed rest)
-    mkNames (r :: args) (p :: ps) (ConsMatch eq) (S h) (f :: fs)
-      = do rest <- mkNames args ps eq h fs
-           let info = MkInfo {name=r} p (fishyIsVar {outer=[<]} h) (embed f)
+    mkNames (r :: args) (p :: ps) (ConsMatch eq) (S h) as
+      = do let (ty, as) : (ArgType ([<r] <>< args), List (ArgType [<]))
+               := case as of
+                      [] => (Unknown, [])
+                      (a :: as) => (embed a, as)
+           let info = MkInfo {name=r} p (fishyIsVar {outer=[<]} h) ty
+           rest <- mkNames args ps eq h as
            pure (info :: rewrite fishAsSnocAppend [<r] args in embed rest)
 
 export
