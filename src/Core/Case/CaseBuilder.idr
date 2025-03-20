@@ -1238,10 +1238,10 @@ argToPat tm = mkPat [] tm tm
 
 mkPatClause : {auto c : Ref Ctxt Defs} ->
               FC -> Name ->
-              (args : List Name) -> ClosedTerm ->
+              (args : List Name) -> SizeOf args -> ClosedTerm ->
               Int -> (List Pat, ClosedTerm) ->
               Core (PatClause (cast args) args)
-mkPatClause fc fn args ty pid (ps, rhs)
+mkPatClause fc fn args s ty pid (ps, rhs)
     = maybe (throw (CaseCompile fc fn DifferingArgNumbers))
             (\eq =>
                do defs <- get Ctxt
@@ -1252,24 +1252,26 @@ mkPatClause fc fn args ty pid (ps, rhs)
                   -- read what we know off 'nty', and reverse it
                   argTys <- logQuiet $ getArgTys [<] args (Just nty)
                   log "compile.casetree" 20 $ "mkPatClause args: " ++ show args ++ ", argTys: " ++ show argTys
-                  ns <- logQuiet $ mkNames args ps eq (mkSizeOf args) argTys
+                  ns <- logQuiet $ mkNames args ps eq s.hasLength argTys
                   log "compile.casetree" 20 $
                     "Make pat clause for names " ++ show ns
                      ++ " in LHS " ++ show ps
-                  pure (MkPatClause [] ns pid (weakensN (mkSizeOf args) rhs)))
+                  pure (MkPatClause [] ns pid (weakensN s rhs)))
             (checkLengthMatch args ps)
   where
     mkNames : (vars : List Name) -> (ps : List Pat) ->
-              (0 _ : LengthMatch vars ps) -> SizeOf vars -> List (ArgType [<]) ->
+              (0 _ : LengthMatch vars ps) ->
+              {n : _} -> (0 _ : HasLength n vars) ->
+              List (ArgType [<]) ->
               Core (NamedPats vars (cast vars))
     mkNames [] [] NilMatch _ _ = pure []
-    mkNames (r :: args) (p :: ps) (ConsMatch eq) (MkSizeOf (S n) (S s)) []
-      = do rest <- mkNames args ps eq (MkSizeOf n s) []
-           let info = MkInfo {name=r} p (fishyIsVar {outer=[<]} s) Unknown
+    mkNames (r :: args) (p :: ps) (ConsMatch eq) (S h) []
+      = do rest <- mkNames args ps eq h []
+           let info = MkInfo {name=r} p (fishyIsVar {outer=[<]} h) Unknown
            pure (info :: rewrite fishAsSnocAppend [<r] args in embed rest)
-    mkNames (r :: args) (p :: ps) (ConsMatch eq) (MkSizeOf (S n) (S s)) (f :: fs)
-      = do rest <- mkNames args ps eq (MkSizeOf n s) fs
-           let info = MkInfo {name=r} p (fishyIsVar {outer=[<]} s) (embed f)
+    mkNames (r :: args) (p :: ps) (ConsMatch eq) (S h) (f :: fs)
+      = do rest <- mkNames args ps eq h fs
+           let info = MkInfo {name=r} p (fishyIsVar {outer=[<]} h) (embed f)
            pure (info :: rewrite fishAsSnocAppend [<r] args in embed rest)
 
 export
@@ -1285,7 +1287,7 @@ patCompile fc fn phase _ [] def
 patCompile fc fn phase ty (p :: ps) def
     = do let ns = getNames 0 (fst p)
          log "compile.casetree" 25 $ "ns: " ++ show ns
-         pats <- mkPatClausesFrom 0 ns (p :: ps)
+         pats <- mkPatClausesFrom 0 ns (mkSizeOf ns) (p :: ps)
          -- low verbosity level: pretty print fully resolved names
          logC "compile.casetree" 5 $ do
            pats <- traverse toFullNames pats
@@ -1298,13 +1300,13 @@ patCompile fc fn phase ty (p :: ps) def
          cases <- match fc fn phase pats (embed @{MaybeFreelyEmbeddable} def)
          pure (_ ** cases)
   where
-    mkPatClausesFrom : Int -> (args : List Name) ->
+    mkPatClausesFrom : Int -> (args : List Name) -> SizeOf args ->
                        List (SnocList Pat, ClosedTerm) ->
                        Core (List (PatClause (cast args) args))
-    mkPatClausesFrom i ns [] = pure []
-    mkPatClausesFrom i ns (p :: ps)
-        = do p' <- mkPatClause fc fn ns ty i (mapFst cast p)
-             ps' <- mkPatClausesFrom (i + 1) ns ps
+    mkPatClausesFrom _ _ _ [] = pure []
+    mkPatClausesFrom i ns s (p :: ps)
+        = do p' <- mkPatClause fc fn ns s ty i (mapFst cast p)
+             ps' <- mkPatClausesFrom (i + 1) ns s ps
              pure (p' :: ps')
 
     getNames : Int -> SnocList Pat -> List Name
