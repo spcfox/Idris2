@@ -1235,7 +1235,6 @@ export
 argToPat : {auto c : Ref Ctxt Defs} -> ClosedTerm -> Core Pat
 argToPat tm = mkPat [] tm tm
 
-
 mkPatClause : {auto c : Ref Ctxt Defs} ->
               FC -> Name ->
               (args : List Name) -> SizeOf args -> ClosedTerm ->
@@ -1277,7 +1276,7 @@ mkPatClause fc fn args s ty pid (ps, rhs)
 export
 patCompile : {auto c : Ref Ctxt Defs} ->
              FC -> Name -> Phase ->
-             ClosedTerm -> List (SnocList Pat, ClosedTerm) ->
+             ClosedTerm -> List (List Pat, ClosedTerm) ->
              Maybe (CaseTree [<]) ->
              Core (args ** CaseTree args)
 patCompile fc fn phase _ [] def
@@ -1301,30 +1300,30 @@ patCompile fc fn phase ty (p :: ps) def
          pure (_ ** cases)
   where
     mkPatClausesFrom : Int -> (args : List Name) -> SizeOf args ->
-                       List (SnocList Pat, ClosedTerm) ->
+                       List (List Pat, ClosedTerm) ->
                        Core (List (PatClause (cast args) args))
     mkPatClausesFrom _ _ _ [] = pure []
     mkPatClausesFrom i ns s (p :: ps)
-        = do p' <- mkPatClause fc fn ns s ty i (mapFst cast p)
+        = do p' <- mkPatClause fc fn ns s ty i p
              ps' <- mkPatClausesFrom (i + 1) ns s ps
              pure (p' :: ps')
 
-    getNames : Int -> SnocList Pat -> List Name
-    getNames i [<] = []
-    getNames i (xs :< x) = MN "arg" i :: getNames (i + 1) xs
+    getNames : Int -> List Pat -> List Name
+    getNames i [] = []
+    getNames i (_ :: xs) = MN "arg" i :: getNames (i + 1) xs
 
 toPatClause : {auto c : Ref Ctxt Defs} ->
               FC -> Name -> (ClosedTerm, ClosedTerm) ->
-              Core (SnocList Pat, ClosedTerm)
+              Core (List Pat, ClosedTerm)
 toPatClause fc n (lhs, rhs)
-    = case getFnArgsSpine lhs of
+    = case getFnArgs lhs of
            (Ref ffc Func fn, args)
               => do defs <- get Ctxt
                     (np, _) <- getPosition n (gamma defs)
                     (fnp, _) <- getPosition fn (gamma defs)
                     if np == fnp
-                       then do pats <- traverseSnocList argToPat args
-                               log "compile.casetree" 10 $ "toPatClause args: " ++ show (toList args) ++ ", pats: " ++ show (toList pats)
+                       then do pats <- traverse argToPat args
+                               log "compile.casetree" 10 $ "toPatClause args: " ++ show args ++ ", pats: " ++ show pats
                                pure (pats, rhs)
                        else throw (GenericMsg ffc ("Wrong function name in pattern LHS " ++ show (n, fn)))
            (f, args) => throw (GenericMsg fc "Not a function name in pattern LHS")
