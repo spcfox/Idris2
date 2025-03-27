@@ -153,48 +153,33 @@ preCompose f ch1 s work _ h ch2
      else
        insert (f, h, ch) work
 
-||| Precompose a given Arg change & insert it in the worklist (unless it's already known)
-postCompose : (h : Name) -> Graph {- g h -} -> -- /!\ g bound later
-              SCSet ->
-              WorkList ->
-              (f : Name) -> (g : Name) -> Graph {- f g -} ->
-              WorkList
-postCompose h ch2 s work f _ ch1
-   = let ch : Graph {- f h -} = composeGraph ch1 ch2 in
-     if contains ch (lookupGraphs f h s) then
-       work
-     else
-       insert (f, h, ch) work
-
 mutual
   addGraph : (f, g : Name) -> Graph {- f g -} ->
              WorkList ->
-             SCSet ->
+             (s_in : SCSet) ->
+             (base : SCSet) ->
              SCSet
-  addGraph f g ch work s_in
+  addGraph f g ch work s_in base
       = let s = insertGraph f g ch s_in
             -- Now that (ch : Graph f g) has been added, we need to update
             -- the graph with the paths it has extended i.e.
 
             -- the ones start in g
-            after = selectDom g s
-            work_pre = foldl (preCompose f ch s) work after
-
-            -- and the ones ending in f
-            before = selectCod f s
-            work_post = foldl (postCompose g ch s) work_pre before in
+            after = selectDom g base
+            work_pre = foldl (preCompose f ch s) work after in
 
         -- And then we need to close over all of these new paths too
-        transitiveClosure work_post s
+        transitiveClosure work_pre s base
 
   transitiveClosure : WorkList ->
-                      SCSet ->
+                      (s : SCSet) ->
+                      (base : SCSet) ->
                       SCSet
-  transitiveClosure work s
+  transitiveClosure work s base
       = case pop work of
              Nothing => s
              Just ((f, g, ch), work) =>
-               addGraph f g ch work s
+               addGraph f g ch work s base
 
 -- find (potential) chain of calls to given function (inclusive)
 prefixCallSeq : NameMap (FC, Name) -> (g : Name) -> {- Exists \ f => -} CallSeq {- f g -}
@@ -316,7 +301,8 @@ calcTerminating loc n
            | bad => pure bad
          Right (work, pred) <- initWork defs def
            | Left bad => pure bad
-         let s = transitiveClosure work initSCSet
+         let s = transitiveClosure work initSCSet $
+                   foldr (\(f, g, ch) => insertGraph f g ch) initSCSet work
          let Nothing = findNonTerminatingLoop s
            | Just (g, loop) =>
                ifThenElse (def.fullname == g)
