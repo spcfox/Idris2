@@ -170,20 +170,23 @@ ufail loc msg = throw (GenericMsg loc msg)
 
 convertError : {vars : _} ->
                {auto c : Ref Ctxt Defs} ->
-               FC -> Env Term vars -> NF vars -> NF vars -> Core a
-convertError loc env x y
+               FC -> UnifyInfo -> Env Term vars -> NF vars -> NF vars -> Core a
+convertError loc mode env x y
     = do defs <- get Ctxt
          empty <- clearDefs defs
+         log "unify" 7 $ "Cant convert " ++ show x ++ " to " ++ show y ++ ", atTop: " ++ show mode.atTop
          throw (CantConvert loc (gamma defs)
                                 env !(quote empty env x)
-                                    !(quote empty env y))
+                                    !(quote empty env y)
+                                    mode.atTop)
 
 convertErrorS : {vars : _} ->
                 {auto c : Ref Ctxt Defs} ->
-                Bool -> FC -> Env Term vars -> NF vars -> NF vars -> Core a
-convertErrorS s loc env x y
-    = if s then convertError loc env y x
-           else convertError loc env x y
+                {auto u : Ref UST UState} ->
+                Bool -> FC -> UnifyInfo -> Env Term vars -> NF vars -> NF vars -> Core a
+convertErrorS s loc mode env x y
+    = if s then convertError loc mode env y x
+           else convertError loc mode env x y
 
 -- Find all the metavariables required by each of the given names.
 -- We'll assume all meta solutions are of the form STerm exp.
@@ -231,6 +234,7 @@ postpone loc mode logstr env x y
                  show c ++ " NEW CONSTRAINT " ++ show loc
          logNF "unify.postpone" 10 "X" env x
          logNF "unify.postpone" 10 "Y" env y
+         log "unify.postpone" 10 $ "At top: " ++ show mode.atTop
          pure (constrain c)
   where
     checkDefined : Defs -> NF vars -> Core ()
@@ -649,7 +653,7 @@ mutual
                 else if post
                         then postpone loc mode ("Postponing unifyIfEq " ++
                                                  show (atTop mode)) env x y
-                        else convertError loc env x y
+                        else convertError loc mode env x y
 
   getArgTypes : {vars : _} ->
                 {auto c : Ref Ctxt Defs} ->
@@ -928,7 +932,7 @@ mutual
   -- Postpone if a name application against an application, unless they are
   -- convertible
   unifyApp swap mode loc env fc (NRef nt n) args tm
-      = do log "unify.application" 10 $ "Name against app, unifyIfEq"
+      = do log "unify.application" 10 $ "Name against app, unifyIfEq (atTop: " ++ show mode.atTop ++ ")"
            if not swap
               then unifyIfEq True loc mode env (NApp fc (NRef nt n) args) tm
               else unifyIfEq True loc mode env tm (NApp fc (NRef nt n) args)
@@ -940,15 +944,15 @@ mutual
                                 (NApp yfc (NLocal ry y yp) [])
   -- A local against something canonical (binder or constructor) is bad
   unifyApp swap mode loc env xfc (NLocal rx x xp) args y@(NBind _ _ _ _)
-      = convertErrorS swap loc env (NApp xfc (NLocal rx x xp) args) y
+      = convertErrorS swap loc mode env (NApp xfc (NLocal rx x xp) args) y
   unifyApp swap mode loc env xfc (NLocal rx x xp) args y@(NDCon _ _ _ _ _)
-      = convertErrorS swap loc env (NApp xfc (NLocal rx x xp) args) y
+      = convertErrorS swap loc mode env (NApp xfc (NLocal rx x xp) args) y
   unifyApp swap mode loc env xfc (NLocal rx x xp) args y@(NTCon _ _ _ _ _)
-      = convertErrorS swap loc env (NApp xfc (NLocal rx x xp) args) y
+      = convertErrorS swap loc mode env (NApp xfc (NLocal rx x xp) args) y
   unifyApp swap mode loc env xfc (NLocal rx x xp) args y@(NPrimVal _ _)
-      = convertErrorS swap loc env (NApp xfc (NLocal rx x xp) args) y
+      = convertErrorS swap loc mode env (NApp xfc (NLocal rx x xp) args) y
   unifyApp swap mode loc env xfc (NLocal rx x xp) args y@(NType _ _)
-      = convertErrorS swap loc env (NApp xfc (NLocal rx x xp) args) y
+      = convertErrorS swap loc mode env (NApp xfc (NLocal rx x xp) args) y
   -- If they're already convertible without metavariables, we're done,
   -- otherwise postpone
   unifyApp False mode loc env fc hd args tm
@@ -974,8 +978,8 @@ mutual
   unifyBothApps mode loc env xfc (NLocal xr x xp) [] yfc (NLocal yr y yp) []
       = if x == y
            then pure success
-           else convertError loc env (NApp xfc (NLocal xr x xp) [])
-                                     (NApp yfc (NLocal yr y yp) [])
+           else convertError loc mode env (NApp xfc (NLocal xr x xp) [])
+                                          (NApp yfc (NLocal yr y yp) [])
   -- Locally bound things, in a term (not LHS). Since we have to unify
   -- for *all* possible values, we can safely unify the arguments.
   unifyBothApps mode@(MkUnifyInfo p InTerm) loc env xfc (NLocal xr x xp) xargs yfc (NLocal yr y yp) yargs
@@ -1059,7 +1063,7 @@ mutual
   unifyBothBinders mode loc env xfc x (Pi fcx cx ix tx) scx yfc y (Pi fcy cy iy ty) scy
       = do defs <- get Ctxt
            if cx /= cy
-             then convertError loc env
+             then convertError loc mode env
                     (NBind xfc x (Pi fcx cx ix tx) scx)
                     (NBind yfc y (Pi fcy cy iy ty) scy)
              else
@@ -1099,7 +1103,7 @@ mutual
   unifyBothBinders mode loc env xfc x (Lam fcx cx ix tx) scx yfc y (Lam fcy cy iy ty) scy
       = do defs <- get Ctxt
            if cx /= cy
-             then convertError loc env
+             then convertError loc mode env
                     (NBind xfc x (Lam fcx cx ix tx) scx)
                     (NBind yfc y (Lam fcy cy iy ty) scy)
              else
@@ -1119,7 +1123,7 @@ mutual
                   pure (union ct cs')
 
   unifyBothBinders mode loc env xfc x bx scx yfc y by scy
-      = convertError loc env
+      = convertError loc mode env
                   (NBind xfc x bx scx)
                   (NBind yfc y by scy)
 
@@ -1162,7 +1166,7 @@ mutual
                            traverse_ (dumpArg env) ys
                      -}
                      unifyArgs mode loc env (map snd xs) (map snd ys)
-             else convertError loc env
+             else convertError loc mode env
                        (NDCon xfc x tagx ax xs)
                        (NDCon yfc y tagy ay ys)
   unifyNoEta mode loc env (NTCon xfc x tagx ax xs) (NTCon yfc y tagy ay ys)
@@ -1186,7 +1190,7 @@ mutual
              -- gallais: really? We don't mind being anticlassical do we?
 --                then postpone True loc mode env (quote empty env (NTCon x tagx ax xs))
 --                                           (quote empty env (NTCon y tagy ay ys))
-           else convertError loc env
+           else convertError loc mode env
                      (NTCon xfc x tagx ax xs)
                      (NTCon yfc y tagy ay ys)
   unifyNoEta mode loc env (NDelayed xfc _ x) (NDelayed yfc _ y)
@@ -1208,19 +1212,21 @@ mutual
   unifyNoEta mode loc env x (NErased _ (Dotted y)) = unifyNoEta mode loc env x y
   unifyNoEta mode loc env (NErased _ (Dotted x)) y = unifyNoEta mode loc env x y
   unifyNoEta mode loc env (NApp xfc hd args) y
-      = unifyApp False (lower mode) loc env xfc hd args y
+      = do log "unify.noeta" 10 $ "Unify NApp - y, at top: " ++ show mode.atTop
+           unifyApp False mode loc env xfc hd args y
   unifyNoEta mode loc env y (NApp yfc hd args)
-      = if umode mode /= InMatch
-           then unifyApp True mode loc env yfc hd args y
-           else do log "unify.noeta" 10 $ "Unify if Eq due to something with app"
-                   unifyIfEq True loc mode env y (NApp yfc hd args)
+      = do log "unify.noeta" 10 $ "Unify x - NApp, at top: " ++ show mode.atTop
+           if umode mode /= InMatch
+             then unifyApp True mode loc env yfc hd args y
+             else do log "unify.noeta" 10 $ "Unify if Eq due to something with app"
+                     unifyIfEq True loc mode env y (NApp yfc hd args)
   -- Only try stripping as patterns as a last resort
   unifyNoEta mode loc env x (NAs _ _ _ y) = unifyNoEta mode loc env x y
   unifyNoEta mode loc env (NAs _ _ _ x) y = unifyNoEta mode loc env x y
   unifyNoEta mode loc env x y
       = do defs <- get Ctxt
            empty <- clearDefs defs
-           log "unify.noeta" 10 $ "Nothing else worked, unifyIfEq"
+           log "unify.noeta" 10 $ "Nothing else worked, unifyIfEq" ++ ", atTop: " ++ show mode.atTop
            unifyIfEq (isDelay x || isDelay y) loc mode env x y
     where
       -- If one of them is a delay, and they're not equal, we'd better
@@ -1389,6 +1395,7 @@ retry mode c
                            log "unify.retry" 5 $ if withLazy
                                       then "(lazy allowed)"
                                       else "(no lazy)"
+                           log "unify.retry" 7 $ "At top: " ++ show mode.atTop
                            cs <- ifThenElse withLazy
                                     (unifyWithLazy mode loc env x y)
                                     (unify (lower mode) loc env x y)

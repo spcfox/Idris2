@@ -204,7 +204,7 @@ elabImplementation {vars} ifc vis opts_in pass env nest is cons iname ps named i
                    ok <- convert defs [] fullty (type gdef)
                    unless ok $ do logTermNF "elab.implementation" 1 "Previous" [] (type gdef)
                                   logTermNF "elab.implementation" 1 "Now" [] fullty
-                                  throw (CantConvert (getFC impTy) (gamma defs) [] fullty (type gdef))
+                                  throw (CantConvert (getFC impTy) (gamma defs) [] fullty (type gdef) True)
 
          -- If the body is empty, we're done for now (just declaring that
          -- the implementation exists and define it later)

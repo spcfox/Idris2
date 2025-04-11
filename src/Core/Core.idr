@@ -88,7 +88,7 @@ public export
 data Error : Type where
      Fatal : Error -> Error -- flag as unrecoverable (so don't postpone awaiting further info)
      CantConvert : {vars : _} ->
-                   FC -> Context -> Env Term vars -> Term vars -> Term vars -> Error
+                   FC -> Context -> Env Term vars -> Term vars -> Term vars -> (atTop : Bool) -> Error
      CantSolveEq : {vars : _} ->
                    FC -> Context -> Env Term vars -> Term vars -> Term vars -> Error
      PatternVariableUnifies : {vars : _} ->
@@ -225,7 +225,7 @@ export
 covering
 Show Error where
   show (Fatal err) = show err
-  show (CantConvert fc _ env x y)
+  show (CantConvert fc _ env x y _)
       = show fc ++ ":Type mismatch: " ++ show x ++ " and " ++ show y
   show (CantSolveEq fc _ env x y)
       = show fc ++ ":" ++ show x ++ " and " ++ show y ++ " are not equal"
@@ -422,7 +422,7 @@ getWarningLoc (GenericWarn fc _) = fc
 export
 getErrorLoc : Error -> Maybe FC
 getErrorLoc (Fatal err) = getErrorLoc err
-getErrorLoc (CantConvert loc _ _ _ _) = Just loc
+getErrorLoc (CantConvert loc _ _ _ _ _) = Just loc
 getErrorLoc (CantSolveEq loc _ _ _ _) = Just loc
 getErrorLoc (PatternVariableUnifies loc _ _ _ _) = Just loc
 getErrorLoc (CyclicMeta loc _ _ _) = Just loc
@@ -514,7 +514,7 @@ killWarningLoc (GenericWarn fc x) = GenericWarn emptyFC x
 export
 killErrorLoc : Error -> Error
 killErrorLoc (Fatal err) = Fatal (killErrorLoc err)
-killErrorLoc (CantConvert fc x y z w) = CantConvert emptyFC x y z w
+killErrorLoc (CantConvert fc x y z w t) = CantConvert emptyFC x y z w t
 killErrorLoc (CantSolveEq fc x y z w) = CantSolveEq emptyFC x y z w
 killErrorLoc (PatternVariableUnifies fc fct x y z) = PatternVariableUnifies emptyFC emptyFC x y z
 killErrorLoc (CyclicMeta fc x y z) = CyclicMeta emptyFC x y z

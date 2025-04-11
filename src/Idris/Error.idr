@@ -61,7 +61,7 @@ Eq FileError where
 export
 Eq Error where
   Fatal err1 == Fatal err2 = err1 == err2
-  CantConvert fc1 gam1 rho1 s1 t1 == CantConvert fc2 gam2 rho2 s2 t2 = fc1 == fc2
+  CantConvert fc1 gam1 rho1 s1 t1 _ == CantConvert fc2 gam2 rho2 s2 t2 _ = fc1 == fc2
   CantSolveEq fc1 gam1 rho s1 t1 == CantSolveEq fc2 gam2 rho2 s2 t2 = fc1 == fc2
   PatternVariableUnifies fc1 fct1 rho1 n1 s1 == PatternVariableUnifies fc2 fct2 rho2 n2 s2 = fc1 == fc2 && fct1 == fct2 && n1 == n2
   CyclicMeta fc1 rho1 n1 s1 == CyclicMeta fc2 rho2 n2 s2 = fc1 == fc2 && n1 == n2
@@ -312,7 +312,7 @@ perrorRaw : {auto c : Ref Ctxt Defs} ->
             {auto o : Ref ROpts REPLOpts} ->
             Error -> Core (Doc IdrisAnn)
 perrorRaw (Fatal err) = perrorRaw err
-perrorRaw (CantConvert fc gam env l r)
+perrorRaw (CantConvert fc gam env l r t)
     = do defs <- get Ctxt
          setCtxt gam
          let res = errorDesc (hsep [ reflow "Mismatch between" <+> colon

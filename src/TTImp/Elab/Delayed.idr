@@ -202,7 +202,7 @@ contra defs x y = pure False
 export
 recoverable : {auto c : Ref Ctxt Defs} ->
               Error -> Core Bool
-recoverable (CantConvert _ gam env l r)
+recoverable (CantConvert _ gam env l r t)
    = do defs <- get Ctxt
         let defs = { gamma := gam } defs
         pure $ not !(contra defs !(nf defs env l) !(nf defs env r))

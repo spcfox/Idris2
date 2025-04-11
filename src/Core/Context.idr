@@ -732,8 +732,8 @@ HasNames Warning where
 export
 HasNames Error where
   full gam (Fatal err) = Fatal <$> full gam err
-  full _ (CantConvert fc gam rho s t)
-    = CantConvert fc gam <$> full gam rho <*> full gam s <*> full gam t
+  full _ (CantConvert fc gam rho s t at)
+    = CantConvert fc gam <$> full gam rho <*> full gam s <*> full gam t <*> pure at
   full _ (CantSolveEq fc gam rho s t)
     = CantSolveEq fc gam <$> full gam rho <*> full gam s <*> full gam t
   full gam (PatternVariableUnifies fc fct rho n s)
@@ -830,8 +830,8 @@ HasNames Error where
           <$> (Right <$> full gam opName) <*> pure rhs <*> pure candidates
 
   resolved gam (Fatal err) = Fatal <$> resolved gam err
-  resolved _ (CantConvert fc gam rho s t)
-    = CantConvert fc gam <$> resolved gam rho <*> resolved gam s <*> resolved gam t
+  resolved _ (CantConvert fc gam rho s t at)
+    = CantConvert fc gam <$> resolved gam rho <*> resolved gam s <*> resolved gam t <*> pure at
   resolved _ (CantSolveEq fc gam rho s t)
     = CantSolveEq fc gam <$> resolved gam rho <*> resolved gam s <*> resolved gam t
   resolved gam (PatternVariableUnifies fc fct rho n s)

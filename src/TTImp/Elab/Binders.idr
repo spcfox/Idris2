@@ -193,7 +193,8 @@ checkLambda rig_in elabinfo nest env fc rigl info n argTy scope (Just expty_in)
                     when (rigb /= c) $
                         throw (CantConvert fc (gamma defs) env
                                   (Bind fc n (Pi fc' rigb info' tyv) !(getTerm scopet))
-                                  (Bind fc bn (Pi fc' c info' pty) psc))
+                                  (Bind fc bn (Pi fc' c info' pty) psc)
+                                  elabinfo.topLevel)
                     pure (Bind fc n (Lam fc' rigb info' tyv) scopev,
                           gnf env (Bind fc n (Pi fc' rigb info' tyv) !(getTerm scopet)))
               _ => inferLambda rig elabinfo nest env fc rigl info n argTy scope (Just expty_in)

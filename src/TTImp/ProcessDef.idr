@@ -132,7 +132,7 @@ impossibleOK defs x y = pure False
 export
 impossibleErrOK : {auto c : Ref Ctxt Defs} ->
                   Defs -> Error -> Core Bool
-impossibleErrOK defs (CantConvert fc gam env l r)
+impossibleErrOK defs (CantConvert fc gam env l r t)
     = do let defs = { gamma := gam } defs
          impossibleOK defs !(nf defs env l)
                            !(nf defs env r)
@@ -203,12 +203,12 @@ recoverable defs x y = pure False
 export
 recoverableErr : {auto c : Ref Ctxt Defs} ->
                  Defs -> Error -> Core Bool
-recoverableErr defs (CantConvert fc gam env l r)
+recoverableErr defs (CantConvert fc gam env l r t)
   = do let defs = { gamma := gam } defs
        l <- nf defs env l
        r <- nf defs env r
        log "coverage.recover" 10 $ unlines
-         [ "Recovering from CantConvert?"
+         [ "Recovering from CantConvert? (atTop: " ++ show t ++ ")"
          , "Checking:"
          , "  " ++ show l
          , "  " ++ show r
