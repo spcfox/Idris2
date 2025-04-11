@@ -1,0 +1,25 @@
+1/1: Building Issue2822 (Issue2822.idr)
+Error: Impossible pattern gives an error:
+When unifying:
+    Void
+and:
+    ?argTy -> ?retTy
+Mismatch between: Void and ?argTy -> ?retTy.
+
+Issue2822:6:1--6:10
+ 2 | f True x = x
+ 3 | 
+ 4 | g : (b : Bool) -> if b then Nat -> Nat else Void
+ 5 | g True x = x
+ 6 | g False x impossible
+     ^^^^^^^^^
+
+Error: f is not covering.
+
+Issue2822:1:1--1:49
+ 1 | f : (b : Bool) -> if b then Nat -> Nat else Void
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Missing cases:
+    f False arg
+

@@ -293,7 +293,8 @@ mkCase {c} {u} fn orig lhs_raw
                        WhenUnifying _ gam env l r err
                          => do let defs = { gamma := gam } defs
                                if !(impossibleOK defs !(nf defs env l)
-                                                      !(nf defs env r))
+                                                      !(nf defs env r)
+                                                      False)
                                   then pure (Impossible lhs_raw)
                                   else pure Invalid
                        _ => pure Invalid)

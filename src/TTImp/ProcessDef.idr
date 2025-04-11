@@ -95,39 +95,39 @@ mutual
 export
 impossibleOK : {auto c : Ref Ctxt Defs} ->
                {vars : _} ->
-               Defs -> NF vars -> NF vars -> Core Bool
-impossibleOK defs (NTCon _ xn xt xa xargs) (NTCon _ yn yt ya yargs)
+               Defs -> NF vars -> NF vars -> (atTop : Bool) -> Core Bool
+impossibleOK defs (NTCon _ xn xt xa xargs) (NTCon _ yn yt ya yargs) _
     = if xn /= yn
          then pure True
          else anyM (mismatch defs) (zipWith (curry $ mapHom snd) xargs yargs)
 -- If it's a data constructor, any mismatch will do
-impossibleOK defs (NDCon _ _ xt _ xargs) (NDCon _ _ yt _ yargs)
+impossibleOK defs (NDCon _ _ xt _ xargs) (NDCon _ _ yt _ yargs) _
     = if xt /= yt
          then pure True
          else anyM (mismatch defs) (zipWith (curry $ mapHom snd) xargs yargs)
-impossibleOK defs (NPrimVal _ x) (NPrimVal _ y) = pure (x /= y)
+impossibleOK defs (NPrimVal _ x) (NPrimVal _ y) _ = pure (x /= y)
 
 -- NPrimVal is apart from NDCon, NTCon, NBind, and NType
-impossibleOK defs (NPrimVal _ _) (NDCon _ _ _ _ _) = pure True
-impossibleOK defs (NDCon _ _ _ _ _) (NPrimVal _ _) = pure True
-impossibleOK defs (NPrimVal _ _) (NBind _ _ _ _) = pure True
-impossibleOK defs (NBind _ _ _ _) (NPrimVal _ _) = pure True
-impossibleOK defs (NPrimVal _ _) (NTCon _ _ _ _ _) = pure True
-impossibleOK defs (NTCon _ _ _ _ _) (NPrimVal _ _) = pure True
-impossibleOK defs (NPrimVal _ _) (NType _ _) = pure True
-impossibleOK defs (NType _ _) (NPrimVal _ _) = pure True
+impossibleOK defs (NPrimVal _ _) (NDCon _ _ _ _ _) _ = pure True
+impossibleOK defs (NDCon _ _ _ _ _) (NPrimVal _ _) _ = pure True
+impossibleOK defs (NPrimVal _ _) (NBind _ _ _ _) False = pure True
+impossibleOK defs (NBind _ _ _ _) (NPrimVal _ _) False = pure True
+impossibleOK defs (NPrimVal _ _) (NTCon _ _ _ _ _) _ = pure True
+impossibleOK defs (NTCon _ _ _ _ _) (NPrimVal _ _) _ = pure True
+impossibleOK defs (NPrimVal _ _) (NType _ _) _ = pure True
+impossibleOK defs (NType _ _) (NPrimVal _ _) _ = pure True
 
 -- NTCon is apart from NBind, and NType
-impossibleOK defs (NTCon _ _ _ _ _) (NBind _ _ _ _) = pure True
-impossibleOK defs (NBind _ _ _ _) (NTCon _ _ _ _ _) = pure True
-impossibleOK defs (NTCon _ _ _ _ _) (NType _ _) = pure True
-impossibleOK defs (NType _ _) (NTCon _ _ _ _ _) = pure True
+impossibleOK defs (NTCon _ _ _ _ _) (NBind _ _ _ _) False = pure True
+impossibleOK defs (NBind _ _ _ _) (NTCon _ _ _ _ _) False = pure True
+impossibleOK defs (NTCon _ _ _ _ _) (NType _ _) _ = pure True
+impossibleOK defs (NType _ _) (NTCon _ _ _ _ _) _ = pure True
 
 -- NBind is apart from NType
-impossibleOK defs (NBind _ _ _ _) (NType _ _) = pure True
-impossibleOK defs (NType _ _) (NBind _ _ _ _) = pure True
+impossibleOK defs (NBind _ _ _ _) (NType _ _) False = pure True
+impossibleOK defs (NType _ _) (NBind _ _ _ _) False = pure True
 
-impossibleOK defs x y = pure False
+impossibleOK defs x y _ = pure False
 
 export
 impossibleErrOK : {auto c : Ref Ctxt Defs} ->
@@ -136,10 +136,12 @@ impossibleErrOK defs (CantConvert fc gam env l r t)
     = do let defs = { gamma := gam } defs
          impossibleOK defs !(nf defs env l)
                            !(nf defs env r)
+                           t
 impossibleErrOK defs (CantSolveEq fc gam env l r)
     = do let defs = { gamma := gam } defs
          impossibleOK defs !(nf defs env l)
                            !(nf defs env r)
+                           False
 impossibleErrOK defs (BadDotPattern _ _ ErasedArg _ _) = pure True
 impossibleErrOK defs (CyclicMeta _ _ _ _) = pure True
 impossibleErrOK defs (AllFailed errs)
@@ -154,51 +156,51 @@ impossibleErrOK defs _ = pure False
 export
 recoverable : {auto c : Ref Ctxt Defs} ->
               {vars : _} ->
-              Defs -> NF vars -> NF vars -> Core Bool
+              Defs -> NF vars -> NF vars -> (atTop : Bool) -> Core Bool
 -- Unlike the above, any mismatch will do
 
 -- TYPE CONSTRUCTORS
-recoverable defs (NTCon _ xn xt xa xargs) (NTCon _ yn yt ya yargs)
+recoverable defs (NTCon _ xn xt xa xargs) (NTCon _ yn yt ya yargs) _
     = if xn /= yn
          then pure False
          else pure $ not !(anyM (mismatch defs) (zipWith (curry $ mapHom snd) xargs yargs))
 -- Type constructor vs. primitive type
-recoverable defs (NTCon _ _ _ _ _) (NPrimVal _ _) = pure False
-recoverable defs (NPrimVal _ _) (NTCon _ _ _ _ _) = pure False
+recoverable defs (NTCon _ _ _ _ _) (NPrimVal _ _) _ = pure False
+recoverable defs (NPrimVal _ _) (NTCon _ _ _ _ _) _ = pure False
 -- Type constructor vs. type
-recoverable defs (NTCon _ _ _ _ _) (NType _ _) = pure False
-recoverable defs (NType _ _) (NTCon _ _ _ _ _) = pure False
+recoverable defs (NTCon _ _ _ _ _) (NType _ _) _ = pure False
+recoverable defs (NType _ _) (NTCon _ _ _ _ _) _ = pure False
 -- Type constructor vs. binder
-recoverable defs (NTCon _ _ _ _ _) (NBind _ _ _ _) = pure False
-recoverable defs (NBind _ _ _ _) (NTCon _ _ _ _ _) = pure False
+recoverable defs (NTCon _ _ _ _ _) (NBind _ _ _ _) False = pure False
+recoverable defs (NBind _ _ _ _) (NTCon _ _ _ _ _) False = pure False
 
-recoverable defs (NTCon _ _ _ _ _) _ = pure True
-recoverable defs _ (NTCon _ _ _ _ _) = pure True
+recoverable defs (NTCon _ _ _ _ _) _ _ = pure True
+recoverable defs _ (NTCon _ _ _ _ _) _ = pure True
 
 -- DATA CONSTRUCTORS
-recoverable defs (NDCon _ _ xt _ xargs) (NDCon _ _ yt _ yargs)
+recoverable defs (NDCon _ _ xt _ xargs) (NDCon _ _ yt _ yargs) _
     = if xt /= yt
          then pure False
          else pure $ not !(anyM (mismatch defs) (zipWith (curry $ mapHom snd) xargs yargs))
 -- Data constructor vs. primitive constant
-recoverable defs (NDCon _ _ _ _ _) (NPrimVal _ _) = pure False
-recoverable defs (NPrimVal _ _) (NDCon _ _ _ _ _) = pure False
+recoverable defs (NDCon _ _ _ _ _) (NPrimVal _ _) _ = pure False
+recoverable defs (NPrimVal _ _) (NDCon _ _ _ _ _) _ = pure False
 
-recoverable defs (NDCon _ _ _ _ _) _ = pure True
-recoverable defs _ (NDCon _ _ _ _ _) = pure True
+recoverable defs (NDCon _ _ _ _ _) _ _ = pure True
+recoverable defs _ (NDCon _ _ _ _ _) _ = pure True
 
 -- FUNCTION CALLS
-recoverable defs (NApp _ (NRef _ f) fargs) (NApp _ (NRef _ g) gargs)
+recoverable defs (NApp _ (NRef _ f) fargs) (NApp _ (NRef _ g) gargs) _
     = pure True -- both functions; recoverable
 
 -- PRIMITIVES
-recoverable defs (NPrimVal _ x) (NPrimVal _ y) = pure (x == y)
+recoverable defs (NPrimVal _ x) (NPrimVal _ y) _ = pure (x == y)
 -- primitive vs. binder
-recoverable defs (NPrimVal _ _) (NBind _ _ _ _) = pure False
-recoverable defs (NBind _ _ _ _) (NPrimVal _ _) = pure False
+recoverable defs (NPrimVal _ _) (NBind _ _ _ _) _ = pure False
+recoverable defs (NBind _ _ _ _) (NPrimVal _ _) _ = pure False
 
 -- OTHERWISE: no
-recoverable defs x y = pure False
+recoverable defs x y _ = pure False
 
 export
 recoverableErr : {auto c : Ref Ctxt Defs} ->
@@ -213,12 +215,13 @@ recoverableErr defs (CantConvert fc gam env l r t)
          , "  " ++ show l
          , "  " ++ show r
          ]
-       recoverable defs l r
+       recoverable defs l r t
 
 recoverableErr defs (CantSolveEq fc gam env l r)
   = do let defs = { gamma := gam } defs
        recoverable defs !(nf defs env l)
                         !(nf defs env r)
+                        False
 recoverableErr defs (BadDotPattern _ _ ErasedArg _ _) = pure True
 recoverableErr defs (CyclicMeta _ _ _ _) = pure False
 -- Don't mark a case as impossible because we can't see the constructor.
