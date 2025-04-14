@@ -25,7 +25,6 @@ Scheme Name where
   toScheme (UN x) = toScheme x
   toScheme (MN x y) = Vector 2 [toScheme x, toScheme y]
   toScheme (PV x y) = Vector 3 [toScheme x, toScheme y]
-  toScheme (DN x y) = Vector 4 [toScheme x, toScheme y]
   toScheme (Nested x y) = Vector 6 [toScheme x, toScheme y]
   toScheme (CaseBlock x y) = Vector 7 [toScheme x, toScheme y]
   toScheme (WithBlock x y) = Vector 8 [toScheme x, toScheme y]
@@ -37,8 +36,6 @@ Scheme Name where
       = pure $ MN !(fromScheme x) !(fromScheme y)
   fromScheme (Vector 3 [x, y])
       = pure $ PV !(fromScheme x) !(fromScheme y)
-  fromScheme (Vector 4 [x, y])
-      = pure $ DN !(fromScheme x) !(fromScheme y)
   fromScheme (Vector 5 [x, y])
       = pure $ UN (Field !(fromScheme x))
   fromScheme (Vector 6 [x, y])

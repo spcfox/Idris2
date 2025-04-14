@@ -429,10 +429,6 @@ Reify Name where
                  => do ns' <- reify defs !(evalClosure defs ns)
                        n' <- reify defs !(evalClosure defs n)
                        pure (NS ns' n')
-             (UN (Basic "DN"), [(_, str), (_, n)])
-                 => do str' <- reify defs !(evalClosure defs str)
-                       n' <- reify defs !(evalClosure defs n)
-                       pure (DN str' n')
              (UN (Basic "Nested"), [(_, ix), (_, n)])
                  => do ix' <- reify defs !(evalClosure defs ix)
                        n' <- reify defs !(evalClosure defs n)
@@ -463,10 +459,6 @@ Reflect Name where
       = do ns' <- reflect fc defs lhs env ns
            n' <- reflect fc defs lhs env n
            appCon fc defs (reflectiontt "NS") [ns', n']
-  reflect fc defs lhs env (DN str n)
-      = do str' <- reflect fc defs lhs env str
-           n' <- reflect fc defs lhs env n
-           appCon fc defs (reflectiontt "DN") [str', n']
   reflect fc defs lhs env (Nested ix n)
       = do ix' <- reflect fc defs lhs env ix
            n'  <- reflect fc defs lhs env n

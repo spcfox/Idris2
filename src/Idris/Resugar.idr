@@ -51,18 +51,14 @@ mkOp tm@(PApp fc (PApp _ (PRef opFC kn) x) y)
                 $ NoBinder (unbracketApp x)) (MkFCVal opFC (pop kn)) (unbracketApp y)
        if not (null (lookupName rootName (infixes syn)))
          then pure asOp
-         else case dropNS raw of
-           DN str _ => pure $ ifThenElse (isOpUserName (Basic str)) asOp tm
-           _ => pure tm
+         else pure tm
 mkOp tm@(PApp fc (PRef opFC kn) x)
   = do syn <- get Syn
        let n = rawName kn
        let asOp = PSectionR fc (unbracketApp x) (MkFCVal opFC $ OpSymbols kn)
        if not (null $ lookupName (UN $ Basic (nameRoot n)) (infixes syn))
          then pure asOp
-         else case dropNS n of
-           DN str _ => pure $ ifThenElse (isOpUserName (Basic str)) asOp tm
-           _ => pure tm
+         else pure tm
 mkOp tm = pure tm
 
 mkSectionL : {auto c : Ref Ctxt Defs} ->
@@ -78,9 +74,7 @@ mkSectionL tm@(PLam fc rig info (PRef _ bd) ty
        let asOp = PSectionL fc (MkFCVal opFC $ OpSymbols kn) (unbracketApp x)
        if not (null $ lookupName (UN $ Basic (nameRoot n)) (fixities syn))
          then pure asOp
-         else case dropNS n of
-           DN str _ => pure $ ifThenElse (isOpUserName (Basic str)) asOp tm
-           _ => pure tm
+         else pure tm
 mkSectionL tm = pure tm
 
 export
@@ -252,14 +246,12 @@ export
 sugarName : Name -> String
 sugarName (MN n _) = "(implicit) " ++ n
 sugarName (PV n _) = sugarName n
-sugarName (DN n _) = n
 sugarName x = show x
 
 toPRef : FC -> KindedName -> Core IPTerm
 toPRef fc (MkKindedName nt fn nm) = case dropNS nm of
   MN n i     => pure (sugarApp (PRef fc (MkKindedName nt fn $ MN n i)))
   PV n _     => pure (sugarApp (PRef fc (MkKindedName nt fn $ n)))
-  DN n _     => pure (sugarApp (PRef fc (MkKindedName nt fn $ UN $ Basic n)))
   Nested _ n => toPRef fc (MkKindedName nt fn n)
   n          => pure (sugarApp (PRef fc (MkKindedName nt fn n)))
 
@@ -582,7 +574,6 @@ cleanPTerm ptm
       PV n _     => pure n
       -- Some of these may be "_" so we use `mkUserName`
       MN n _     => pure (UN $ mkUserName n)
-      DN n _     => pure (UN $ mkUserName n)
       -- namespaces have already been stripped in toPTerm if necessary
       NS ns n    => NS ns <$> cleanName n
       Nested _ n => cleanName n

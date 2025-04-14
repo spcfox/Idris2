@@ -108,7 +108,6 @@ jsMangleName (NS ns n) = jsIdent (showNSWithSep "_" ns) ++ "_" ++ jsMangleName n
 jsMangleName (UN n) = jsUserName n
 jsMangleName (MN n i) = jsIdent n ++ "_" ++ show i
 jsMangleName (PV n d) = "pat__" ++ jsMangleName n
-jsMangleName (DN _ n) = jsMangleName n
 jsMangleName (Nested (i, x) n) = "n__" ++ show i ++ "_" ++ show x ++ "_" ++ jsMangleName n
 jsMangleName (CaseBlock x y) = "case__" ++ jsIdent x ++ "_" ++ show y
 jsMangleName (WithBlock x y) = "with__" ++ jsIdent x ++ "_" ++ show y

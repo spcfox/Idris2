@@ -820,7 +820,6 @@ definedInBlock ns decls =
        = if ns == emptyNS then n else case n of
            UN _ => NS ns n
            MN _ _ => NS ns n
-           DN _ _ => NS ns n
            _ => n
 
     defName : Namespace -> SortedSet Name -> ImpDecl -> SortedSet Name

@@ -45,7 +45,6 @@ schName (UN n) = schUserName n
 schName (NS ns n) = schString (showNSWithSep "-" ns) ++ "-" ++ schName n
 schName (MN n i) = schString n ++ "-" ++ showB i
 schName (PV n d) = "pat--" ++ schName n
-schName (DN _ n) = schName n
 schName (Nested (i, x) n) = "n--" ++ showB i ++ "-" ++ showB x ++ "-" ++ schName n
 schName (CaseBlock x y) = "case--" ++ schString x ++ "-" ++ showB y
 schName (WithBlock x y) = "with--" ++ schString x ++ "-" ++ showB y

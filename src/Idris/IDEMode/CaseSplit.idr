@@ -368,7 +368,6 @@ fnName lhs (UN (Basic n))
       else if lhs then "(" ++ n ++ ")"
       else "op"
 fnName lhs (NS _ n) = fnName lhs n
-fnName lhs (DN s _) = s
 fnName lhs n = nameRoot n
 
 

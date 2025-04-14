@@ -87,7 +87,6 @@ cName (NS ns n) = cCleanString (showNSWithSep "_" ns) ++ "_" ++ cName n
 cName (UN n) = cUserName n
 cName (MN n i) = cCleanString n ++ "_" ++ cCleanString (show i)
 cName (PV n d) = "pat__" ++ cName n
-cName (DN _ n) = cName n
 cName (Nested i n) = "n__" ++ cCleanString (show i) ++ "_" ++ cName n
 cName (CaseBlock x y) = "case__" ++ cCleanString (show x) ++ "_" ++ cCleanString (show y)
 cName (WithBlock x y) = "with__" ++ cCleanString (show x) ++ "_" ++ cCleanString (show y)

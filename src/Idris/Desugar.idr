@@ -1302,8 +1302,8 @@ mutual
       mkConName : Name -> Name
       mkConName (NS ns (UN n))
         = let str = displayUserName n in
-          NS ns (DN str (MN ("__mk" ++ str) 0))
-      mkConName n = DN (show n) (MN ("__mk" ++ show n) 0)
+          NS ns (MN ("__mk" ++ str) 0)
+      mkConName n = MN ("__mk" ++ show n) 0
 
   desugarDecl ps fx@(MkFCVal fc $ PFixity (MkPFixityData vis binding fix prec opNames))
       = flip (Core.traverseList1_ {b = Unit}) opNames (\opName : OpStr => do

@@ -904,7 +904,7 @@ process (Eval itm)
                  defs <- get Ctxt
                  opts <- get ROpts
                  let norm = replEval emode
-                 evalResultName <- DN "it" <$> genName "evalResult"
+                 evalResultName <- genName "evalResult"
                  ignore $ addDef evalResultName
                    $ newDef replFC evalResultName top [] ty defaulted
                    $ PMDef defaultPI [] (STerm 0 ntm) (STerm 0 ntm) []

@@ -253,8 +253,7 @@ getConstraintHint {vars} fc env vis iname cname constraints meths params (cn, co
          let fty = mkTy fc Implicit (map jname params) $
                    mkTy fc Explicit [(Nothing, top, ity)] con
          ty_imp <- bindTypeNames fc [] (pNames ++ meths ++ vars) fty
-         let hintname = DN ("Constraint " ++ show con)
-                          (UN (Basic $ "__" ++ show iname ++ "_" ++ show con))
+         let hintname = UN (Basic $ "__" ++ show iname ++ "_" ++ show con)
 
          let tydecl = IClaim (MkFCVal fc $ MkIClaimData top vis [Inline, Hint False]
                           (MkImpTy EmptyFC (NoFC hintname) ty_imp))
@@ -288,10 +287,10 @@ getDefault _ = Nothing
 mkCon : FC -> Name -> Name
 mkCon loc (NS ns (UN n))
    = let str = displayUserName n in
-     NS ns (DN (str ++ " at " ++ show loc) (UN $ Basic ("__mk" ++ str)))
+     NS ns (UN $ Basic ("__mk" ++ str))
 mkCon loc n
    = let str = show n in
-     DN (str ++ " at " ++ show loc) (UN $ Basic ("__mk" ++  str))
+     UN $ Basic ("__mk" ++  str)
 
 updateIfaceSyn : {auto c : Ref Ctxt Defs} ->
                  {auto s : Ref Syn SyntaxInfo} ->

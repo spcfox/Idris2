@@ -96,7 +96,6 @@ TTC Name where
   toBuf b (UN (Basic x)) = do tag 1; toBuf b x
   toBuf b (MN x y) = do tag 2; toBuf b x; toBuf b y
   toBuf b (PV x y) = do tag 3; toBuf b x; toBuf b y
-  toBuf b (DN x y) = do tag 4; toBuf b x; toBuf b y
   toBuf b (UN (Field x)) = do tag 5; toBuf b x
   toBuf b (Nested x y) = do tag 6; toBuf b x; toBuf b y
   toBuf b (CaseBlock x y) = do tag 7; toBuf b x; toBuf b y
@@ -118,9 +117,6 @@ TTC Name where
              3 => do x <- fromBuf b
                      y <- fromBuf b
                      pure (PV x y)
-             4 => do x <- fromBuf b
-                     y <- fromBuf b
-                     pure (DN x y)
              5 => do x <- fromBuf b
                      pure (UN $ Field x)
              6 => do x <- fromBuf b

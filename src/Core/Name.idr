@@ -40,7 +40,6 @@ data Name : Type where
      UN : UserName -> Name -- user defined name
      MN : String -> Int -> Name -- machine generated name
      PV : Name -> Int -> Name -- pattern variable name; int is the resolved function id
-     DN : String -> Name -> Name -- a name and how to display it
      Nested : (Int, Int) -> Name -> Name -- nested function name
      CaseBlock : String -> Int -> Name -- case block nested in (resolved) name
      WithBlock : String -> Int -> Name -- with block nested in (resolved) name
@@ -71,7 +70,6 @@ asName : ModuleIdent -> -- Initial module name
          Namespace -> -- 'as' module name
          Name -> -- identifier
          Name
-asName old new (DN s n) = DN s (asName old new n)
 asName old new (NS ns n)
     = NS (replace old new ns) n
 asName _ _ n = n
@@ -80,7 +78,6 @@ export
 userNameRoot : Name -> Maybe UserName
 userNameRoot (NS _ n) = userNameRoot n
 userNameRoot (UN n) = Just n
-userNameRoot (DN _ n) = userNameRoot n
 userNameRoot _ = Nothing
 
 export
@@ -119,7 +116,6 @@ isUserName : Name -> Bool
 isUserName (PV _ _) = False
 isUserName (MN _ _) = False
 isUserName (NS _ n) = isUserName n
-isUserName (DN _ n) = isUserName n
 isUserName _ = True
 
 ||| True iff name can be traced back to a source name.
@@ -130,7 +126,6 @@ isSourceName (NS _ n) = isSourceName n
 isSourceName (UN _) = True
 isSourceName (MN _ _) = False
 isSourceName (PV n _) = isSourceName n
-isSourceName (DN _ n) = isSourceName n
 isSourceName (Nested _ n) = isSourceName n
 isSourceName (CaseBlock _ _) = False
 isSourceName (WithBlock _ _) = False
@@ -161,7 +156,6 @@ isField _ = Nothing
 export
 caseFn : Name -> Bool
 caseFn (CaseBlock _ _) = True
-caseFn (DN _ n) = caseFn n
 caseFn (NS _ n) = caseFn n
 caseFn _ = False
 
@@ -178,7 +172,6 @@ nameRoot (NS _ n) = nameRoot n
 nameRoot (UN n) = displayUserName n
 nameRoot (MN n _) = n
 nameRoot (PV n _) = nameRoot n
-nameRoot (DN _ n) = nameRoot n
 nameRoot (Nested _ inner) = nameRoot inner
 nameRoot (CaseBlock n _) = "$" ++ show n
 nameRoot (WithBlock n _) = "$" ++ show n
@@ -190,7 +183,6 @@ displayName (NS ns n) = mapFst (pure . maybe ns (ns <.>)) $ displayName n
 displayName (UN n) = (Nothing, displayUserName n)
 displayName (MN n _) = (Nothing, n)
 displayName (PV n _) = displayName n
-displayName (DN n _) = (Nothing, n)
 displayName (Nested _ n) = displayName n
 displayName (CaseBlock outer _) = (Nothing, "case block in " ++ show outer)
 displayName (WithBlock outer _) = (Nothing, "with block in " ++ show outer)
@@ -247,7 +239,6 @@ Show Name where
   show (UN x) = show x
   show (MN x y) = "{" ++ x ++ ":" ++ show y ++ "}"
   show (PV n d) = "{P:" ++ show n ++ ":" ++ show d ++ "}"
-  show (DN str n) = str
   show (Nested (outer, idx) inner)
       = show outer ++ ":" ++ show idx ++ ":" ++ show inner
   show (CaseBlock outer i) = "case block in " ++ outer
@@ -267,7 +258,6 @@ covering
   showPrec d (UN x) = showCon d "UN" $ showArg @{RawUN} x
   showPrec d (MN x y) = showCon d "MN" $ showArg x ++ showArg y
   showPrec d (PV n i) = showCon d "PV" $ showArg n ++ showArg i
-  showPrec d (DN str n) = showCon d "DN" $ showArg str ++ showArg n
   showPrec d (Nested ij n) = showCon d "Nested" $ showArg ij ++ showArg n
   showPrec d (CaseBlock str i) = showCon d "CaseBlock" $ showArg str ++ showArg i
   showPrec d (WithBlock str i) = showCon d "WithBlock" $ showArg str ++ showArg i
@@ -285,7 +275,6 @@ export
 isPrettyOp : Bool -> Name -> Bool
 isPrettyOp b (UN nm@(Field _)) = b -- prefixed fields need to be parenthesised
 isPrettyOp b (UN nm@(Basic _)) = isOpUserName nm
-isPrettyOp b (DN str _) = isOpUserName (Basic str)
 isPrettyOp b nm = False
 
 mutual
@@ -302,7 +291,6 @@ mutual
     pretty (UN x) = pretty x
     pretty (MN x y) = braces (pretty x <+> colon <+> byShow y)
     pretty (PV n d) = braces (pretty 'P' <+> colon <+> pretty n <+> colon <+> byShow d)
-    pretty (DN str _) = pretty str
     pretty (Nested (outer, idx) inner)
       = byShow outer <+> colon <+> byShow idx <+> colon <+> pretty inner
     pretty (CaseBlock outer _) = reflow "case block in" <++> pretty outer
@@ -322,7 +310,6 @@ Eq Name where
     (==) (UN x) (UN y) = x == y
     (==) (MN x y) (MN x' y') = y == y' && x == x'
     (==) (PV x y) (PV x' y') = x == x' && y == y'
-    (==) (DN _ n) (DN _ n') = n == n'
     (==) (Nested x y) (Nested x' y') = x == x' && y == y'
     (==) (CaseBlock x y) (CaseBlock x' y') = y == y' && x == x'
     (==) (WithBlock x y) (WithBlock x' y') = y == y' && x == x'
@@ -346,7 +333,6 @@ nameTag (NS _ _) = 0
 nameTag (UN _) = 1
 nameTag (MN _ _) = 2
 nameTag (PV _ _) = 3
-nameTag (DN _ _) = 4
 nameTag (Nested _ _) = 6
 nameTag (CaseBlock _ _) = 7
 nameTag (WithBlock _ _) = 8
@@ -372,7 +358,6 @@ Ord Name where
                EQ => compare x x'
                GT => GT
                LT => LT
-    compare (DN _ n) (DN _ n') = compare n n'
     compare (Nested x y) (Nested x' y')
         = case compare y y' of
                EQ => compare x x'
@@ -423,11 +408,6 @@ nameEq (PV x t) (PV y t') with (nameEq x y)
     nameEq (PV y t) (PV y t) | (Just Refl) | (Yes Refl) = Just Refl
     nameEq (PV y t) (PV y t') | (Just Refl) | (No p) = Nothing
   nameEq (PV x t) (PV y t') | Nothing = Nothing
-nameEq (DN x t) (DN y t') with (decEq x y)
-  nameEq (DN y t) (DN y t') | (Yes Refl) with (nameEq t t')
-    nameEq (DN y t) (DN y t) | (Yes Refl) | (Just Refl) = Just Refl
-    nameEq (DN y t) (DN y t') | (Yes Refl) | Nothing = Nothing
-  nameEq (DN x t) (DN y t') | (No p) = Nothing
 nameEq (Nested x y) (Nested x' y') with (decEq x x')
   nameEq (Nested x y) (Nested x' y') | (No p) = Nothing
   nameEq (Nested x y) (Nested x y') | (Yes Refl) with (nameEq y y')

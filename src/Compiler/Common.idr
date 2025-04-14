@@ -226,12 +226,8 @@ dumpIR fn lns
                | Left err => throw (FileErr fn err)
          pure ()
   where
-    fullShow : Name -> String
-    fullShow (DN _ n) = show n
-    fullShow n = show n
-
     dumpDef : (Name, def) -> String
-    dumpDef (n, d) = fullShow n ++ " = " ++ show d ++ "\n"
+    dumpDef (n, d) = show n ++ " = " ++ show d ++ "\n"
 
 
 export

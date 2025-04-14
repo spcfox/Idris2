@@ -85,9 +85,7 @@ displayImpl defs (n, idx, gdef)
              let (PRef _ kn, _) = getFnArgs defaultKindedName expr
                | _ => pure Nothing
              log "doc.implementation" 20 $ "Got name \{show @{Raw} kn}"
-             let (ns, DN dn nm) = splitNS (kn.fullName)
-               | _ => do log "doc.implementation" 10 $ "Invalid name \{show @{Raw} kn}"
-                         pure Nothing
+             let (ns, nm) = splitNS (kn.fullName)
              let nm = NS ns nm
              Just (idx, gdef) <- lookupCtxtExactI kn.fullName (gamma defs)
                | _ => do log "doc.implementation" 10 $ "Couldn't find \{show @{Raw} nm}"
