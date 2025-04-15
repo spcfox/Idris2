@@ -1104,7 +1104,7 @@ TTC SCCall where
 
 needSave : Def -> Bool
 needSave None = True
--- needSave (PMDef {}) = True
+needSave (PMDef {}) = True
 needSave (ExternDef {}) = True
 needSave (ForeignDef {}) = True
 needSave (Builtin {}) = True
