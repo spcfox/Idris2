@@ -1103,7 +1103,6 @@ TTC SCCall where
            pure (MkSCCall fn args loc)
 
 needSave : Def -> Bool
-needSave ImpBind = False
 needSave (PMDef {}) = False
 needSave _ = True
 
