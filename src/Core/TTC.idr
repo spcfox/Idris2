@@ -1102,11 +1102,21 @@ TTC SCCall where
            loc <- fromBuf b
            pure (MkSCCall fn args loc)
 
-isMeta : Def -> Bool
-isMeta (PMDef (MkPMDefInfo (SolvedHole _) _ _)  _ _ _ _) = True
-isMeta (BySearch _ _ _) = True
-isMeta (Guess _ _ _) = True
-isMeta _ = False
+needSave : Def -> Bool
+needSave None = True
+-- needSave (PMDef {}) = True
+needSave (ExternDef {}) = True
+needSave (ForeignDef {}) = True
+needSave (Builtin {}) = True
+needSave (DCon {}) = True
+needSave (TCon {}) = True
+needSave (Hole {}) = True
+-- needSave (BySearch {}) = True
+-- needSave (Guess {}) = True
+-- needSave (ImpBind {}) = True
+needSave (UniverseLevel {}) = True
+needSave Delayed = True
+needSave _ = False
 
 export
 TTC GlobalDef where
@@ -1123,7 +1133,7 @@ TTC GlobalDef where
            toBuf b (fullname gdef)
            toBuf b (map NameMap.toList (refersToM gdef))
            toBuf b (definition gdef)
-           when (isUserName (fullname gdef) || not (isMeta (definition gdef))) $
+           when (isUserName (fullname gdef) || needSave (definition gdef)) $
               do toBuf b (type gdef)
                  toBuf b (eraseArgs gdef)
                  toBuf b (safeErase gdef)
@@ -1148,7 +1158,7 @@ TTC GlobalDef where
            refsList <- fromBuf b
            let refs = map fromList refsList
            def <- fromBuf b
-           if (isUserName name) || not (isMeta def)
+           if (isUserName name) || needSave def
               then do ty <- fromBuf b
                       eargs <- fromBuf b;
                       seargs <- fromBuf b; specargs <- fromBuf b
