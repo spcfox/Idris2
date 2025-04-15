@@ -128,7 +128,7 @@ showCT indent (Unmatched msg) = "Error: " ++ show msg
 showCT indent Impossible = "Impossible"
 
 showCA indent (ConCase n tag args sc)
-        = showSep " " (map show (n :: args)) ++ " => " ++
+        = showSep " " ([show n] ++ map show (args)) ++ " => " ++
           showCT indent sc
 showCA indent (DelayCase _ arg sc)
         = "Delay " ++ show arg ++ " => " ++ showCT indent sc
@@ -174,8 +174,8 @@ export
 covering
 Show Pat where
   show (PAs _ n p) = show n ++ "@(" ++ show p ++ ")"
-  show (PCon _ n i _ args) = show n ++ " " ++ show i ++ " " ++ assert_total (show args)
-  show (PTyCon _ n _ args) = "<TyCon>" ++ show n ++ " " ++ assert_total (show args)
+  show (PCon _ n i _ args) = show n ++ " " ++ show i ++ " " ++ assert_total (show $ toList args)
+  show (PTyCon _ n _ args) = "<TyCon>" ++ show n ++ " " ++ assert_total (show $ toList args)
   show (PConst _ c) = show c
   show (PArrow _ x s t) = "(" ++ show s ++ " -> " ++ show t ++ ")"
   show (PDelay _ _ _ p) = "(Delay " ++ show p ++ ")"

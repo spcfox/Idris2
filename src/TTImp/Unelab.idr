@@ -406,7 +406,7 @@ unelabNest : {vars : _} ->
              Env Term vars ->
              Term vars -> Core IRawImp
 unelabNest mode nest env (Meta fc n i args)
-    = do let mkn = nameRoot n ++ showScope args
+    = do let mkn = nameRoot n ++ (showScope $ toList args)
          pure (IHole fc mkn)
   where
     toName : Term vars -> Maybe Name

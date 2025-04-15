@@ -518,7 +518,9 @@ mutual
                     Env Term free -> Scopeable (FC, Closure free) ->
                     Core (Scopeable (FC, Term (free ++ bound)))
   quoteArgsWithFC q defs bounds env terms
-      = pure $ zip (map fst terms) !(quoteArgs q defs bounds env (map snd terms))
+           -- [Note] Restore logging sequence
+      = do let rev_terms = reverse terms
+           pure . reverse $ zip (map fst rev_terms) !(quoteArgs q defs bounds env (map snd rev_terms))
 
   quoteHead : {bound, free : _} ->
               {auto c : Ref Ctxt Defs} ->

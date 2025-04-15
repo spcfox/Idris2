@@ -147,7 +147,7 @@ covering
 Show Def where
   show None = "undefined"
   show (PMDef _ args ct rt pats)
-      = unlines [ show args ++ ";"
+      = unlines [ show (toList args) ++ ";"
                 , "Compile time tree: " ++ show ct
                 , "Run time tree: " ++ show rt
                 ]
@@ -195,7 +195,7 @@ export
 covering
 Show Clause where
   show (MkClause {vars} env lhs rhs)
-      = show vars ++ ": " ++ show lhs ++ " = " ++ show rhs
+      = show (asList vars) ++ ": " ++ show lhs ++ " = " ++ show rhs
 
 public export
 data DefFlag

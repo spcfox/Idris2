@@ -83,6 +83,7 @@ data SchVars : Scoped where
      Lin : SchVars [<]
      (:<) : SchVars ns -> SVar -> SchVars (ns :< n)
 
+export
 Show (SchVars ns) where
   show xs = show (toSnocList xs <>> [])
     where

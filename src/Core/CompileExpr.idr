@@ -255,9 +255,9 @@ mutual
     show (NmForce _ lr x) = "(%force " ++ show lr ++ " " ++ show x ++ ")"
     show (NmDelay _ lr x) = "(%delay " ++ show lr ++ " " ++ show x ++ ")"
     show (NmConCase _ sc xs def)
-        = assert_total $ "(%case " ++ show sc ++ " " ++ show xs ++ " " ++ show def ++ ")"
+        = assert_total $ "(%case con " ++ show sc ++ " " ++ show xs ++ " " ++ show def ++ ")"
     show (NmConstCase _ sc xs def)
-        = assert_total $ "(%case " ++ show sc ++ " " ++ show xs ++ " " ++ show def ++ ")"
+        = assert_total $ "(%case const " ++ show sc ++ " " ++ show xs ++ " " ++ show def ++ ")"
     show (NmPrimVal _ x) = show x
     show (NmErased _) = "___"
     show (NmCrash _ x) = "(CRASH " ++ show x ++ ")"
@@ -394,6 +394,11 @@ covering
 {vars : _} -> Show (CExp vars) where
   show exp = show (forget exp)
 
+public export
+covering
+{vars : _} -> Show (CConAlt vars) where
+    show (MkConAlt name ci t args cexp) = "{MkConAlt name: \{show name}, ci: \{show ci}, t: \{show t}, args: \{show args}, cexp: \{show cexp}}"
+
 export
 covering
 Show CFType where
@@ -419,12 +424,12 @@ Show CFType where
   show (CFFun s t) = show s ++ " -> " ++ show t
   show (CFIORes t) = "IORes " ++ show t
   show (CFStruct n args) = "struct " ++ show n ++ " " ++ showSep " " (map show args)
-  show (CFUser n args) = show n ++ " " ++ showSep " " (map show args)
+  show (CFUser n args) = show n ++ " " ++ showSep " " (toList $ map show args)
 
 export
 covering
 Show CDef where
-  show (MkFun args exp) = show args ++ ": " ++ show exp
+  show (MkFun args exp) = show (toList args) ++ ": " ++ show exp
   show (MkCon tag arity pos)
       = "Constructor tag " ++ show tag ++ " arity " ++ show arity ++
         maybe "" (\n => " (newtype by " ++ show n ++ ")") pos
@@ -566,6 +571,16 @@ Weaken CConAlt where
 public export
 SubstCEnv : Scope -> Scoped
 SubstCEnv = Subst CExp
+
+public export
+covering
+{dropped, vars : _} -> Show (SubstCEnv dropped vars) where
+    show x = "SubstCEnv [" ++ showAll x ++ "]{vars = " ++ show (toList vars) ++ ", dropped = " ++ show (toList dropped) ++ "}"
+        where
+            showAll : {dropped, vars : _} -> SubstCEnv dropped vars -> String
+            showAll Lin = ""
+            showAll (Lin :< x) = show x
+            showAll (xx :< x) = showAll xx ++ ", " ++ show x
 
 mutual
   substEnv : Substitutable CExp CExp
