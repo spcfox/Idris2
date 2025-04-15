@@ -1103,7 +1103,7 @@ TTC SCCall where
            pure (MkSCCall fn args loc)
 
 needSave : Def -> Bool
-needSave (PMDef {}) = False
+needSave (PMDef (MkPMDefInfo (SolvedHole _) _ _) _ _ _ _) = False
 needSave _ = True
 
 export
