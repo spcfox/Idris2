@@ -1103,20 +1103,9 @@ TTC SCCall where
            pure (MkSCCall fn args loc)
 
 needSave : Def -> Bool
-needSave None = True
-needSave (PMDef {}) = True
-needSave (ExternDef {}) = True
-needSave (ForeignDef {}) = True
-needSave (Builtin {}) = True
-needSave (DCon {}) = True
-needSave (TCon {}) = True
-needSave (Hole {}) = True
-needSave (BySearch {}) = True
-needSave (Guess {}) = True
--- needSave (ImpBind {}) = True
-needSave (UniverseLevel {}) = True
-needSave Delayed = True
-needSave _ = False
+needSave ImpBind = False
+needSave (PMDef (MkPMDefInfo (SolvedHole _) _ _) _ _ _ _) = False
+needSave _ = True
 
 export
 TTC GlobalDef where
@@ -1158,7 +1147,7 @@ TTC GlobalDef where
            refsList <- fromBuf b
            let refs = map fromList refsList
            def <- fromBuf b
-           if (isUserName name) || needSave def
+           if isUserName name || needSave def
               then do ty <- fromBuf b
                       eargs <- fromBuf b;
                       seargs <- fromBuf b; specargs <- fromBuf b
