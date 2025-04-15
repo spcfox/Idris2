@@ -141,15 +141,20 @@ defNameType ImpBind = Just Bound
 defNameType (UniverseLevel {}) = Nothing
 defNameType Delayed = Nothing
 
+Show HoleInfo where
+  show NotHole = "NotHole"
+  show (SolvedHole n) = "SolvedHole " ++ show n
+
+Show PMDefInfo where
+  show (MkPMDefInfo {holeInfo, alwaysReduce, externalDecl}) =
+    "PMDefInfo " ++ show holeInfo ++ " " ++ show alwaysReduce ++ " " ++ show externalDecl
+
 export
 covering
 Show Def where
   show None = "undefined"
-  show (PMDef _ args ct rt pats)
-      = unlines [ show args ++ ";"
-                , "Compile time tree: " ++ show ct
-                , "Run time tree: " ++ show rt
-                ]
+  show (PMDef info args ct rt pats)
+      = "{PMDef} Info: " ++ show info
   show (DCon t a nt)
       = "DataCon " ++ show t ++ " " ++ show a
            ++ maybe "" (\n => " (newtype by " ++ show n ++ ")") nt

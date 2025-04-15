@@ -4,6 +4,7 @@ import Core.Binary.Prims
 import Core.Case.CaseTree
 import Core.CompileExpr
 import Core.Context
+import Core.Context.Log
 import Core.Core
 import Core.Env
 import Core.FC
@@ -1121,20 +1122,22 @@ TTC GlobalDef where
            toBuf b (fullname gdef)
            toBuf b (map NameMap.toList (refersToM gdef))
            toBuf b (definition gdef)
-           when (isUserName (fullname gdef) || needSave (definition gdef)) $
-              do toBuf b (type gdef)
-                 toBuf b (eraseArgs gdef)
-                 toBuf b (safeErase gdef)
-                 toBuf b (specArgs gdef)
-                 toBuf b (inferrable gdef)
-                 toBuf b (localVars gdef)
-                 toBuf b (visibility gdef)
-                 toBuf b (totality gdef)
-                 toBuf b (isEscapeHatch gdef)
-                 toBuf b (flags gdef)
-                 toBuf b (invertible gdef)
-                 toBuf b (noCycles gdef)
-                 toBuf b (sizeChange gdef)
+           if isUserName (fullname gdef) || needSave (definition gdef)
+              then do toBuf b (type gdef)
+                      toBuf b (eraseArgs gdef)
+                      toBuf b (safeErase gdef)
+                      toBuf b (specArgs gdef)
+                      toBuf b (inferrable gdef)
+                      toBuf b (localVars gdef)
+                      toBuf b (visibility gdef)
+                      toBuf b (totality gdef)
+                      toBuf b (isEscapeHatch gdef)
+                      toBuf b (flags gdef)
+                      toBuf b (invertible gdef)
+                      toBuf b (noCycles gdef)
+                      toBuf b (sizeChange gdef)
+              else do logString "ttt.write" 0 $ "!!! Skipping writing of " ++ show @{Raw} (fullname gdef)
+                      logString "ttt.write" 0 $ "!!! \t" ++ show (definition gdef)
 
   fromBuf b
       = do cdef <- fromBuf b
