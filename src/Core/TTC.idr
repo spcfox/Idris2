@@ -1104,7 +1104,7 @@ TTC SCCall where
 
 needSave : Def -> Bool
 needSave ImpBind = False
-needSave (PMDef (MkPMDefInfo (SolvedHole _) _ _) _ _ _ _) = False
+needSave (PMDef {}) = False
 needSave _ = True
 
 export
