@@ -3,19 +3,19 @@ RecordDoc>
 RecordDoc> record RecordDoc.A : Type -> Type
   Totality: total
   Visibility: private
-  Constructor: __mkA : _
+  Constructor: __mkA : a -> A a
   Projection: .anA : A a -> a
 RecordDoc> record RecordDoc.Tuple : Type -> Type -> Type
   Totality: total
   Visibility: private
-  Constructor: __mkTuple : _
+  Constructor: __mkTuple : a -> b -> Tuple a b
   Projections:
     .proj1 : Tuple a b -> a
     .proj2 : Tuple a b -> b
 RecordDoc> record RecordDoc.Singleton : a -> Type
   Totality: total
   Visibility: private
-  Constructor: __mkSingleton : _
+  Constructor: __mkSingleton : (value : a) -> (0 _ : value = v) -> Singleton v
   Projections:
     0 .equal : (rec : Singleton v) -> value rec = v
     .value : Singleton v -> a
