@@ -1102,6 +1102,12 @@ TTC SCCall where
            loc <- fromBuf b
            pure (MkSCCall fn args loc)
 
+isMeta : Def -> Bool
+isMeta (PMDef (MkPMDefInfo (SolvedHole _) _ _)  _ _ _ _) = True
+isMeta (BySearch _ _ _) = True
+isMeta (Guess _ _ _) = True
+isMeta _ = False
+
 export
 TTC GlobalDef where
   toBuf b gdef
@@ -1117,7 +1123,7 @@ TTC GlobalDef where
            toBuf b (fullname gdef)
            toBuf b (map NameMap.toList (refersToM gdef))
            toBuf b (definition gdef)
-           when (isUserName (fullname gdef)) $
+           when (isUserName (fullname gdef) || not (isMeta (definition gdef))) $
               do toBuf b (type gdef)
                  toBuf b (eraseArgs gdef)
                  toBuf b (safeErase gdef)
@@ -1142,7 +1148,7 @@ TTC GlobalDef where
            refsList <- fromBuf b
            let refs = map fromList refsList
            def <- fromBuf b
-           if isUserName name
+           if (isUserName name) || not (isMeta def)
               then do ty <- fromBuf b
                       eargs <- fromBuf b;
                       seargs <- fromBuf b; specargs <- fromBuf b
