@@ -428,7 +428,7 @@ mutual
     convGen q i defs env (NPrimVal _ c) (NPrimVal _ c') = pure (c == c')
     convGen q i defs env (NErased _ (Dotted t)) u = convGen q i defs env t u
     convGen q i defs env t (NErased _ (Dotted u)) = convGen q i defs env t u
-    convGen q i defs env (NErased _ _) _ = pure True
+    -- convGen q i defs env (NErased _ _) _ = pure True
     convGen q i defs env _ (NErased _ _) = pure True
     convGen q i defs env (NType _ ul) (NType _ ur)
         = -- TODO Cumulativity: Add constraint here
