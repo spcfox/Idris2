@@ -486,7 +486,7 @@ record ElabInfo where
 
 export
 initElabInfo : ElabMode -> ElabInfo
-initElabInfo m = MkElabInfo m NONE False True False []
+initElabInfo m = MkElabInfo m NONE True True False []
 
 export
 tryError : {vars : _} ->
