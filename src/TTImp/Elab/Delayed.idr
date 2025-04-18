@@ -91,9 +91,10 @@ delayOnFailure fc rig elabinfo env exp pred pri elab
                                      let nos' = noSolve ust
                                      put UST ({ noSolve := nos } ust)
                                      (restm, resty) <- elab True
+                                     res <- checkExp rig elabinfo env fc restm resty (Just expected)
                                      ust <- get UST
                                      put UST ({ noSolve := nos' } ust)
-                                     checkExp rig elabinfo env fc restm resty (Just expected)
+                                     pure res
                                      ))) :: ) }
                          pure (dtm, expected)
                     else throw err)
@@ -132,9 +133,10 @@ delayElab {vars} fc rig elabinfo env exp pri elab
                  let nos' = noSolve ust
                  put UST ({ noSolve := nos } ust)
                  (restm, resty) <- elab
+                 res <- checkExp rig elabinfo env fc restm resty (Just expected)
                  ust <- get UST
                  put UST ({ noSolve := nos' } ust)
-                 checkExp rig elabinfo env fc restm resty (Just expected)
+                 pure res
                  )) :: ) }
          pure (dtm, expected)
   where
