@@ -102,6 +102,9 @@ genName n
 refToLocal : Name -> (x : Name) -> CExp vars -> CExp (vars :< x)
 refToLocal x new tm = refsToLocals (Add new x None) tm
 
+refToLocalScope : Name -> (x : Name) -> CCaseScope vars -> CCaseScope (vars :< x)
+refToLocalScope x new tm = refsToLocalsScope (Add new x None) tm
+
 largest : Ord a => a -> List a -> a
 largest x [] = x
 largest x (y :: ys)
@@ -135,11 +138,15 @@ mutual
           largest (maybe 0 (used n) def) (map (usedConst n) alts)
   used _ tm = 0
 
+  usedCaseScope : {free : _} ->
+            {idx : Nat} -> (0 p : IsVar n idx free) -> CCaseScope free -> Int
+  usedCaseScope n (CRHS rhs) = used n rhs
+  usedCaseScope n (CArg x sc) = usedCaseScope (Later n) sc
+
   usedCon : {free : _} ->
             {idx : Nat} -> (0 p : IsVar n idx free) -> CConAlt free -> Int
-  usedCon n (MkConAlt _ _ _ args sc)
-      = let MkVar n' = weakensN (mkSizeOf args) (MkVar n) in
-            used n' sc
+  usedCon n (MkConAlt _ _ _ sc)
+      = usedCaseScope n sc
 
   usedConst : {free : _} ->
               {idx : Nat} -> (0 p : IsVar n idx free) -> CConstAlt free -> Int
@@ -325,6 +332,19 @@ mutual
   eval rec env stk (CErased fc) = pure $ unload stk $ CErased fc
   eval rec env stk (CCrash fc str) = pure $ unload stk $ CCrash fc str
 
+  evalScope : {vars, free : _} ->
+            {auto c : Ref Ctxt Defs} ->
+            {auto l : Ref LVar Int} ->
+            FC -> List Name -> EEnv free vars -> Stack free ->
+            CCaseScope (free ++ vars) ->
+            Core (CCaseScope free)
+  evalScope fc rec env stk (CRHS tm) = pure $ CRHS !(eval rec env stk tm)
+  evalScope fc rec env stk (CArg x sc)
+      = do xn <- genName "cv"
+           let env' = env :< CRef fc xn
+           sc' <- evalScope fc rec env' stk sc
+           pure (CArg x (refToLocalScope xn x sc'))
+
   extendLoc : {vars, free : _} ->
               {auto c : Ref Ctxt Defs} ->
               {auto l : Ref LVar Int} ->
@@ -351,13 +371,15 @@ mutual
             {auto l : Ref LVar Int} ->
             FC -> List Name -> EEnv free vars -> Stack free -> CConAlt (free ++ vars) ->
             Core (CConAlt free)
-  evalAlt {free} {vars} fc rec env stk (MkConAlt n ci t args sc)
-      = do log "compiler.inline.io_bind" 50 $ "Attempting to evalAlt, env: \{show env}, args: \{show args}"
-           (bs, env') <- extendLoc fc env args
-           log "compiler.inline.io_bind" 50 $ "Attempting to evalAlt, bs: \{show bs}, env': \{show env'}"
-           scEval <- eval rec env' stk
-                          (rewrite sym $ snocAppendFishAssociative free vars args in sc)
-           pure $ MkConAlt n ci t args (rewrite snocAppendFishAssociative free ScopeEmpty args in refsToLocals bs scEval)
+  evalAlt {free} {vars} fc rec env stk (MkConAlt n ci t sc)
+      = pure $ MkConAlt n ci t !(evalScope fc rec env stk sc)
+--   evalAlt {free} {vars} fc rec env stk (MkConAlt n ci t args sc)
+--       = do log "compiler.inline.io_bind" 50 $ "Attempting to evalAlt, env: \{show env}, args: \{show args}"
+--            (bs, env') <- extendLoc fc env args
+--            log "compiler.inline.io_bind" 50 $ "Attempting to evalAlt, bs: \{show bs}, env': \{show env'}"
+--            scEval <- eval rec env' stk
+--                           (rewrite sym $ snocAppendFishAssociative free vars args in sc)
+--            pure $ MkConAlt n ci t args (rewrite snocAppendFishAssociative free ScopeEmpty args in refsToLocals bs scEval)
 
   evalConstAlt : {vars, free : _} ->
                  {auto c : Ref Ctxt Defs} ->
@@ -366,6 +388,18 @@ mutual
                  Core (CConstAlt free)
   evalConstAlt rec env stk (MkConstAlt c sc)
       = MkConstAlt c <$> eval rec env stk sc
+
+  evalPickedAlt : {vars, free : _} ->
+            {auto c : Ref Ctxt Defs} ->
+            {auto l : Ref LVar Int} ->
+            List Name -> EEnv free vars -> Stack free ->
+            (args : List (CExp free)) ->
+            CCaseScope (free ++ vars) ->
+            Core (Maybe (CExp free))
+  evalPickedAlt rec env stk [] (CRHS tm) = pure $ Just !(eval rec env stk tm)
+  evalPickedAlt rec env stk (a :: args) (CArg x sc)
+      = evalPickedAlt rec (env :< a) stk args sc
+  evalPickedAlt rec env stk _ _ = pure Nothing
 
   pickAlt : {vars, free : _} ->
             {auto c : Ref Ctxt Defs} ->
@@ -376,13 +410,9 @@ mutual
             Core (Maybe (CExp free))
   pickAlt rec env stk (CCon fc n ci t args) [] def
       = traverseOpt (eval rec env stk) def
-  pickAlt {vars} {free} rec env stk con@(CCon fc n ci t args) (MkConAlt n' _ t' args' sc :: alts) def
-      =
-        if matches n t n' t'
-           then do let Just env' = extend env args' args
-                         | Nothing => pure Nothing
-                   pure $ Just !(eval rec env' stk
-                           (rewrite sym $ snocAppendFishAssociative free vars args' in sc))
+  pickAlt {vars} {free} rec env stk con@(CCon fc n ci t args) (MkConAlt n' _ t' sc :: alts) def
+      = if matches n t n' t'
+           then evalPickedAlt rec env stk args sc
            else pickAlt rec env stk con alts def
     where
       matches : Name -> Maybe Int -> Name -> Maybe Int -> Bool
@@ -456,9 +486,13 @@ fixArityTm (CConCase fc sc alts def) args
                            !(traverse fixArityAlt alts)
                            !(traverseOpt (\tm => fixArityTm tm []) def)) args
   where
+    fixArityScope : {vars : _} -> CCaseScope vars -> Core (CCaseScope vars)
+    fixArityScope (CRHS tm) = pure $ CRHS !(fixArityTm tm [])
+    fixArityScope (CArg x sc) = pure $ CArg x !(fixArityScope sc)
+
     fixArityAlt : CConAlt vars -> Core (CConAlt vars)
-    fixArityAlt (MkConAlt n ci t a sc)
-        = pure $ MkConAlt n ci t a !(fixArityTm sc [])
+    fixArityAlt (MkConAlt n ci t sc)
+        = pure $ MkConAlt n ci t !(fixArityScope sc)
 fixArityTm (CConstCase fc sc alts def) args
     = pure $ expandToArity Z
               (CConstCase fc !(fixArityTm sc [])
@@ -566,10 +600,14 @@ mutual
   addRefsArgs ds [] = ds
   addRefsArgs ds (a :: as) = addRefsArgs (addRefs ds a) as
 
+  addRefsScope : NameMap Bool -> CCaseScope vars -> NameMap Bool
+  addRefsScope ds (CRHS tm) = addRefs ds tm
+  addRefsScope ds (CArg x sc) = addRefsScope ds sc
+
   addRefsConAlts : NameMap Bool -> List (CConAlt vars) -> NameMap Bool
   addRefsConAlts ds [] = ds
-  addRefsConAlts ds (MkConAlt n _ _ _ sc :: rest)
-      = addRefsConAlts (addRefs (insert n False ds) sc) rest
+  addRefsConAlts ds (MkConAlt _ _ _ sc :: rest)
+      = addRefsConAlts (addRefsScope ds sc) rest
 
   addRefsConstAlts : NameMap Bool -> List (CConstAlt vars) -> NameMap Bool
   addRefsConstAlts ds [] = ds

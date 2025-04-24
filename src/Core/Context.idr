@@ -530,12 +530,17 @@ mutual
     resolved gam t = pure t
 
   export
+  HasNames (CaseScope vars) where
+    full gam (RHS x) = pure (RHS !(full gam x))
+    full gam (Arg c x sc) = pure (Arg c x !(full gam sc))
+
+    resolved gam (RHS x) = pure (RHS !(resolved gam x))
+    resolved gam (Arg c x sc) = pure (Arg c x !(resolved gam sc))
+
+  export
   HasNames (CaseAlt vars) where
-    full gam (ConCase n t args sc)
-        = do sc' <- full gam sc
-             Just gdef <- lookupCtxtExact n gam
-                | Nothing => pure (ConCase n t args sc')
-             pure $ ConCase (fullname gdef) t args sc'
+    full gam (ConCase x tag y)
+        = pure (ConCase !(full gam x) tag !(full gam y))
     full gam (DelayCase ty arg sc)
         = pure $ DelayCase ty arg !(full gam sc)
     full gam (ConstCase c sc)
@@ -543,11 +548,8 @@ mutual
     full gam (DefaultCase sc)
         = pure $ DefaultCase !(full gam sc)
 
-    resolved gam (ConCase n t args sc)
-        = do sc' <- resolved gam sc
-             let Just i = getNameID n gam
-                | Nothing => pure (ConCase n t args sc')
-             pure $ ConCase (Resolved i) t args sc'
+    resolved gam (ConCase x tag y)
+        = pure (ConCase !(resolved gam x) tag !(resolved gam y))
     resolved gam (DelayCase ty arg sc)
         = pure $ DelayCase ty arg !(resolved gam sc)
     resolved gam (ConstCase c sc)

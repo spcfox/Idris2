@@ -46,11 +46,11 @@ namespace Raw
         [ "Arguments" <++> cast (prettyList $ toList args)
         , header "Compile time tree" <++> reAnnotate Syntax ct
         ]
-  prettyDef (DCon tag arity nt) =
+  prettyDef (DCon nt tag arity) =
       vcat $ header "Data constructor" :: map (indent 2)
           ([ "tag:" <++> byShow tag
            , "arity:" <++> byShow arity
-           ] ++ maybe [] (\ n => ["newtype by:" <++> byShow n]) nt)
+           ] ++ maybe [] (\ n => ["newtype by:" <++> byShow n]) (newTypeArg nt))
   prettyDef (TCon tag arity ps ds u ms cons det) =
         let enum = hsep . punctuate "," in
         vcat $ header "Type constructor" :: map (indent 2)
@@ -98,11 +98,11 @@ namespace Resugared
         [ "Arguments" <++> cast (prettyList $ toList args)
         , header "Compile time tree" <++> reAnnotate Syntax ct
         ]
-  prettyDef (DCon tag arity nt) = pure $
+  prettyDef (DCon nt tag arity) = pure $
       vcat $ header "Data constructor" :: map (indent 2)
           ([ "tag:" <++> byShow tag
            , "arity:" <++> byShow arity
-           ] ++ maybe [] (\ n => ["newtype by:" <++> byShow n]) nt)
+           ] ++ maybe [] (\ n => ["newtype by:" <++> byShow n]) (newTypeArg nt))
   prettyDef (TCon tag arity ps ds u ms cons det) = pure $
         let enum = hsep . punctuate "," in
         vcat $ header "Type constructor" :: map (indent 2)

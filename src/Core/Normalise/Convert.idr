@@ -167,23 +167,23 @@ mutual
                       List (Var args, Var args') ->
                       CaseAlt args -> CaseAlt args' ->
                       Core (Maybe (List (Var args, Var args')))
-  getMatchingVarAlt defs ms (ConCase n tag cargs t) (ConCase n' tag' cargs' t')
-      = if n == n'
-           then do let s = mkSizeOf cargs
-                   let s' = mkSizeOf cargs'
-                   let Just ms' = extend s s' ms
-                        | Nothing => pure Nothing
-                   Just ms <- getMatchingVars defs ms' t t'
-                        | Nothing => pure Nothing
-                   -- drop the prefix from cargs/cargs' since they won't
-                   -- be in the caller
-                   pure (Just (mapMaybe (dropP s s') ms))
-           else pure Nothing
-    where
-      weakenP : {0 c, c' : _} -> {0 args, args' : Scope} ->
-                (Var args, Var args') ->
-                (Var (args :< c), Var (args' :< c'))
-      weakenP (v, vs) = (weaken v, weaken vs)
+--   getMatchingVarAlt defs ms (ConCase n tag t) (ConCase n' tag' t')
+--       = if n == n'
+--            then do let s = mkSizeOf cargs
+--                    let s' = mkSizeOf cargs'
+--                    let Just ms' = extend s s' ms
+--                         | Nothing => pure Nothing
+--                    Just ms <- getMatchingVars defs ms' t t'
+--                         | Nothing => pure Nothing
+--                    -- drop the prefix from cargs/cargs' since they won't
+--                    -- be in the caller
+--                    pure (Just (mapMaybe (dropP s s') ms))
+--            else pure Nothing
+--     where
+--       weakenP : {0 c, c' : _} -> {0 args, args' : Scope} ->
+--                 (Var args, Var args') ->
+--                 (Var (args :< c), Var (args' :< c'))
+--       weakenP (v, vs) = (weaken v, weaken vs)
 
   getMatchingVarAlt defs ms (ConstCase c t) (ConstCase c' t')
       = if c == c'

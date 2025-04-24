@@ -213,10 +213,17 @@ mutual
         = h `hashWithSalt` 3
 
   export
+  Hashable (CaseScope vars) where
+    hashWithSalt h (RHS tm)
+        = hashWithSalt h 0 `hashWithSalt` tm
+    hashWithSalt h (Arg _ x sc)
+        = hashWithSalt h 1 `hashWithSalt` x `hashWithSalt` sc
+
+  export
   Hashable (CaseAlt vars) where
-    hashWithSalt h (ConCase x tag args y)
-        = h `hashWithSalt` 0 `hashWithSalt` x `hashWithSalt` args
-            `hashWithSalt` y
+    hashWithSalt h (ConCase n t sc)
+        = hashWithSalt h 0 `hashWithSalt` n `hashWithSalt` t
+                           `hashWithSalt` sc
     hashWithSalt h (DelayCase t x y)
         = h `hashWithSalt` 2 `hashWithSalt` (show t)
             `hashWithSalt` (show x) `hashWithSalt` y

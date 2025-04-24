@@ -58,6 +58,25 @@ defaultFlags : TypeFlags
 defaultFlags = MkTypeFlags False False
 
 public export
+record DataConInfo where
+  constructor MkDataConInfo
+  quantities : List RigCount
+               -- Quantities on arguments
+  newTypeArg : Maybe (Bool, Nat)
+               -- if it's the only constructor, and only one argument is
+               -- non-Rig0, flag it here.
+               -- The Nat is the unerased argument position.
+               -- The Bool is 'True' if there is no %World token in the
+               -- structure, which means it is safe to completely erase
+               -- when pattern matching (otherwise we still have to ensure
+               -- that the value is inspected, to make sure external effects
+               -- happen)
+
+export
+defaultDataConInfo : List RigCount -> DataConInfo
+defaultDataConInfo qs = MkDataConInfo qs Nothing
+
+public export
 record HoleFlags where
   constructor MkHoleFlags
   implbind : Bool -- stands for an implicitly bound name
@@ -87,15 +106,7 @@ data Def : Type where
                                 -- e.g "C:printf,libc,stdlib.h", "scheme:display", ...
                  Def
     Builtin : {arity : Nat} -> PrimFn arity -> Def
-    DCon : (tag : Int) -> (arity : Nat) ->
-           (newtypeArg : Maybe (Bool, Nat)) ->
-               -- if only constructor, and only one argument is non-Rig0,
-               -- flag it here. The Nat is the unerased argument position.
-               -- The Bool is 'True' if there is no %World token in the
-               -- structure, which means it is safe to completely erase
-               -- when pattern matching (otherwise we still have to ensure
-               -- that the value is inspected, to make sure external effects
-               -- happen)
+    DCon : DataConInfo -> (tag : Int) -> (arity : Nat) ->
            Def -- data constructor
     TCon : (tag : Int) -> (arity : Nat) ->
            (parampos : List Nat) -> -- parameters
@@ -133,7 +144,7 @@ defNameType (PMDef {}) = Just Func
 defNameType (ExternDef {}) = Just Func
 defNameType (ForeignDef {}) = Just Func
 defNameType (Builtin {}) = Just Func
-defNameType (DCon tag ar _) = Just (DataCon tag ar)
+defNameType (DCon _ tag ar) = Just (DataCon tag ar)
 defNameType (TCon tag ar _ _ _ _ _ _) = Just (TyCon tag ar)
 defNameType (Hole {}) = Just Func
 defNameType (BySearch {}) = Nothing
@@ -151,9 +162,10 @@ Show Def where
                 , "Compile time tree: " ++ show ct
                 , "Run time tree: " ++ show rt
                 ]
-  show (DCon t a nt)
+  show (DCon di t a)
       = "DataCon " ++ show t ++ " " ++ show a
-           ++ maybe "" (\n => " (newtype by " ++ show n ++ ")") nt
+           ++ maybe "" (\n => " (newtype by " ++ show n ++ ")")
+                    (newTypeArg di)
   show (TCon t a ps ds u ms cons det)
       = "TyCon " ++ show t ++ " " ++ show a ++ " params: " ++ show ps ++
         " constructors: " ++ show cons ++

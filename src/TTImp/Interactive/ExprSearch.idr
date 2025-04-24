@@ -292,7 +292,7 @@ searchName fc rigc opts hints env target topty (n, ndef)
              | _ => noResult
          let namety : NameType
                  = case definition ndef of
-                        DCon tag arity _ => DataCon tag arity
+                        DCon _ tag arity => DataCon tag arity
                         TCon tag arity _ _ _ _ _ _ => TyCon tag arity
                         _ => Func
          log "interaction.search" 5 $ "Trying " ++ show (fullname ndef)

@@ -198,7 +198,7 @@ checkNatCons c cons ty fc = case !(foldr checkCon (pure (Nothing, Nothing)) cons
     checkCon : (Name, GlobalDef) -> Core (Maybe Name, Maybe Name) -> Core (Maybe Name, Maybe Name)
     checkCon (n, gdef) cons = do
         (zero, succ) <- cons
-        let DCon _ arity _ = gdef.definition
+        let DCon _ _ arity = gdef.definition
             | def => throw $ GenericMsg fc $ "Expected data constructor, found:" ++ showDefType def
         case arity `minus` length gdef.eraseArgs of
             0 => case zero of

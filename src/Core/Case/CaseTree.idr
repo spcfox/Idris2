@@ -36,13 +36,17 @@ mutual
        ||| Absurd context
        Impossible : CaseTree vars
 
+  public export
+  data CaseScope : Scope -> Type where
+      RHS : CaseTree vars -> CaseScope vars
+      Arg : RigCount -> (x : Name) -> CaseScope (vars :< x) -> CaseScope vars
+
   ||| Case alternatives. Unlike arbitrary patterns, they can be at most
   ||| one constructor deep.
   public export
   data CaseAlt : Scoped where
        ||| Constructor for a data type; bind the arguments and subterms.
-       ConCase : Name -> (tag : Int) -> (args : List Name) ->
-                 CaseTree (vars <>< args) -> CaseAlt vars
+       ConCase : Name -> (tag : Int) -> CaseScope vars -> CaseAlt vars
        ||| Lazy match for the Delay type use for codata types
        DelayCase : (ty : Name) -> (arg : Name) ->
                    CaseTree (vars :< ty :< arg) -> CaseAlt vars
@@ -51,19 +55,19 @@ mutual
        ||| Catch-all case
        DefaultCase : CaseTree vars -> CaseAlt vars
 
-mutual
-  public export
-  measure : CaseTree vars -> Nat
-  measure (Case idx p scTy xs) = sum $ measureAlts <$> xs
-  measure (STerm x y) = 0
-  measure (Unmatched msg) = 0
-  measure Impossible = 0
+-- mutual
+--   public export
+--   measure : CaseTree vars -> Nat
+--   measure (Case idx p scTy xs) = sum $ measureAlts <$> xs
+--   measure (STerm x y) = 0
+--   measure (Unmatched msg) = 0
+--   measure Impossible = 0
 
-  measureAlts : CaseAlt vars -> Nat
-  measureAlts (ConCase x tag args y) = 1 + (measure y)
-  measureAlts (DelayCase ty arg x) = 1 + (measure x)
-  measureAlts (ConstCase x y) = 1 + (measure y)
-  measureAlts (DefaultCase x) = 1 + (measure x)
+--   measureAlts : CaseAlt vars -> Nat
+--   measureAlts (ConCase x tag args y) = 1 + (measure y)
+--   measureAlts (DelayCase ty arg x) = 1 + (measure x)
+--   measureAlts (ConstCase x y) = 1 + (measure y)
+--   measureAlts (DefaultCase x) = 1 + (measure x)
 
 export
 isDefault : CaseAlt vars -> Bool
@@ -84,13 +88,21 @@ mutual
     restoreNS ns c = c
 
   export
+  StripNamespace (CaseScope vars) where
+    trimNS ns (RHS ct) = RHS (trimNS ns ct)
+    trimNS ns (Arg ty arg t) = Arg ty arg (trimNS ns t)
+
+    restoreNS ns (RHS ct) = RHS (restoreNS ns ct)
+    restoreNS ns (Arg ty arg t) = Arg ty arg (restoreNS ns t)
+
+  export
   StripNamespace (CaseAlt vars) where
-    trimNS ns (ConCase x tag args t) = ConCase x tag args (trimNS ns t)
+    trimNS ns (ConCase n t sc) = ConCase n t (trimNS ns sc)
     trimNS ns (DelayCase ty arg t) = DelayCase ty arg (trimNS ns t)
     trimNS ns (ConstCase x t) = ConstCase x (trimNS ns t)
     trimNS ns (DefaultCase t) = DefaultCase (trimNS ns t)
 
-    restoreNS ns (ConCase x tag args t) = ConCase x tag args (restoreNS ns t)
+    restoreNS ns (ConCase n t sc) = ConCase n t (restoreNS ns sc)
     restoreNS ns (DelayCase ty arg t) = DelayCase ty arg (restoreNS ns t)
     restoreNS ns (ConstCase x t) = ConstCase x (restoreNS ns t)
     restoreNS ns (DefaultCase t) = DefaultCase (restoreNS ns t)
@@ -127,15 +139,23 @@ showCT indent (STerm i tm) = "[" ++ show i ++ "] " ++ show tm
 showCT indent (Unmatched msg) = "Error: " ++ show msg
 showCT indent Impossible = "Impossible"
 
-showCA indent (ConCase n tag args sc)
-        = showSep " " ([show n] ++ map show (args)) ++ " => " ++
-          showCT indent sc
+showCA indent (ConCase n tag sc)
+        = show n ++ " " ++ showScope sc
+  where
+    showScope : {vars : _} -> CaseScope vars -> String
+    showScope (RHS tm) = " => " ++ showCT indent tm
+    showScope (Arg c x sc) = show x ++ " " ++ showScope sc
 showCA indent (DelayCase _ arg sc)
         = "Delay " ++ show arg ++ " => " ++ showCT indent sc
 showCA indent (ConstCase c sc)
         = "Constant " ++ show c ++ " => " ++ showCT indent sc
 showCA indent (DefaultCase sc)
         = "_ => " ++ showCT indent sc
+
+export
+{vars : _} -> Show (CaseScope vars) where
+    show (RHS rhs) = " => rhs" --++ showCT "" rhs
+    show (Arg r nm sc) = " " ++ show nm ++ show sc
 
 export
 covering
@@ -147,28 +167,28 @@ covering
 {vars : _} -> Show (CaseAlt vars) where
   show = showCA ""
 
-mutual
-  export
-  eqTree : CaseTree vs -> CaseTree vs' -> Bool
-  eqTree (Case i _ _ alts) (Case i' _ _ alts')
-      = i == i'
-       && length alts == length alts'
-       && all (uncurry eqAlt) (zip alts alts')
-  eqTree (STerm _ t) (STerm _ t') = eqTerm t t'
-  eqTree (Unmatched _) (Unmatched _) = True
-  eqTree Impossible Impossible = True
-  eqTree _ _ = False
+-- mutual
+--   export
+--   eqTree : CaseTree vs -> CaseTree vs' -> Bool
+--   eqTree (Case i _ _ alts) (Case i' _ _ alts')
+--       = i == i'
+--        && length alts == length alts'
+--        && all (uncurry eqAlt) (zip alts alts')
+--   eqTree (STerm _ t) (STerm _ t') = eqTerm t t'
+--   eqTree (Unmatched _) (Unmatched _) = True
+--   eqTree Impossible Impossible = True
+--   eqTree _ _ = False
 
-  eqAlt : CaseAlt vs -> CaseAlt vs' -> Bool
-  eqAlt (ConCase n t args tree) (ConCase n' t' args' tree')
-      = n == n' && eqTree tree tree' -- assume arities match, since name does
-  eqAlt (DelayCase _ _ tree) (DelayCase _ _ tree')
-      = eqTree tree tree'
-  eqAlt (ConstCase c tree) (ConstCase c' tree')
-      = c == c' && eqTree tree tree'
-  eqAlt (DefaultCase tree) (DefaultCase tree')
-      = eqTree tree tree'
-  eqAlt _ _ = False
+--   eqAlt : CaseAlt vs -> CaseAlt vs' -> Bool
+--   eqAlt (ConCase n t args tree) (ConCase n' t' args' tree')
+--       = n == n' && eqTree tree tree' -- assume arities match, since name does
+--   eqAlt (DelayCase _ _ tree) (DelayCase _ _ tree')
+--       = eqTree tree tree'
+--   eqAlt (ConstCase c tree) (ConstCase c' tree')
+--       = c == c' && eqTree tree tree'
+--   eqAlt (DefaultCase tree) (DefaultCase tree')
+--       = eqTree tree tree'
+--   eqAlt _ _ = False
 
 export
 covering
@@ -209,23 +229,20 @@ mutual
   insertCaseNames _ _ (Unmatched msg) = Unmatched msg
   insertCaseNames _ _ Impossible = Impossible
 
+  insertCaseScopeNames : SizeOf outer ->
+                        SizeOf ns ->
+                        CaseScope (inner ++ outer) ->
+                        CaseScope (inner ++ ns ++ outer)
+  insertCaseScopeNames outer ns (RHS tm) = RHS (insertCaseNames outer ns tm)
+  insertCaseScopeNames outer ns (Arg c x sc)
+      = Arg c x (insertCaseScopeNames (suc outer) ns sc)
+
   insertCaseAltNames : SizeOf outer ->
                        SizeOf ns ->
                        CaseAlt (inner ++ outer) ->
                        CaseAlt (inner ++ ns ++ outer)
-  insertCaseAltNames p q (ConCase x tag args ct)
-      = ConCase x tag args ct''
-      where
-        ct' : CaseTree (inner ++ (ns ++ (outer <>< args)))
-        ct' = insertCaseNames (p <>< mkSizeOf args) q
-          $ replace {p = CaseTree} (snocAppendFishAssociative inner outer args) ct
-
-        ct'' : CaseTree ((inner ++ (ns ++ outer)) <>< args)
-        ct'' = do
-          rewrite (appendAssociative inner ns outer)
-          rewrite snocAppendFishAssociative (inner ++ ns) outer args
-          rewrite sym (appendAssociative inner ns (outer <>< args))
-          ct'
+  insertCaseAltNames outer ns (ConCase n t sc)
+      = ConCase n t (insertCaseScopeNames outer ns sc)
 
   insertCaseAltNames outer ns (DelayCase tyn valn ct)
       = DelayCase tyn valn
@@ -239,39 +256,48 @@ export
 Weaken CaseTree where
   weakenNs ns t = insertCaseNames zero ns t
 
-total
-getNames : (forall vs . NameMap Bool -> Term vs -> NameMap Bool) ->
-           NameMap Bool -> CaseTree vars -> NameMap Bool
-getNames add ns sc = getSet ns sc
-  where
-    mutual
-      getAltSet : NameMap Bool -> CaseAlt vs -> NameMap Bool
-      getAltSet ns (ConCase n t args sc) = getSet ns sc
-      getAltSet ns (DelayCase t a sc) = getSet ns sc
-      getAltSet ns (ConstCase i sc) = getSet ns sc
-      getAltSet ns (DefaultCase sc) = getSet ns sc
-
-      getAltSets : NameMap Bool -> List (CaseAlt vs) -> NameMap Bool
-      getAltSets ns [] = ns
-      getAltSets ns (a :: as) = getAltSets (getAltSet ns a) as
-
-      getSet : NameMap Bool -> CaseTree vs -> NameMap Bool
-      getSet ns (Case _ x ty xs) = getAltSets ns xs
-      getSet ns (STerm i tm) = add ns tm
-      getSet ns (Unmatched msg) = ns
-      getSet ns Impossible = ns
-
 export
-getRefs : (aTotal : Name) -> CaseTree vars -> NameMap Bool
-getRefs at = getNames (addRefs False at) empty
+Weaken CaseScope where
+  weakenNs ns t = insertCaseScopeNames zero ns t
 
-export
-addRefs : (aTotal : Name) -> NameMap Bool -> CaseTree vars -> NameMap Bool
-addRefs at ns = getNames (addRefs False at) ns
+-- total
+-- getNames : (forall vs . NameMap Bool -> Term vs -> NameMap Bool) ->
+--            NameMap Bool -> CaseTree vars -> NameMap Bool
+-- getNames add ns sc = getSet ns sc
+--   where
+--     mutual
+--       getAltSet : NameMap Bool -> CaseAlt vs -> NameMap Bool
+--       getAltSet ns (ConCase n t sc) = getScope ns sc
+--       getAltSet ns (DelayCase t a sc) = getSet ns sc
+--       getAltSet ns (ConstCase i sc) = getSet ns sc
+--       getAltSet ns (DefaultCase sc) = getSet ns sc
 
-export
-getMetas : CaseTree vars -> NameMap Bool
-getMetas = getNames (addMetas False) empty
+--       getScope : NameMap Bool -> CaseScope vs -> NameMap Bool
+--       getScope ns (RHS tm) = getSet ns sc
+--       getScope ns (Arg _ x sc) = getScope ns sc
+
+--       getAltSets : NameMap Bool -> List (CaseAlt vs) -> NameMap Bool
+--       getAltSets ns [] = ns
+--       getAltSets ns (a :: as) = getAltSets (getAltSet ns a) as
+
+--       getSet : NameMap Bool -> CaseTree vs -> NameMap Bool
+--       getSet ns (Case _ x ty []) = ns
+--       getSet ns (Case _ x ty (a :: as)) = getAltSets (getAltSet ns a) as
+--       getSet ns (STerm i tm) = add ns tm
+--       getSet ns (Unmatched msg) = ns
+--       getSet ns Impossible = ns
+
+-- export
+-- getRefs : (aTotal : Name) -> CaseTree vars -> NameMap Bool
+-- getRefs at = getNames (addRefs False at) empty
+
+-- export
+-- addRefs : (aTotal : Name) -> NameMap Bool -> CaseTree vars -> NameMap Bool
+-- addRefs at ns = getNames (addRefs False at) ns
+
+-- export
+-- getMetas : CaseTree vars -> NameMap Bool
+-- getMetas = getNames (addMetas False) empty
 
 export
 mkTerm : (vars : Scope) -> Pat -> Term vars

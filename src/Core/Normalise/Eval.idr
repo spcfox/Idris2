@@ -358,37 +358,34 @@ parameters (defs : Defs) (topopts : EvalOpts)
     tryAlt {more} env loc opts fc stk (NErased _ (Dotted tm)) alt
          = tryAlt {more} env loc opts fc stk tm alt
     -- Ordinary constructor matching
-    tryAlt {more} env loc opts fc stk (NDCon _ nm tag' arity args') (ConCase x tag args sc)
-         = if tag == tag'
-              then evalConAlt env loc opts fc stk args (map snd args') sc
-              else pure NoMatch
+    tryAlt {more} env loc opts fc stk (NDCon _ _ t a sp) (ConCase _ t' cscope)
+        = if t == t' then ?evalCaseScope loc env (?cast sp) cscope --stuck: pure GotStuck
+            else pure NoMatch
     -- Type constructor matching, in typecase
-    tryAlt {more} env loc opts fc stk (NTCon _ nm tag' arity args') (ConCase nm' tag args sc)
-         = if nm == nm'
-              then evalConAlt env loc opts fc stk args (map snd args') sc
+    tryAlt {more} env loc opts fc stk (NTCon _ _ t a sp) (ConCase _ t' cscope)
+         = if t == t'
+              then ?evalCaseScope2 loc env (?cast2 sp) cscope --stuck: pure GotStuck
               else pure NoMatch
     -- Primitive type matching, in typecase
-    tryAlt env loc opts fc stk (NPrimVal _ c) (ConCase nm tag args sc)
-         = case args of -- can't just test for it in the `if` for typing reasons
-             [] => if UN (Basic $ show c) == nm
-                   then evalTree env loc opts fc stk sc
-                   else pure NoMatch
-             _ => pure NoMatch
+    tryAlt env loc opts fc stk (NPrimVal _ c) (ConstCase c' rhs)
+        = if c == c'
+            then evalTree env loc opts fc stk rhs
+            else pure NoMatch
     -- Type of type matching, in typecase
-    tryAlt env loc opts fc stk (NType _ _) (ConCase (UN (Basic "Type")) tag [] sc)
-         = evalTree env loc opts fc stk sc
-    tryAlt env loc opts fc stk (NType _ _) (ConCase _ _ _ _)
-         = pure NoMatch
+    -- tryAlt env loc opts fc stk (NType _ _) (ConCase (UN (Basic "Type")) tag [] sc)
+    --      = evalTree env loc opts fc stk sc
+    -- tryAlt env loc opts fc stk (NType _ _) (ConCase _ _ _ _)
+    --      = pure NoMatch
     -- Arrow matching, in typecase
-    tryAlt {more}
-           env loc opts fc stk (NBind pfc x (Pi fc' r e aty) scty) (ConCase (UN (Basic "->")) tag [s,t] sc)
-       = evalConAlt {more} env loc opts fc stk [s,t]
-                  [<MkNFClosure opts env (NBind pfc x (Lam fc' r e aty) scty),
-                  aty]
-                  sc
-    tryAlt {more}
-           env loc opts fc stk (NBind pfc x (Pi fc' r e aty) scty) (ConCase nm tag args sc)
-       = pure NoMatch
+    -- tryAlt {more}
+    --        env loc opts fc stk (NBind pfc x (Pi fc' r e aty) scty) (ConCase (UN (Basic "->")) tag [s,t] sc)
+    --    = evalConAlt {more} env loc opts fc stk [s,t]
+    --               [<MkNFClosure opts env (NBind pfc x (Lam fc' r e aty) scty),
+    --               aty]
+    --               sc
+    -- tryAlt {more}
+    --        env loc opts fc stk (NBind pfc x (Pi fc' r e aty) scty) (ConCase nm tag args sc)
+    --    = pure NoMatch
     -- Delay matching
     tryAlt env loc opts fc stk (NDelay _ _ ty arg) (DelayCase tyn argn sc)
          = evalTree env (loc :< ty :< arg) opts fc stk sc

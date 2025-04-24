@@ -271,8 +271,8 @@ mutual
   caseAltInlineSafe : {vars : _} ->
                       {auto u : Ref Used (Usage vars)} ->
                       CaseAlt vars -> Core Bool
-  caseAltInlineSafe (ConCase x tag args sc)
-      = inExtended Used0 args (\u' => caseInlineSafe sc)
+  caseAltInlineSafe (ConCase x tag sc)
+      = ?caseAltInlineSafe_ConCase
   caseAltInlineSafe (DelayCase ty arg sc)
       = inExtended Used0 [ty, arg] (\u' => caseInlineSafe sc)
   caseAltInlineSafe (ConstCase x sc) = caseInlineSafe sc
