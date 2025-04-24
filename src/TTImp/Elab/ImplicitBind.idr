@@ -551,9 +551,7 @@ checkBindHere rig elabinfo nest env fc bindmode tm exp
          -- implicits should have access to whatever is in scope here
          put EST (updateEnv env Refl [] est)
          constart <- getNextEntry
-         (tmv, tmt) <- check rig ({ implicitMode := bindmode,
-                                    bindingVars := True }
-                                  elabinfo)
+         (tmv, tmt) <- check rig ({ implicitMode := bindmode } elabinfo)
                              nest env tm exp
          let solvemode = case elabMode elabinfo of
                               InLHS c => inLHS

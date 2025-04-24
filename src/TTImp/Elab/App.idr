@@ -187,8 +187,7 @@ mutual
            metaval <- metaVar fc argRig env nm metaty
            let fntm = App fc tm metaval
            fnty <- sc defs (toClosure defaultOpts env metaval)
-           when (bindingVars elabinfo) $ update EST $
-             addBindIfUnsolved nm (getLoc (getFn tm)) argRig Implicit env metaval metaty
+           update EST $ addBindIfUnsolved nm (getLoc (getFn tm)) argRig Implicit env metaval metaty
            checkAppWith rig elabinfo nest env fc
                         fntm fnty (n, 1 + argpos) expargs autoargs namedargs kr expty
 
