@@ -317,7 +317,7 @@ runDelays pri elab
          ust <- get UST
          log "elab.delay" 2 $ "Rerunning delayed in elaborator"
          handle (do ignore $ retryDelayed' AllErrors False []
-                       (reverse (filter hasPri (delayedElab ust))))
+                       (filter hasPri (delayedElab ust)))
                 (\err => do put UST ({ delayedElab := olddelayed } ust)
                             throw err)
          update UST { delayedElab $= (++ olddelayed) }
