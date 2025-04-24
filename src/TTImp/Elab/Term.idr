@@ -324,7 +324,7 @@ TTImp.Elab.Check.checkImp rigc elabinfo nest env tm exp
          -- LHS arguments can't infer their own type - they need to be inferred
          -- from some other argument. This is to prevent arguments being not
          -- polymorphic enough. So, here, add the constraint to be checked later.
-         when (onLHS (elabMode elabinfo) && not (topLevel elabinfo)) $
+         when (onLHS (elabMode elabinfo)) $
             do let (argv, argt) = res
                let Just expty = exp
                         | Nothing => pure ()
