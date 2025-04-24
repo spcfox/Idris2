@@ -187,7 +187,7 @@ mutual
            args' <- if patterns opts && not (topLevel opts) && isRef f
                        then do empty <- clearDefs defs
                                quoteArgsWithFC q opts' empty bound env args
-                               else quoteArgsWithFC q ({ topLevel := False } opts')
+                               else quoteArgsWithFC q ({ topLevel := True } opts')
                                                     defs bound env args
            pure $ applyStackWithFC f' args'
     where
