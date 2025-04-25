@@ -348,6 +348,20 @@ parameters (defs : Defs) (topopts : EvalOpts)
               evalTree env bound opts fc stk $
                 rewrite sym $ fishAsSnocAppend more args in sc
 
+    evalCaseScope : {auto c : Ref Ctxt Defs} ->
+                    {more, free : _} ->
+                    Env Term free ->
+                    LocalEnv free more -> EvalOpts -> FC ->
+                    Stack free ->
+                    SnocList (FC, Closure free) ->
+                    CaseScope more ->
+                    Core (CaseResult (TermWithEnv free))
+    evalCaseScope {more} env loc opts fc stk [<] (RHS tm)
+        = evalTree env loc opts fc stk tm
+    evalCaseScope {more} env loc opts fc stk (sp :< e) (Arg r x sc)
+        = evalCaseScope env (loc :< snd e) opts fc stk sp sc
+    evalCaseScope _ _ _ _ _ _ _ = pure GotStuck
+
     tryAlt : {auto c : Ref Ctxt Defs} ->
              {free, more : _} ->
              Env Term free ->
@@ -359,12 +373,11 @@ parameters (defs : Defs) (topopts : EvalOpts)
          = tryAlt {more} env loc opts fc stk tm alt
     -- Ordinary constructor matching
     tryAlt {more} env loc opts fc stk (NDCon _ _ t a sp) (ConCase _ t' cscope)
-        = if t == t' then ?evalCaseScope loc env (?cast sp) cscope --stuck: pure GotStuck
+        = if t == t' then evalCaseScope env loc opts fc stk sp cscope
             else pure NoMatch
     -- Type constructor matching, in typecase
     tryAlt {more} env loc opts fc stk (NTCon _ _ t a sp) (ConCase _ t' cscope)
-         = if t == t'
-              then ?evalCaseScope2 loc env (?cast2 sp) cscope --stuck: pure GotStuck
+         = if t == t' then evalCaseScope env loc opts fc stk sp cscope
               else pure NoMatch
     -- Primitive type matching, in typecase
     tryAlt env loc opts fc stk (NPrimVal _ c) (ConstCase c' rhs)
