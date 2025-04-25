@@ -627,16 +627,13 @@ mutual
   substEnv _ _ _ (CErased fc) = CErased fc
   substEnv _ _ _ (CCrash fc x) = CCrash fc x
 
-  substCScope : SizeOf outer ->
-                SubstCEnv dropped vars ->
-                CCaseScope (vars ++ (dropped ++ outer)) ->
-                CCaseScope (vars ++ outer)
-  substCScope p env (CRHS tm) = ?crhs --?substEnv2 --(substEnv p env tm)
-  substCScope p env (CArg x sc) = CArg x (substCScope (suc p) env sc)
+  substCScope : Substitutable CExp CCaseScope
+  substCScope p q env (CRHS tm) = CRHS (substEnv p q env tm)
+  substCScope p q env (CArg x sc) = CArg x (substCScope (suc p) q env sc)
 
   substConAlt : Substitutable CExp CConAlt
   substConAlt {vars} {outer} {dropped} p q env (MkConAlt x ci tag sc)
-    = MkConAlt x ci tag (substCScope p env (rewrite (appendAssociative vars dropped outer) in sc))
+    = MkConAlt x ci tag (substCScope p q env sc)
 
   substConstAlt : Substitutable CExp CConstAlt
   substConstAlt outer dropped env (MkConstAlt x sc) = MkConstAlt x (substEnv outer dropped env sc)
