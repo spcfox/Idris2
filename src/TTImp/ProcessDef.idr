@@ -837,13 +837,6 @@ mkRunTime fc n
            ignore $ addDef n $
                        { definition := PMDef r rargs tree_ct tree_rt pats
                        } gdef
-           -- If it's a case block, and not already set as inlinable or forced
-           -- to not be inlinable, check if it's safe to inline
-           when (caseName !(toFullNames n) && noInline (flags gdef)) $
-             do inl <- canInlineCaseBlock n
-                when inl $ do
-                  logC "compiler.inline.eval" 5 $ do pure "Marking \{show !(toFullNames n)} for inlining in runtime case tree."
-                  setFlag fc n Inline
   where
     -- check if the flags contain explicit inline or noinline directives:
     noInline : List DefFlag -> Bool

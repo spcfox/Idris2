@@ -124,6 +124,9 @@ bindReq fc (env :< b) (Drop p) ns tm
 -- This machinery is to calculate whether any top level argument is used
 -- more than once in a case block, in which case inlining wouldn't be safe
 -- since it might duplicate work.
+-- TODO: Not sure the rest of this is needed any more. Will port if it turns
+-- out it is!
+{-
 
 data ArgUsed = Used1 -- been used
              | Used0 -- not used
