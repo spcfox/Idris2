@@ -1322,10 +1322,14 @@ simpleCase fc phase fn ty def clauses
 
 mutual
   findReachedAlts : CaseAlt ns' -> List Int
-  findReachedAlts (ConCase _ _ t) = findReached ?t
+  findReachedAlts (ConCase _ _ t) = findReachedCaseScope t
   findReachedAlts (DelayCase _ _ t) = findReached t
   findReachedAlts (ConstCase _ t) = findReached t
   findReachedAlts (DefaultCase t) = findReached t
+
+  findReachedCaseScope : CaseScope a -> List Int
+  findReachedCaseScope (RHS tm) = findReached tm
+  findReachedCaseScope (Arg _ _ cs) = findReachedCaseScope cs
 
   findReached : CaseTree ns -> List Int
   findReached (Case _ _ _ alts) = concatMap findReachedAlts alts
@@ -1396,8 +1400,12 @@ findExtraDefaults fc defs ctree@(Case {name = var} idx el ty altsIn)
        extraCases' <- concat <$> traverse findExtraAlts altsIn
        pure (Prelude.toList extraCases ++ extraCases')
   where
+    findExtraAltsScope : {vars : _} -> CaseScope vars -> Core (List Int)
+    findExtraAltsScope (RHS tm) = findExtraDefaults fc defs tm
+    findExtraAltsScope (Arg c x sc) = findExtraAltsScope sc
+
     findExtraAlts : CaseAlt vars -> Core (List Int)
-    findExtraAlts (ConCase x tag ctree') = findExtraDefaults fc defs ?ctree'
+    findExtraAlts (ConCase x tag ctree') = findExtraAltsScope ctree'
     findExtraAlts (DelayCase x arg ctree') = findExtraDefaults fc defs ctree'
     findExtraAlts (ConstCase x ctree') = findExtraDefaults fc defs ctree'
     -- already handled defaults by elaborating them to all possible cons
