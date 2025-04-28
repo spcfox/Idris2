@@ -37,30 +37,19 @@ case t of
 
 shiftUnder : {args : _} ->
              {idx : _} ->
-             NVar n ((vars ++ args :< x) ++ outer) ->
+             (0 p : IsVar n idx (vars ++ args :< x)) ->
              NVar n (vars :< x ++ args)
--- shiftUnder First = weakenNVar (mkSizeOf args) (MkNVar First)
--- shiftUnder (Later p) = insertNVar (mkSizeOf args) (MkNVar p)
+shiftUnder First = weakenNVar (mkSizeOf args) (MkNVar First)
+shiftUnder (Later p) = insertNVar (mkSizeOf args) (MkNVar p)
 
-shiftVar : {outer, args : _} ->
+shiftVar : {outer, args : Scope} ->
            NVar n ((vars ++ args :< x) ++ outer) ->
            NVar n ((vars :< x ++ args) ++ outer)
--- shiftVar {outer = [<]} p = shiftUnder p
--- shiftVar nvar
---   = let out = mkSizeOf outer in
---     case locateNVar out nvar of
---       Left nvar => embed nvar
---       Right (MkNVar p) => weakenNs out (shiftUndersN (mkSizeOf _) p)
-
--- shiftVar : {outer, args : _} ->
---            {idx : _} ->
---            (0 p : IsVar n idx ((vars ++ args :< x) ++ outer)) ->
---            NVar n ((vars :< x ++ args) ++ outer)
--- shiftVar {outer = [<]} p = shiftUnder p
--- shiftVar {outer = (xs :< n)} First = MkNVar First
--- shiftVar {outer = (xs :< y)} (Later p)
---     = case shiftVar p of
---            MkNVar p' => MkNVar (Later p')
+shiftVar nvar
+  = let out = mkSizeOf outer in
+    case locateNVar out nvar of
+      Left nvar => embed nvar
+      Right (MkNVar p) => weakenNs out (shiftUnderNs (mkSizeOf _) p)
 
 mutual
   renameVar : IsVar x i (((rest :< old) ++ args) ++ outer) ->
@@ -105,7 +94,7 @@ mutual
                 (new : Name) ->
                 CCaseScope ((vars ++ args) :< old ++ outer) ->
                 CCaseScope ((vars :< new ++ args) ++ outer)
-  shiftBinderConScope new (CRHS tm) = CRHS ?shiftBinderConScope2 --(shiftBinder new tm)
+  shiftBinderConScope new (CRHS tm) = CRHS (shiftBinder new tm)
   shiftBinderConScope new (CArg x sc)
       = CArg x (shiftBinderConScope {outer = outer :< x} new sc)
 
