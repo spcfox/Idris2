@@ -274,7 +274,7 @@ mutual
 
       toCExpScope : {vars : _} -> Nat -> List Nat ->
                     CaseScope vars -> Core (CCaseScope vars)
-      toCExpScope i es (RHS tm) = pure $ CRHS !(toCExp n ?tm)
+      toCExpScope i es (RHS tm) = pure $ CRHS !(toCExpTree n tm)
       toCExpScope {vars} i es (Arg c x sc)
         = if i `elem` es
                 then pure $ shrinkCScope (Drop Refl) $
@@ -325,8 +325,8 @@ mutual
               CaseScope (vars ++ args) ->
               Core (Maybe (CExp vars))
       substScr i pos x env (RHS tm)
-          = do tm' <- toCExp n ?tm2
-               pure $ Just ?substScr --(substs env tm')
+          = do tm' <- toCExpTree n tm
+               pure $ Just (substs (mkSizeOf _) env tm')
       substScr i pos x env (Arg c n sc)
           = if i == pos
               then substScr (S i) pos x (env :< x) sc
@@ -340,14 +340,13 @@ mutual
               CaseScope (vars ++ args) ->
               Core (Maybe (CExp vars))
       substLetScr i pos x env (RHS tm)
-          = do tm' <- toCExp n ?tm3
+          = do tm' <- toCExpTree n tm
                let tm' = insertNames {outer = args} {inner = vars} {ns = [<MN "eff" 0]}
                               (mkSizeOf _) (mkSizeOf _) tm'
                let rettm = CLet fc (MN "eff" 0) NotInline x
-                      ?substs2
-                      -- (substs env
-                      --     (rewrite sym (appendAssociative vars [<MN "eff" 0] args)
-                      --                 in tm'))
+                      (substs (mkSizeOf _) env
+                          (rewrite sym (appendAssociative vars [<MN "eff" 0] args)
+                                      in tm'))
                pure $ Just rettm
       substLetScr i pos x env (Arg c n sc)
           = if i == pos
