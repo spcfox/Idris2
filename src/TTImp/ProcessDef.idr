@@ -770,9 +770,9 @@ calcRefs rt at fn
          let Nothing = refs
               | Just _ => pure () -- already done
          let tree : CaseTree cargs = if rt then tree_rt else tree_ct
-         let metas = getMetas (?toTerm tree)
+         let metas = CaseTree.getMetas tree
          traverse_ addToSave (keys metas)
-         let refs_all = ?addRefs --at metas tree
+         let refs_all = CaseTree.addRefs at metas tree
          refs <- ifThenElse rt
                     (dropErased (keys refs_all) refs_all)
                     (pure refs_all)
@@ -830,7 +830,6 @@ mkRunTime fc n
                , show (toList rargs)
                ]
            log "compile.casetree" 10 $ "tree_rt " ++ show tree_rt
-           --  log "compile.casetree.measure" 15 $ show (measure tree_rt)
 
            let Just Refl = nameListEq cargs rargs
                    | Nothing => throw (InternalError "WAT")
@@ -1035,7 +1034,7 @@ processDef opts nest env fc n_in cs_in
                    } gdef)
 
          when (collapseDefault (visibility gdef) == Public) $
-             do let rmetas = getMetas ?tree_ct
+             do let rmetas = CaseTree.getMetas tree_ct
                 log "declare.def" 10 $ "Saving from " ++ show n ++ ": " ++ show (keys rmetas)
                 traverse_ addToSave (keys rmetas)
          when (isUserName n && collapseDefault (visibility gdef) /= Private) $

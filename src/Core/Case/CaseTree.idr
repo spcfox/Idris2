@@ -55,20 +55,6 @@ mutual
        ||| Catch-all case
        DefaultCase : CaseTree vars -> CaseAlt vars
 
--- mutual
---   public export
---   measure : CaseTree vars -> Nat
---   measure (Case idx p scTy xs) = sum $ measureAlts <$> xs
---   measure (STerm x y) = 0
---   measure (Unmatched msg) = 0
---   measure Impossible = 0
-
---   measureAlts : CaseAlt vars -> Nat
---   measureAlts (ConCase x tag args y) = 1 + (measure y)
---   measureAlts (DelayCase ty arg x) = 1 + (measure x)
---   measureAlts (ConstCase x y) = 1 + (measure y)
---   measureAlts (DefaultCase x) = 1 + (measure x)
-
 export
 isDefault : CaseAlt vars -> Bool
 isDefault (DefaultCase _) = True
@@ -167,28 +153,33 @@ covering
 {vars : _} -> Show (CaseAlt vars) where
   show = showCA ""
 
--- mutual
---   export
---   eqTree : CaseTree vs -> CaseTree vs' -> Bool
---   eqTree (Case i _ _ alts) (Case i' _ _ alts')
---       = i == i'
---        && length alts == length alts'
---        && all (uncurry eqAlt) (zip alts alts')
---   eqTree (STerm _ t) (STerm _ t') = eqTerm t t'
---   eqTree (Unmatched _) (Unmatched _) = True
---   eqTree Impossible Impossible = True
---   eqTree _ _ = False
+mutual
+  export
+  eqTree : CaseTree vs -> CaseTree vs' -> Bool
+  eqTree (Case i _ _ alts) (Case i' _ _ alts')
+      = i == i'
+       && length alts == length alts'
+       && all (uncurry eqAlt) (zip alts alts')
+  eqTree (STerm _ t) (STerm _ t') = eqTerm t t'
+  eqTree (Unmatched _) (Unmatched _) = True
+  eqTree Impossible Impossible = True
+  eqTree _ _ = False
 
---   eqAlt : CaseAlt vs -> CaseAlt vs' -> Bool
---   eqAlt (ConCase n t args tree) (ConCase n' t' args' tree')
---       = n == n' && eqTree tree tree' -- assume arities match, since name does
---   eqAlt (DelayCase _ _ tree) (DelayCase _ _ tree')
---       = eqTree tree tree'
---   eqAlt (ConstCase c tree) (ConstCase c' tree')
---       = c == c' && eqTree tree tree'
---   eqAlt (DefaultCase tree) (DefaultCase tree')
---       = eqTree tree tree'
---   eqAlt _ _ = False
+  eqScope : forall vs, vs' . CaseScope vs -> CaseScope vs' -> Bool
+  eqScope (RHS tm) (RHS tm') = eqTree tm tm'
+  eqScope (Arg _ _ sc) (Arg _ _ sc') = eqScope sc sc'
+  eqScope _ _ = False
+
+  eqAlt : CaseAlt vs -> CaseAlt vs' -> Bool
+  eqAlt (ConCase n t sc) (ConCase n' t' sc')
+      = n == n' && eqScope sc sc' -- assume arities match, since name does
+  eqAlt (DelayCase _ _ tree) (DelayCase _ _ tree')
+      = eqTree tree tree'
+  eqAlt (ConstCase c tree) (ConstCase c' tree')
+      = c == c' && eqTree tree tree'
+  eqAlt (DefaultCase tree) (DefaultCase tree')
+      = eqTree tree tree'
+  eqAlt _ _ = False
 
 export
 covering
@@ -260,44 +251,44 @@ export
 Weaken CaseScope where
   weakenNs ns t = insertCaseScopeNames zero ns t
 
--- total
--- getNames : (forall vs . NameMap Bool -> Term vs -> NameMap Bool) ->
---            NameMap Bool -> CaseTree vars -> NameMap Bool
--- getNames add ns sc = getSet ns sc
---   where
---     mutual
---       getAltSet : NameMap Bool -> CaseAlt vs -> NameMap Bool
---       getAltSet ns (ConCase n t sc) = getScope ns sc
---       getAltSet ns (DelayCase t a sc) = getSet ns sc
---       getAltSet ns (ConstCase i sc) = getSet ns sc
---       getAltSet ns (DefaultCase sc) = getSet ns sc
+total
+getNames : (forall vs . NameMap Bool -> Term vs -> NameMap Bool) ->
+           NameMap Bool -> CaseTree vars -> NameMap Bool
+getNames add ns sc = getSet ns sc
+  where
+    mutual
+      getAltSet : NameMap Bool -> CaseAlt vs -> NameMap Bool
+      getAltSet ns (ConCase n t sc) = getScope ns sc
+      getAltSet ns (DelayCase t a sc) = getSet ns sc
+      getAltSet ns (ConstCase i sc) = getSet ns sc
+      getAltSet ns (DefaultCase sc) = getSet ns sc
 
---       getScope : NameMap Bool -> CaseScope vs -> NameMap Bool
---       getScope ns (RHS tm) = getSet ns sc
---       getScope ns (Arg _ x sc) = getScope ns sc
+      getScope : NameMap Bool -> CaseScope vs -> NameMap Bool
+      getScope ns (RHS tm) = getSet ns tm
+      getScope ns (Arg _ x sc) = getScope ns sc
 
---       getAltSets : NameMap Bool -> List (CaseAlt vs) -> NameMap Bool
---       getAltSets ns [] = ns
---       getAltSets ns (a :: as) = getAltSets (getAltSet ns a) as
+      getAltSets : NameMap Bool -> List (CaseAlt vs) -> NameMap Bool
+      getAltSets ns [] = ns
+      getAltSets ns (a :: as) = getAltSets (getAltSet ns a) as
 
---       getSet : NameMap Bool -> CaseTree vs -> NameMap Bool
---       getSet ns (Case _ x ty []) = ns
---       getSet ns (Case _ x ty (a :: as)) = getAltSets (getAltSet ns a) as
---       getSet ns (STerm i tm) = add ns tm
---       getSet ns (Unmatched msg) = ns
---       getSet ns Impossible = ns
+      getSet : NameMap Bool -> CaseTree vs -> NameMap Bool
+      getSet ns (Case _ x ty []) = ns
+      getSet ns (Case _ x ty (a :: as)) = getAltSets (getAltSet ns a) as
+      getSet ns (STerm i tm) = add ns tm
+      getSet ns (Unmatched msg) = ns
+      getSet ns Impossible = ns
 
--- export
--- getRefs : (aTotal : Name) -> CaseTree vars -> NameMap Bool
--- getRefs at = getNames (addRefs False at) empty
+export
+getRefs : (aTotal : Name) -> CaseTree vars -> NameMap Bool
+getRefs at = getNames (addRefs False at) empty
 
--- export
--- addRefs : (aTotal : Name) -> NameMap Bool -> CaseTree vars -> NameMap Bool
--- addRefs at ns = getNames (addRefs False at) ns
+export
+addRefs : (aTotal : Name) -> NameMap Bool -> CaseTree vars -> NameMap Bool
+addRefs at ns = getNames (addRefs False at) ns
 
--- export
--- getMetas : CaseTree vars -> NameMap Bool
--- getMetas = getNames (addMetas False) empty
+export
+getMetas : CaseTree vars -> NameMap Bool
+getMetas = getNames (addMetas False) empty
 
 export
 mkTerm : (vars : Scope) -> Pat -> Term vars
