@@ -40,11 +40,15 @@ numArgs defs (Ref _ _ n)
                case newTypeArg di of
                     Nothing => pure (EraseArgs arity (eraseArgs gdef))
                     Just (_, pos) => pure (NewTypeBy arity pos)
-           PMDef _ args _ _ _ => pure (EraseArgs (length args) (eraseArgs gdef))
+           Function _ def _ _ => pure (EraseArgs (countArgs def) (eraseArgs gdef))
            ExternDef arity => pure (Arity arity)
            ForeignDef arity _ => pure (Arity arity)
            Builtin {arity} f => pure (Arity arity)
            _ => pure (Arity 0)
+  where
+    countArgs : forall vars . Term vars -> Nat
+    countArgs (Bind _ _ (Lam{}) sc) = S (countArgs sc)
+    countArgs _ = 0
 numArgs _ tm = pure (Arity 0)
 
 ||| Compute the thinning getting rid of the listed de Bruijn indices.
@@ -226,6 +230,7 @@ toCExpTm n (TForce fc lr arg)
 toCExpTm n (PrimVal fc $ PrT c) = pure $ CCon fc (UN $ Basic $ show c) TYCON Nothing [] -- Primitive type constant
 toCExpTm n (PrimVal fc c) = pure $ CPrimVal fc c -- Non-type constant
 toCExpTm n (Erased fc _) = pure $ CErased fc
+toCExpTm n (Unmatched fc str) = pure $ CCrash fc str
 toCExpTm n (TType fc _) = pure $ CCon fc (UN (Basic "Type")) TYCON Nothing []
 
 toCExp n tm
@@ -410,8 +415,8 @@ mutual
   toCExpTree' n (Case _ x scTy [])
       = pure $ CCrash (getLoc scTy) $ "Missing case tree in " ++ show n
   toCExpTree' n (STerm _ tm) = toCExp n tm
-  toCExpTree' n (Unmatched msg)
-      = pure $ CCrash emptyFC msg
+  toCExpTree' n (TUnmatched msg)
+      = pure $ CCrash emptyFC ("Unmatched: " ++ show msg)
   toCExpTree' n Impossible
       = pure $ CCrash emptyFC ("Impossible case encountered in " ++ show n)
 
@@ -584,22 +589,29 @@ lamRHS ns tm
     lamBind fc [<] tm = tm
     lamBind fc (ns :< n) tm = lamBind fc ns (CLam fc n tm)
 
+-- Move any lambdas in the body of the definition into the lhs list of vars.
+-- Annoyingly, the indices will need fixing up because the order in the top
+-- level definition goes left to right (i.e. first argument has lowest index,
+-- not the highest, as you'd expect if they were all lambdas).
+export
+mergeLambdas : (args : SnocList Name) -> CExp args -> (args' ** CExp args')
+mergeLambdas args (CLam fc x sc)
+    = mergeLambdas (args :< x) sc
+mergeLambdas args exp = (args ** exp)
+
 toCDef : Ref Ctxt Defs => Ref NextMN Int =>
          Name -> ClosedTerm -> List Nat -> Def ->
          Core CDef
 toCDef n ty _ None
     = pure $ MkError $ CCrash emptyFC ("Encountered undefined name " ++ show !(getFullName n))
-toCDef n ty erased (PMDef pi args _ tree _)
-    = do log "compiler.newtype.world" 25 "toCDef PMDef args \{show $ toList args}, ty: \{show ty}, n: \{show n}, erased: \{show erased}, tree: \{show tree}"
+toCDef n ty erased (Function fi _ tree _)
+    = do s <- newRef NextMN 0
+         t <- toCExp n tree
+         let (args ** comptree) = mergeLambdas [<] t
          let (args' ** p) = mkSub args erased
-         comptree <- toCExpTree n tree
-         log "compiler.newtype.world" 25 "toCDef PMDef comptree \{show comptree}, p: \{show p}, is_ext: \{show $ (externalDecl pi)}"
-         let lam = toLam (externalDecl pi) $
-            if isNil erased
-                then MkFun args comptree
-                else MkFun args' (shrinkCExp p comptree)
-         log "compiler.newtype.world" 25 "toCDef PMDef is_erased: \{show $ isNil erased}, lam \{show lam}, args': \{show $ toList args'}"
-         pure lam
+         pure $ toLam (externalDecl fi) $ if isNil erased
+            then MkFun args comptree
+            else MkFun args' (shrinkCExp p comptree)
   where
     toLam : Bool -> CDef -> CDef
     toLam True (MkFun args rhs) = MkFun ScopeEmpty (lamRHS args rhs)

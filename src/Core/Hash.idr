@@ -179,8 +179,10 @@ mutual
         = h `hashWithSalt` 9 `hashWithSalt` (show c)
     hashWithSalt h (Erased fc _)
         = hashWithSalt h 10
+    hashWithSalt h (Unmatched fc u)
+        = hashWithSalt h 13 `hashWithSalt` u
     hashWithSalt h (TType fc u)
-        = hashWithSalt h 11 `hashWithSalt` u
+        = hashWithSalt h 15 `hashWithSalt` u
 
   export
   Hashable Pat where
@@ -207,7 +209,7 @@ mutual
         = h `hashWithSalt` 0 `hashWithSalt` idx `hashWithSalt` xs
     hashWithSalt h (STerm _ x)
         = h `hashWithSalt` 1 `hashWithSalt` x
-    hashWithSalt h (Unmatched msg)
+    hashWithSalt h (TUnmatched msg)
         = h `hashWithSalt` 2
     hashWithSalt h Impossible
         = h `hashWithSalt` 3

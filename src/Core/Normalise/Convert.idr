@@ -104,6 +104,7 @@ tryUpdate ms (TDelay fc r ty tm) = pure $ TDelay fc r !(tryUpdate ms ty) !(tryUp
 tryUpdate ms (TForce fc r tm) = pure $ TForce fc r !(tryUpdate ms tm)
 tryUpdate ms (PrimVal fc c) = pure $ PrimVal fc c
 tryUpdate ms (Erased fc a) = Erased fc <$> traverse (tryUpdate ms) a
+tryUpdate ms (Unmatched fc str) = pure $ Unmatched fc str
 tryUpdate ms (TType fc u) = pure $ TType fc u
 
 mutual
@@ -167,23 +168,23 @@ mutual
                       List (Var args, Var args') ->
                       CaseAlt args -> CaseAlt args' ->
                       Core (Maybe (List (Var args, Var args')))
---   getMatchingVarAlt defs ms (ConCase n tag t) (ConCase n' tag' t')
---       = if n == n'
---            then do let s = mkSizeOf cargs
---                    let s' = mkSizeOf cargs'
---                    let Just ms' = extend s s' ms
---                         | Nothing => pure Nothing
---                    Just ms <- getMatchingVars defs ms' t t'
---                         | Nothing => pure Nothing
---                    -- drop the prefix from cargs/cargs' since they won't
---                    -- be in the caller
---                    pure (Just (mapMaybe (dropP s s') ms))
---            else pure Nothing
---     where
---       weakenP : {0 c, c' : _} -> {0 args, args' : Scope} ->
---                 (Var args, Var args') ->
---                 (Var (args :< c), Var (args' :< c'))
---       weakenP (v, vs) = (weaken v, weaken vs)
+  getMatchingVarAlt defs ms (ConCase n tag t) (ConCase n' tag' t')
+      = if n == n'
+           then do let s = mkSizeOf ?cargs
+                   let s' = mkSizeOf ?cargs'
+                   let Just ms' = extend s s' ms
+                        | Nothing => pure Nothing
+                   Just ms <- getMatchingVars defs ms' ?t ?t'
+                        | Nothing => pure Nothing
+                   -- drop the prefix from cargs/cargs' since they won't
+                   -- be in the caller
+                   pure (Just (mapMaybe (dropP s s') ms))
+           else pure Nothing
+    where
+      weakenP : {0 c, c' : _} -> {0 args, args' : Scope} ->
+                (Var args, Var args') ->
+                (Var (args :< c), Var (args' :< c'))
+      weakenP (v, vs) = (weaken v, weaken vs)
 
   getMatchingVarAlt defs ms (ConstCase c t) (ConstCase c' t')
       = if c == c'
@@ -220,9 +221,18 @@ mutual
            if !(convert defs (mkEnv (getLoc tm) args') tm'' tm')
               then pure (Just ms)
               else pure Nothing
-  getMatchingVars defs ms (Unmatched _) (Unmatched _) = pure (Just ms)
+  getMatchingVars defs ms (TUnmatched _) (TUnmatched _) = pure (Just ms)
   getMatchingVars defs ms Impossible Impossible = pure (Just ms)
   getMatchingVars _ _ _ _ = pure Nothing
+
+  getMatchingVarsCaseScope : {auto c : Ref Ctxt Defs} ->
+                             {args, args' : _} ->
+                             Defs ->
+                             List (Var args, Var args') ->
+                             CaseScope args -> CaseScope args' ->
+                             Core (Maybe (List (Var args, Var args')))
+  getMatchingVarsCaseScope defs ms (RHS tm) (RHS tm') = ?gdfgdfg
+  getMatchingVarsCaseScope defs ms _ _ = pure Nothing
 
   chkSameDefs : {auto c : Ref Ctxt Defs} ->
                 {vars : _} ->
@@ -230,15 +240,15 @@ mutual
                 Name -> Name ->
                 Scopeable (Closure vars) -> Scopeable (Closure vars) -> Core Bool
   chkSameDefs q i defs env n n' nargs nargs'
-     = do Just (PMDef _ args ct rt _) <- lookupDefExact n (gamma defs)
+     = do Just (Function _ ct rt _) <- lookupDefExact n (gamma defs)
                | _ => pure False
-          Just (PMDef _ args' ct' rt' _) <- lookupDefExact n' (gamma defs)
+          Just (Function _ ct' rt' _) <- lookupDefExact n' (gamma defs)
                | _ => pure False
 
           -- If the two case blocks match in structure, get which variables
           -- correspond. If corresponding variables convert, the two case
           -- blocks convert.
-          Just ms <- getMatchingVars defs [] ct ct'
+          Just ms <- getMatchingVars defs [] ?ct ?ct'
                | Nothing => pure False
           convertMatches ms
      where
@@ -285,13 +295,13 @@ mutual
                 | _ => pure False
            Just def' <- lookupCtxtExact n' (gamma defs)
                 | _ => pure False
-           let PMDef _ _ tree _ _ = definition def
+           let Function _ tree _ _ = definition def
                 | _ => pure False
-           let PMDef _ _ tree' _ _ = definition def'
+           let Function _ tree' _ _ = definition def'
                 | _ => pure False
-           let Just scpos = findArgPos tree
+           let Just scpos = findArgPos ?tree
                 | Nothing => pure False
-           let Just scpos' = findArgPos tree'
+           let Just scpos' = findArgPos ?tree'
                 | Nothing => pure False
            let Just sc = getScrutinee ((length nargs) `minus` scpos + 1) nargs
                 | Nothing => pure False

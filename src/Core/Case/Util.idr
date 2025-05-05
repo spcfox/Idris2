@@ -60,8 +60,6 @@ mkAlt : {vars : _} ->
         FC -> CaseTree vars -> DataCon -> CaseAlt vars
 mkAlt fc sc (MkDataCon cn t ar qs)
     = ConCase cn t (mkScope qs (map (MN "m") (take ar [0..])))
-    -- = ConCase cn t (map (MN "m") (take ar [0..]))
-    --           (weakensN (map take) (emptyRHS fc sc))
   where
     mkScope : List RigCount -> SnocList Name -> CaseScope vars
     mkScope _ [<] = RHS (emptyRHS fc sc)

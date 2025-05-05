@@ -101,6 +101,7 @@ mutual
        NForce   : FC -> LazyReason -> NF vars -> Scopeable (FC, Closure vars) -> NF vars
        NPrimVal : FC -> Constant -> NF vars
        NErased  : FC -> WhyErased (NF vars) -> NF vars
+       NUnmatched : FC -> String -> NF vars
        NType    : FC -> Name -> NF vars
 
 %name LocalEnv lenv
@@ -147,6 +148,7 @@ getLoc (NDelay fc _ _ _) = fc
 getLoc (NForce fc _ _ _) = fc
 getLoc (NPrimVal fc _) = fc
 getLoc (NErased fc i) = fc
+getLoc (NUnmatched fc i) = fc
 getLoc (NType fc _) = fc
 
 export
@@ -169,6 +171,7 @@ HasNames (NF free) where
   full defs (NForce fc lz nf xs) = pure $ NForce fc lz !(full defs nf) xs
   full defs (NPrimVal fc cst) = pure $ NPrimVal fc cst
   full defs (NErased fc imp) = pure $ NErased fc imp
+  full defs (NUnmatched fc n) = pure $ NUnmatched fc n
   full defs (NType fc n) = pure $ NType fc !(full defs n)
 
   resolved defs (NBind fc x bd f) = pure $ NBind fc x bd f
@@ -181,6 +184,7 @@ HasNames (NF free) where
   resolved defs (NForce fc lz nf xs) = pure $ NForce fc lz !(resolved defs nf) xs
   resolved defs (NPrimVal fc cst) = pure $ NPrimVal fc cst
   resolved defs (NErased fc imp) = pure $ NErased fc imp
+  resolved defs (NUnmatched fc n) = pure $ NUnmatched fc n
   resolved defs (NType fc n) = pure $ NType fc !(resolved defs n)
 
 mutual
@@ -236,4 +240,5 @@ mutual
     show (NForce _ _ tm args) = "%Force " ++ show tm ++ " [" ++ show (length args) ++ " closures " ++ showClosureSnocList args ++ "]"
     show (NPrimVal _ c) = show c
     show (NErased _ _) = "[__]"
+    show (NUnmatched _ str) = "Unmatched: " ++ show str
     show (NType _ _) = "Type"

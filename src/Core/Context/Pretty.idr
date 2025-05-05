@@ -40,12 +40,9 @@ namespace Raw
   export
   prettyDef : Def -> Doc IdrisDocAnn
   prettyDef None = "undefined"
-  prettyDef (PMDef _ args ct _ pats) =
-       let ct = prettyTree ct in
-       vcat
-        [ "Arguments" <++> cast (prettyList $ toList args)
-        , header "Compile time tree" <++> reAnnotate Syntax ct
-        ]
+  prettyDef (Function _ ct _ pats) =
+       let ct = prettyTree ?ct in
+        header "Compile time tree" <++> reAnnotate Syntax ct
   prettyDef (DCon nt tag arity) =
       vcat $ header "Data constructor" :: map (indent 2)
           ([ "tag:" <++> byShow tag
@@ -92,12 +89,9 @@ namespace Resugared
               {auto s : Ref Syn SyntaxInfo} ->
               Def -> Core (Doc IdrisDocAnn)
   prettyDef None = pure "undefined"
-  prettyDef (PMDef _ args ct _ pats) = do
-      ct <- prettyTree (mkEnv emptyFC _) ct
-      pure $ vcat
-        [ "Arguments" <++> cast (prettyList $ toList args)
-        , header "Compile time tree" <++> reAnnotate Syntax ct
-        ]
+  prettyDef (Function _ ct _ pats) =
+       let ct = prettyTree ?ct_2 in
+        pure $ header "Compile time tree" <++> reAnnotate Syntax ct
   prettyDef (DCon nt tag arity) = pure $
       vcat $ header "Data constructor" :: map (indent 2)
           ([ "tag:" <++> byShow tag

@@ -47,6 +47,10 @@ export
 defaultPI : PMDefInfo
 defaultPI = MkPMDefInfo NotHole False False
 
+export
+reducePI : PMDefInfo
+reducePI = MkPMDefInfo NotHole True False
+
 public export
 record TypeFlags where
   constructor MkTypeFlags
@@ -87,19 +91,21 @@ holeInit : Bool -> HoleFlags
 holeInit b = MkHoleFlags b False
 
 public export
+data Clause : Type where
+     MkClause : {vars : _} ->
+                (env : Env Term vars) ->
+                (lhs : Term vars) -> (rhs : Term vars) -> Clause
+
+%name Clause cl
+
+public export
 data Def : Type where
     None : Def -- Not yet defined
-    PMDef : (pminfo : PMDefInfo) ->
-            (args : Scope) ->
-            (treeCT : CaseTree args) ->
-            (treeRT : CaseTree args) ->
-            (pats : List (vs ** (Env Term vs, Term vs, Term vs))) ->
-                -- original checked patterns (LHS/RHS) with the names in
-                -- the environment. Used for display purposes, for helping
-                -- find size changes in termination checking, and for
-                -- generating specialised definitions (so needs to be the
-                -- full, non-erased, term)
-            Def -- Ordinary function definition
+    Function : (pminfo : PMDefInfo) ->
+               (compileTime : Term [<]) ->
+               (runTime : Term [<]) ->
+               Maybe (List Clause) -> -- initial definition, if known
+               Def -- normal function
     ExternDef : (arity : Nat) -> Def
     ForeignDef : (arity : Nat) ->
                  List String -> -- supported calling conventions,
@@ -140,7 +146,7 @@ data Def : Type where
 export
 defNameType : Def -> Maybe NameType
 defNameType None = Nothing
-defNameType (PMDef {}) = Just Func
+defNameType (Function {}) = Just Func
 defNameType (ExternDef {}) = Just Func
 defNameType (ForeignDef {}) = Just Func
 defNameType (Builtin {}) = Just Func
@@ -157,11 +163,8 @@ export
 covering
 Show Def where
   show None = "undefined"
-  show (PMDef _ args ct rt pats)
-      = unlines [ show (toList args) ++ ";"
-                , "Compile time tree: " ++ show ct
-                , "Run time tree: " ++ show rt
-                ]
+  show (Function _ tm tm' _)
+      = "Function " ++ show tm ++ "\n\tRuntime: " ++ show tm'
   show (DCon di t a)
       = "DataCon " ++ show t ++ " " ++ show a
            ++ maybe "" (\n => " (newtype by " ++ show n ++ ")")
@@ -195,13 +198,6 @@ public export
 data DataDef : Type where
      MkData : (tycon : Constructor) -> (datacons : List Constructor) ->
               DataDef
-
-public export
-data Clause : Type where
-     MkClause : {vars : _} ->
-                (env : Env Term vars) ->
-                (lhs : Term vars) -> (rhs : Term vars) -> Clause
-%name Clause cl
 
 export
 covering

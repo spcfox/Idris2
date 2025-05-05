@@ -157,6 +157,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
     eval env locs (PrimVal fc c) stk = pure $ NPrimVal fc c
     eval env locs (Erased fc a) stk
       = NErased fc <$> traverse @{%search} @{CORE} (\ t => eval env locs t stk) a
+    eval env locs (Unmatched fc u) stk = pure $ NUnmatched fc u
     eval env locs (TType fc u) stk = pure $ NType fc u
 
     -- Apply an evaluated argument (perhaps cached from an earlier evaluation)
@@ -208,6 +209,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
     applyToStack env nf@(NPrimVal fc _) _ = pure nf
     applyToStack env (NErased fc a) stk
       = NErased fc <$> traverse @{%search} @{CORE} (\ t => applyToStack env t stk) a
+    applyToStack env nf@(NUnmatched fc _) _ = pure nf
     applyToStack env nf@(NType fc _) _ = pure nf
 
     evalLocClosure : {auto c : Ref Ctxt Defs} ->
@@ -512,7 +514,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
               RigCount -> Def -> List DefFlag ->
               Stack free -> (def : Lazy (NF free)) ->
               Core (NF free)
-    evalDef env opts meta fc rigd (PMDef r args tree _ _) flags stk def
+    evalDef env opts meta fc rigd (Function x ctm _ _) flags stk def
        -- If evaluating the definition fails (e.g. due to a case being
        -- stuck) return the default.
        -- We can use the definition if one of the following is true:
@@ -522,20 +524,20 @@ parameters (defs : Defs) (topopts : EvalOpts)
        --   + It's a metavariable and not in Rig0
        --   + It's a metavariable and we're not in 'argHolesOnly'
        --   + It's inlinable and we're in 'tcInline'
-        = if alwaysReduce r
+        = if alwaysReduce x
              || (not (holesOnly opts || argHolesOnly opts || tcInline opts))
              || (meta && not (isErased rigd))
              || (meta && holesOnly opts)
              || (tcInline opts && elem TCInline flags)
-             then case argsFromStack (reverse args) stk of
+             then case argsFromStack (reverse ?args) stk of
                        Nothing => do logC "eval.def.underapplied" 50 $ do
                                        def <- toFullNames def
                                        pure "Cannot reduce under-applied \{show def}"
                                      pure def
                        Just (locs', stk') =>
-                            do log "eval.def.stuck" 50 $ "pre-evalTree args: " ++ show (toList args) ++ ", stk: " ++ show stk' ++ ", tree: " ++ show tree
+                            do -- log "eval.def.stuck" 50 $ "pre-evalTree args: " ++ show (toList args) ++ ", stk: " ++ show stk' ++ ", tree: " ++ show tree
                                logDepth $ logLocalEnv "eval.def.stuck" 50 "pre-evalTree locs" locs'
-                               (Result (MkTermEnv newLoc res)) <- evalTree env locs' opts fc stk' (rewrite reverseInvolutive args in tree)
+                               (Result (MkTermEnv newLoc res)) <- evalTree env locs' opts fc stk' ?tree
                                     | _ => do logC "eval.def.stuck" 50 $ do
                                                 def <- toFullNames def
                                                 pure "evalTree failed on \{show def}"
@@ -620,6 +622,10 @@ gnfOpts opts env tm
 export
 gType : FC -> Name -> Glued vars
 gType fc u = MkGlue True (pure (TType fc u)) (const (pure (NType fc u)))
+
+export
+gUnmatched : FC -> String -> Glued vars
+gUnmatched fc msg = MkGlue True (pure (Unmatched fc msg)) (const (pure (NUnmatched fc msg)))
 
 export
 gErased : FC -> Glued vars

@@ -355,8 +355,10 @@ mutual
              toBuf b c
     toBuf b (Erased fc _)
         = tag 10
+    toBuf b (Unmatched fc u)
+        = do tag 13; toBuf b u
     toBuf b (TType fc u)
-        = do tag 11; toBuf b u
+        = do tag 14; toBuf b u
 
     fromBuf {vars} b
         = case !getTag of
@@ -451,7 +453,7 @@ mutual
         = do tag 0; toBuf b name; toBuf b idx; toBuf b xs
     toBuf b (STerm _ x)
         = do tag 1; toBuf b x
-    toBuf b (Unmatched msg)
+    toBuf b (TUnmatched msg)
         = do tag 2; toBuf b msg
     toBuf b Impossible = tag 3
 
@@ -463,7 +465,7 @@ mutual
                1 => do x <- fromBuf b
                        pure (STerm 0 x)
                2 => do msg <- fromBuf b
-                       pure (Unmatched msg)
+                       pure (TUnmatched msg)
                3 => pure Impossible
                _ => corrupt "CaseTree"
 
@@ -1009,10 +1011,18 @@ TTC DataConInfo where
            pure (MkDataConInfo q n)
 
 export
+TTC Clause where
+  toBuf b (MkClause {vars} env lhs rhs)
+      = do toBuf b vars; toBuf b env; toBuf b lhs; toBuf b rhs
+  fromBuf b
+      = do vars <- fromBuf b; env <- fromBuf b; lhs <- fromBuf b; rhs <- fromBuf b
+           pure (MkClause {vars} env lhs rhs)
+
+export
 TTC Def where
   toBuf b None = tag 0
-  toBuf b (PMDef pi args ct rt pats)
-      = do tag 1; toBuf b pi; toBuf b args; toBuf b ct; toBuf b pats
+  toBuf b (Function pi ct rt pats)
+      = do tag 1; toBuf b pi; toBuf b ct; toBuf b pats
   toBuf b (ExternDef a)
       = do tag 2; toBuf b a
   toBuf b (ForeignDef a cs)
@@ -1038,10 +1048,9 @@ TTC Def where
       = case !getTag of
              0 => pure None
              1 => do pi <- fromBuf b
-                     args <- fromBuf b
                      ct <- fromBuf b
                      pats <- fromBuf b
-                     pure (PMDef pi args ct (Unmatched "") pats)
+                     pure (Function pi ct (Unmatched emptyFC "") pats)
              2 => do a <- fromBuf b
                      pure (ExternDef a)
              3 => do a <- fromBuf b

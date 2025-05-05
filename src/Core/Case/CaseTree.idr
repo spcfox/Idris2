@@ -32,7 +32,7 @@ mutual
        ||| initial clauses are reached in the tree
        STerm : Int -> Term vars -> CaseTree vars
        ||| error from a partial match
-       Unmatched : (msg : String) -> CaseTree vars
+       TUnmatched : (msg : String) -> CaseTree vars
        ||| Absurd context
        Impossible : CaseTree vars
 
@@ -122,7 +122,7 @@ showCT indent (Case {name} idx prf ty alts)
              (assert_total (map (showCA ("  " ++ indent)) alts))
   ++ "\n" ++ indent ++ " }"
 showCT indent (STerm i tm) = "[" ++ show i ++ "] " ++ show tm
-showCT indent (Unmatched msg) = "Error: " ++ show msg
+showCT indent (TUnmatched msg) = "Error: " ++ show msg
 showCT indent Impossible = "Impossible"
 
 showCA indent (ConCase n tag sc)
@@ -161,7 +161,7 @@ mutual
        && length alts == length alts'
        && all (uncurry eqAlt) (zip alts alts')
   eqTree (STerm _ t) (STerm _ t') = eqTerm t t'
-  eqTree (Unmatched _) (Unmatched _) = True
+  eqTree (TUnmatched _) (TUnmatched _) = True
   eqTree Impossible Impossible = True
   eqTree _ _ = False
 
@@ -217,7 +217,7 @@ mutual
             Case _ prf' (insertNames outer ns scTy)
                 (map (insertCaseAltNames outer ns) alts)
   insertCaseNames outer ns (STerm i x) = STerm i (insertNames outer ns x)
-  insertCaseNames _ _ (Unmatched msg) = Unmatched msg
+  insertCaseNames _ _ (TUnmatched msg) = TUnmatched msg
   insertCaseNames _ _ Impossible = Impossible
 
   insertCaseScopeNames : SizeOf outer ->
@@ -275,7 +275,7 @@ getNames add ns sc = getSet ns sc
       getSet ns (Case _ x ty []) = ns
       getSet ns (Case _ x ty (a :: as)) = getAltSets (getAltSet ns a) as
       getSet ns (STerm i tm) = add ns tm
-      getSet ns (Unmatched msg) = ns
+      getSet ns (TUnmatched msg) = ns
       getSet ns Impossible = ns
 
 export

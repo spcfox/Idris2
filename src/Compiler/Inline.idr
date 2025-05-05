@@ -373,13 +373,6 @@ mutual
             Core (CConAlt free)
   evalAlt {free} {vars} fc rec env stk (MkConAlt n ci t sc)
       = pure $ MkConAlt n ci t !(evalScope fc rec env stk sc)
---   evalAlt {free} {vars} fc rec env stk (MkConAlt n ci t args sc)
---       = do log "compiler.inline.io_bind" 50 $ "Attempting to evalAlt, env: \{show env}, args: \{show args}"
---            (bs, env') <- extendLoc fc env args
---            log "compiler.inline.io_bind" 50 $ "Attempting to evalAlt, bs: \{show bs}, env': \{show env'}"
---            scEval <- eval rec env' stk
---                           (rewrite sym $ snocAppendFishAssociative free vars args in sc)
---            pure $ MkConAlt n ci t args (rewrite snocAppendFishAssociative free ScopeEmpty args in refsToLocals bs scEval)
 
   evalConstAlt : {vars, free : _} ->
                  {auto c : Ref Ctxt Defs} ->
@@ -535,19 +528,6 @@ getNewArgs [<] = [<]
 getNewArgs (xs :< CRef _ n) = getNewArgs xs :< n
 getNewArgs {done = xs :< x} (sub :< _) = getNewArgs sub :< x
 
--- Move any lambdas in the body of the definition into the lhs list of vars.
--- Annoyingly, the indices will need fixing up because the order in the top
--- level definition goes left to right (i.e. first argument has lowest index,
--- not the highest, as you'd expect if they were all lambdas).
-mergeLambdas : (args : Scope) -> CExp args -> (args' ** CExp args')
-mergeLambdas args (CLam fc x sc)
-    = let (args' ** (s, env, exp')) = getLams zero 0 ScopeEmpty (CLam fc x sc)
-          expNs = substs s env exp'
-          newArgs = getNewArgs env
-          expLocs = refsToLocals (mkBounds newArgs) expNs in
-          (_ ** expLocs)
-mergeLambdas args exp = (args ** exp)
-
 ||| Inline all inlinable functions into the given expression.
 ||| @ n the function name
 ||| @ exp the body of the function
@@ -654,7 +634,7 @@ mergeLamDef n
     = do defs <- get Ctxt
          Just def <- lookupCtxtExact n (gamma defs)
               | Nothing => pure ()
-         let PMDef pi _ _ _ _ = definition def
+         let Function pi _ _ _ = definition def
               | _ => pure ()
          if not (isNil (incrementalCGs !getSession)) &&
                 externalDecl pi -- better keep it at arity 0

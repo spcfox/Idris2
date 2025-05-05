@@ -1027,12 +1027,12 @@ mutual
            case mix of
              Nothing =>
                do log "compile.casetree.intermediate" 25 "match: No clauses"
-                  pure (Unmatched "No clauses")
+                  pure (TUnmatched "No clauses")
              Just m =>
                do log "compile.casetree.intermediate" 25 $ "match: new case tree " ++ show m
                   Core.pure m
   match {todo = []} fc fn phase [] err
-       = maybe (pure (Unmatched "No patterns"))
+       = maybe (pure (TUnmatched "No patterns"))
                pure err
   match {todo = []} fc fn phase ((MkPatClause pvars [] pid (Erased _ Impossible)) :: _) err
        = pure Impossible
@@ -1082,7 +1082,7 @@ mutual
             List (PatClause (a :: todo) vars) ->
             Maybe (CaseTree vars) ->
             Core (CaseTree vars)
-  conRule fc fn phase [] err = maybe (pure (Unmatched "No constructor clauses")) pure err
+  conRule fc fn phase [] err = maybe (pure (TUnmatched "No constructor clauses")) pure err
   -- ASSUMPTION, not expressed in the type, that the patterns all have
   -- the same variable (pprf) for the first argument. If not, the result
   -- will be a broken case tree... so we should find a way to express this
@@ -1253,7 +1253,7 @@ patCompile : {auto c : Ref Ctxt Defs} ->
              Maybe (CaseTree ScopeEmpty) ->
              Core (args ** CaseTree args)
 patCompile fc fn phase ty [] def
-    = maybe (pure (ScopeEmpty ** Unmatched "No definition"))
+    = maybe (pure (ScopeEmpty ** TUnmatched "No definition"))
             (\e => pure (ScopeEmpty ** e))
             def
 patCompile fc fn phase ty (p :: ps) def
@@ -1424,7 +1424,7 @@ getPMDef : {auto c : Ref Ctxt Defs} ->
 getPMDef fc phase fn ty []
     = do log "compile.casetree.getpmdef" 20 "getPMDef: No clauses!"
          defs <- get Ctxt
-         pure (cast !(getArgs 0 !(nf defs ScopeEmpty ty)) ** (Unmatched "No clauses", []))
+         pure (cast !(getArgs 0 !(nf defs ScopeEmpty ty)) ** (TUnmatched "No clauses", []))
   where
     getArgs : Int -> ClosedNF -> Core (List Name)
     getArgs i (NBind fc x (Pi _ _ _ _) sc)

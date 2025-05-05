@@ -846,7 +846,7 @@ exprSearchOpts opts fc n_in hints
          -- the REPL does this step, but doing it here too because
          -- expression search might be invoked some other way
          let Hole _ _ = definition gdef
-             | PMDef pi [<] (STerm _ tm) _ _
+             | Function pi tm _ _
                  => do raw <- unelab ScopeEmpty !(toFullNames !(normaliseHoles defs ScopeEmpty tm))
                        one (map rawName raw)
              | _ => throw (GenericMsg fc "Name is already defined")

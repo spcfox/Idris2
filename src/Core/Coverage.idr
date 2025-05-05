@@ -168,27 +168,27 @@ getMissingAlts : {auto c : Ref Ctxt Defs} ->
 -- check, so require a catch all
 getMissingAlts fc defs (NPrimVal _ $ PrT WorldType) alts
     = if isNil alts
-         then pure [DefaultCase (Unmatched "Coverage check")]
+         then pure [DefaultCase (TUnmatched "Coverage check")]
          else pure []
 getMissingAlts fc defs (NPrimVal _ c) alts
   = do log "coverage.missing" 50 $ "Looking for missing alts at type " ++ show c
        if any isDefault alts
          then do log "coverage.missing" 20 "Found default"
                  pure []
-         else pure [DefaultCase (Unmatched "Coverage check")]
+         else pure [DefaultCase (TUnmatched "Coverage check")]
 -- Similarly for types
 getMissingAlts fc defs (NType _ _) alts
     = do log "coverage.missing" 50 "Looking for missing alts at type Type"
          if any isDefault alts
            then do log "coverage.missing" 20 "Found default"
                    pure []
-           else pure [DefaultCase (Unmatched "Coverage check")]
+           else pure [DefaultCase (TUnmatched "Coverage check")]
 getMissingAlts fc defs nfty alts
     = do log "coverage.missing" 50 $ "Getting constructors for: " ++ show nfty
          logNF "coverage.missing" 20 "Getting constructors for" (mkEnv fc _) nfty
          allCons <- getCons defs nfty
          pure (filter (noneOf alts)
-                 (map (mkAlt fc (Unmatched "Coverage check")) allCons))
+                 (map (mkAlt fc (TUnmatched "Coverage check")) allCons))
   where
     -- Return whether the alternative c matches none of the given cases in alts
     noneOf : List (CaseAlt vars) -> CaseAlt vars -> Bool
@@ -347,7 +347,7 @@ buildArgs fc defs known not ps cs@(Case {name = var} idx el ty altsIn)
 
 buildArgs fc defs known not ps (STerm _ vs)
     = pure [] -- matched, so return nothing
-buildArgs fc defs known not ps (Unmatched msg)
+buildArgs fc defs known not ps (TUnmatched msg)
     = pure [ps] -- unmatched, so return it
 buildArgs fc defs known not ps Impossible
     = pure [] -- not a possible match, so return nothing

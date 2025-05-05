@@ -763,16 +763,16 @@ calcRefs rt at fn
     = do defs <- get Ctxt
          Just gdef <- lookupCtxtExact fn (gamma defs)
               | _ => pure ()
-         let PMDef r cargs tree_ct tree_rt pats = definition gdef
+         let Function r tree_ct tree_rt pats = definition gdef
               | _ => pure () -- not a function definition
          let refs : Maybe (NameMap Bool)
                   = if rt then refersToRuntimeM gdef else refersToM gdef
          let Nothing = refs
               | Just _ => pure () -- already done
-         let tree : CaseTree cargs = if rt then tree_rt else tree_ct
-         let metas = CaseTree.getMetas tree
+         let tree : Term [<] = if rt then tree_rt else tree_ct
+         let metas = TT.getMetas tree
          traverse_ addToSave (keys metas)
-         let refs_all = CaseTree.addRefs at metas tree
+         let refs_all = TT.addRefs False at metas tree
          refs <- ifThenElse rt
                     (dropErased (keys refs_all) refs_all)
                     (pure refs_all)
@@ -806,19 +806,17 @@ mkRunTime fc n
          let cov = gdef.totality.isCovering
          -- If it's erased at run time, don't build the tree
          when (not (isErased $ multiplicity gdef)) $ do
-           let PMDef r cargs tree_ct _ pats = definition gdef
+           let Function r tree_ct _ (Just pats) = definition gdef
                 | _ => pure () -- not a function definition
            let ty = type gdef
            -- Prepare RHS of definitions, by erasing 0-multiplicities, and
            -- finding any applications to specialise (partially evaluate)
-           pats' <- traverse (toErased (location gdef) (getSpec (flags gdef)))
-                             pats
+           pats' <- traverse (toErased (location gdef) (getSpec (flags gdef))) pats
 
-           let clauses_init = map (toClause (location gdef)) pats'
            clauses <- case cov of
-                           MissingCases _ => do log "compile.casetree.missing" 5 $ "Adding uncovered error to \{show clauses_init}"
-                                                pure $ addErrorCase clauses_init
-                           _ => pure clauses_init
+                           MissingCases _ => do log "compile.casetree.missing" 5 $ "Adding uncovered error to \{show pats'}"
+                                                pure $ addErrorCase pats'
+                           _ => pure pats'
 
            (rargs ** (tree_rt, _)) <- getPMDef (location gdef) RunTime n ty clauses
            logC "compile.casetree" 5 $ do
@@ -830,11 +828,8 @@ mkRunTime fc n
                , show (toList rargs)
                ]
            log "compile.casetree" 10 $ "tree_rt " ++ show tree_rt
-
-           let Just Refl = nameListEq cargs rargs
-                   | Nothing => throw (InternalError "WAT")
            ignore $ addDef n $
-                       { definition := PMDef r rargs tree_ct tree_rt pats
+                       { definition := Function r tree_ct ?tree_rt (Just pats)
                        } gdef
   where
     -- check if the flags contain explicit inline or noinline directives:
@@ -875,19 +870,15 @@ mkRunTime fc n
     getSpec (x :: xs) = getSpec xs
 
     toErased : FC -> Maybe (List (Name, Nat)) ->
-               (vars ** (Env Term vars, Term vars, Term vars)) ->
-               Core (vars ** (Env Term vars, Term vars, Term vars))
-    toErased fc spec (_ ** (env, lhs, rhs))
+               Clause ->
+               Core Clause
+    toErased fc spec (MkClause env lhs rhs)
         = do lhs_erased <- linearCheck fc linear True env lhs
              -- Partially evaluate RHS here, where appropriate
              rhs' <- applyTransforms env rhs
              rhs' <- applySpecialise env spec rhs'
              rhs_erased <- linearCheck fc linear True env rhs'
-             pure (_ ** (env, lhs_erased, rhs_erased))
-
-    toClause : FC -> (vars ** (Env Term vars, Term vars, Term vars)) -> Clause
-    toClause fc (_ ** (env, lhs, rhs))
-        = MkClause env lhs rhs
+             pure (MkClause env lhs_erased rhs_erased)
 
 compileRunTime : {auto c : Ref Ctxt Defs} ->
                  {auto m : Ref MD Metadata} ->
@@ -1030,7 +1021,7 @@ processDef opts nest env fc n_in cs_in
          -- but we'll rebuild that in a later pass once all the case
          -- blocks etc are resolved
          ignore $ addDef (Resolved nidx)
-                  ({ definition := PMDef pi cargs tree_ct tree_ct pats
+                  ({ definition := Function pi ?tree_ct ?tree_ct_2 ?pats_2
                    } gdef)
 
          when (collapseDefault (visibility gdef) == Public) $

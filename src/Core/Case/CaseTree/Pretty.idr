@@ -27,7 +27,7 @@ namespace Raw
          <+> nest 2 (hardline
          <+> vsep (assert_total (map prettyAlt alts)))
   prettyTree (STerm i tm) = byShow tm
-  prettyTree (Unmatched msg) = "Error:" <++> pretty0 msg
+  prettyTree (TUnmatched msg) = "Error:" <++> pretty0 msg
   prettyTree Impossible = "Impossible"
 
   prettyScope (RHS tm) = fatArrow <++> byShow tm
@@ -83,7 +83,7 @@ namespace Resugared
     pure $ case_ <++> pretty0 name <+> ann <++> of_
        <+> nest 2 (hardline <+> vsep alts)
   prettyTree env (STerm i tm) = pretty <$> resugar env tm
-  prettyTree env (Unmatched msg) = pure ("Error:" <++> pretty0 msg)
+  prettyTree env (TUnmatched msg) = pure ("Error:" <++> pretty0 msg)
   prettyTree env Impossible = pure "Impossible"
 
   prettyScope env (RHS tm) = do
