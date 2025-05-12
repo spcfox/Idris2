@@ -107,7 +107,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
     eval env locs (Ref fc nt fn) stk
         = do logC "eval.ref" 50 $ do fn' <- toFullNames fn
                                      pure "Ref \{show nt} \{show fn'} to \{show stk}"
-             evalRef env False fc nt fn stk (NApp fc (NRef nt fn) (cast stk))
+             evalRef env locs False fc nt fn stk (NApp fc (NRef nt fn) (cast stk))
     eval {vars} {free} env locs (Meta fc name idx args) stk
         = evalMeta env fc name idx (reverse $ closeArgs args) stk
       where
@@ -179,7 +179,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
         = pure (NBind fc x b
                       (\defs', arg => applyToStack env !(sc defs' arg) stk))
     applyToStack env (NApp fc (NRef nt fn) args) stk
-        = evalRef env False fc nt fn (args <>> stk)
+        = evalRef env [<] False fc nt fn (args <>> stk)
                   (NApp fc (NRef nt fn) (args <>< stk))
     applyToStack env (NApp fc (NLocal mrig idx p) args) stk
         = evalLocal env fc mrig _ p (args <>> stk) ScopeEmpty
@@ -269,31 +269,32 @@ parameters (defs : Defs) (topopts : EvalOpts)
         = let args' = if isNil stk then map (EmptyFC,) (toList args)
                          else map (EmptyFC,) args <>> stk
                         in
-              evalRef env True fc Func (Resolved i) args'
+              evalRef env [<] True fc Func (Resolved i) args'
                           (NApp fc (NMeta nm i args) (cast stk))
 
     -- The commented out logging here might still be useful one day, but
     -- evalRef is used a lot and even these tiny checks turn out to be
     -- worth skipping if we can
     evalRef : {auto c : Ref Ctxt Defs} ->
-              {free : _} ->
+              {free, vars : _} ->
               Env Term free ->
+              LocalEnv free vars ->
               (isMeta : Bool) ->
               FC -> NameType -> Name -> Stack free -> (def : Lazy (NF free)) ->
               Core (NF free)
-    evalRef env meta fc (DataCon tag arity) fn stk def
+    evalRef env locs meta fc (DataCon tag arity) fn stk def
         = do -- logC "eval.ref.data" 50 $ do fn' <- toFullNames fn -- Can't use ! here, it gets lifted too far
              --                             pure $ "Found data constructor: " ++ show fn'
              pure $ NDCon fc fn tag arity (cast stk)
-    evalRef env meta fc (TyCon tag arity) fn stk def
+    evalRef env locs meta fc (TyCon tag arity) fn stk def
         = do -- logC "eval.ref.type" 50 $ do fn' <- toFullNames fn
              --                             pure $ "Found type constructor: " ++ show fn'
              pure $ ntCon fc fn tag arity (cast stk)
-    evalRef env meta fc Bound fn stk def
+    evalRef env locs meta fc Bound fn stk def
         = do -- logC "eval.ref.bound" 50 $ do fn' <- toFullNames fn
              --                              pure $ "Found bound variable: " ++ show fn'
              pure def
-    evalRef env meta fc nt@Func n stk def
+    evalRef env locs meta fc nt@Func n stk def
         = do -- logC "eval.ref" 50 $ do n' <- toFullNames n
              --                        pure $ "Found function: " ++ show n'
              Just res <- lookupCtxtExact n (gamma defs)
@@ -317,7 +318,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
                    Just opts' <- updateLimit nt n topopts
                         | Nothing => do log "eval.stuck" 10 $ "Function \{show n} past reduction limit"
                                         pure def -- name is past reduction limit
-                   nf <- evalDef env opts' meta fc
+                   nf <- evalDef env locs opts' meta fc
                            (multiplicity res) (definition res) (flags res) stk def
                    logC "eval.ref" 50 $ do n' <- toFullNames n
                                            nf <- toFullNames nf
@@ -478,15 +479,6 @@ parameters (defs : Defs) (topopts : EvalOpts)
            = rewrite sym (plusSuccRightSucc got k) in
                      takeStk k stk (snd arg :: acc)
 
-    argsFromStack : (args : Scope) ->
-                    Stack free ->
-                    Maybe (LocalEnv free (reverse args), Stack free)
-    argsFromStack [<] stk = Just (ScopeEmpty, stk)
-    argsFromStack (ns :< n) [] = Nothing
-    argsFromStack (ns :< n) (arg :: args)
-         = do (loc', stk') <- argsFromStack ns args
-              pure (rewrite Extra.revOnto [<n] ns in cons {v=n} loc' (snd arg), stk')
-
     evalOp : {auto c : Ref Ctxt Defs} ->
              {arity, free : _} ->
              (Vect arity (NF free) -> Maybe (NF free)) ->
@@ -508,13 +500,13 @@ parameters (defs : Defs) (topopts : EvalOpts)
         evalAll (c :: cs) = pure $ !(evalClosure defs c) :: !(evalAll cs)
 
     evalDef : {auto c : Ref Ctxt Defs} ->
-              {free : _} ->
-              Env Term free -> EvalOpts ->
+              {free, vars : _} ->
+              Env Term free -> LocalEnv free vars -> EvalOpts ->
               (isMeta : Bool) -> FC ->
               RigCount -> Def -> List DefFlag ->
               Stack free -> (def : Lazy (NF free)) ->
               Core (NF free)
-    evalDef env opts meta fc rigd (Function x ctm _ _) flags stk def
+    evalDef env locs opts meta fc rigd (Function x ctm _ _) flags stk def
        -- If evaluating the definition fails (e.g. due to a case being
        -- stuck) return the default.
        -- We can use the definition if one of the following is true:
@@ -529,28 +521,17 @@ parameters (defs : Defs) (topopts : EvalOpts)
              || (meta && not (isErased rigd))
              || (meta && holesOnly opts)
              || (tcInline opts && elem TCInline flags)
-             then case argsFromStack (reverse ?args) stk of
-                       Nothing => do logC "eval.def.underapplied" 50 $ do
-                                       def <- toFullNames def
-                                       pure "Cannot reduce under-applied \{show def}"
-                                     pure def
-                       Just (locs', stk') =>
-                            do -- log "eval.def.stuck" 50 $ "pre-evalTree args: " ++ show (toList args) ++ ", stk: " ++ show stk' ++ ", tree: " ++ show tree
-                               logDepth $ logLocalEnv "eval.def.stuck" 50 "pre-evalTree locs" locs'
-                               (Result (MkTermEnv newLoc res)) <- evalTree env locs' opts fc stk' ?tree
-                                    | _ => do logC "eval.def.stuck" 50 $ do
-                                                def <- toFullNames def
-                                                pure "evalTree failed on \{show def}"
-                                              pure def
-                               logTerm "eval.def.stuck" 50 "post-evalTree res" res
-                               logDepth $ logLocalEnv "eval.def.stuck" 50 "post-evalTree locs" newLoc
-                               case fuel opts of
-                                    Nothing => evalWithOpts defs opts env newLoc res stk'
-                                    Just Z => log "eval.def.stuck" 50 "Recursion depth limit exceeded"
-                                              >> pure def
-                                    Just (S k) =>
-                                        do let opts' = { fuel := Just k } opts
-                                           evalWithOpts defs opts' env newLoc res stk'
+             then
+                 do log "eval.def.stuck" 50 $ "pre-evalTree stk: " ++ show stk
+                    logTerm "eval.def.stuck" 50 "post-evalTree ctm" ctm
+                    logDepth $ logLocalEnv "eval.def.stuck" 50 "post-evalTree locs" locs
+                    case fuel opts of
+                        Nothing => evalWithOpts defs opts env locs (embed ctm) stk
+                        Just Z => log "eval.def.stuck" 50 "Recursion depth limit exceeded"
+                                    >> pure def
+                        Just (S k) =>
+                             do let opts' = { fuel := Just k } opts
+                                evalWithOpts defs opts' env locs (embed ctm) stk
              else do logC "eval.def.stuck" 50 $ do
                        def <- toFullNames def
                        pure $ unlines [ "Refusing to reduce \{show def}:"
@@ -561,11 +542,11 @@ parameters (defs : Defs) (topopts : EvalOpts)
                                       , "  rigd        : \{show rigd}"
                                       ]
                      pure def
-    evalDef env opts meta fc rigd (Builtin op) flags stk def
+    evalDef env locs opts meta fc rigd (Builtin op) flags stk def
         = evalOp (getOp op) stk def
     -- All other cases, use the default value, which is already applied to
     -- the stack
-    evalDef env opts meta fc rigd def flags stk orig = do
+    evalDef env locs opts meta fc rigd def flags stk orig = do
       logC "eval.def.stuck" 50 $ do
         orig <- toFullNames orig
         pure "Cannot reduce def \{show orig}: it is a \{show def}"
