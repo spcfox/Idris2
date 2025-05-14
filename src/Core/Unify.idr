@@ -4,7 +4,6 @@ import Core.Context
 import Core.Context.Log
 import Core.Core
 import Core.Env
-import Core.GetType
 import Core.Normalise
 import Core.Options
 import Core.TT
@@ -1539,9 +1538,8 @@ retryGuess mode smode (hid, (loc, hname))
                                            NoLazy => pure tm
                                            AddForce r => pure $ forceMeta r envb tm
                                            AddDelay r =>
-                                              do ty <- getType ScopeEmpty tm
-                                                 logTerm "unify.retry" 5 "Retry Delay" tm
-                                                 pure $ delayMeta r envb !(getTerm ty) tm
+                                              do logTerm "unify.retry" 5 "Retry Delay" tm
+                                                 pure $ delayMeta r envb (type def) tm
                                   let gdef = { definition := Function reducePI tm' tm' Nothing } def
                                   logTerm "unify.retry" 5 ("Resolved " ++ show hname) tm'
                                   ignore $ addDef (Resolved hid) gdef
@@ -1551,9 +1549,8 @@ retryGuess mode smode (hid, (loc, hname))
                                            NoLazy => pure tm
                                            AddForce r => pure $ forceMeta r envb tm
                                            AddDelay r =>
-                                              do ty <- getType ScopeEmpty tm
-                                                 logTerm "unify.retry" 5 "Retry Delay (constrained)" tm
-                                                 pure $ delayMeta r envb !(getTerm ty) tm
+                                              do logTerm "unify.retry" 5 "Retry Delay (constrained)" tm
+                                                 pure $ delayMeta r envb (type def) tm
                                      let gdef = { definition := Guess tm' envb newcs } def
                                      ignore $ addDef (Resolved hid) gdef
                                      pure False

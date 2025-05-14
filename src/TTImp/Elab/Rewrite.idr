@@ -4,7 +4,6 @@ import Core.Context
 import Core.Context.Log
 import Core.Core
 import Core.Env
-import Core.GetType
 import Core.Metadata
 import Core.Normalise
 import Core.Unify
@@ -95,11 +94,12 @@ elabRewrite loc env expected rulety
          logTerm "elab.rewrite" 5 "Rewritten to" rwexp_sc
 
          empty <- clearDefs defs
-         let pred = Bind loc parg (Lam loc top Explicit
-                          !(quote empty env lty))
+         ltyTm <- quote empty env lty
+         let pred = Bind loc parg (Lam loc top Explicit ltyTm)
                           (refsToLocals (Add parg parg None) rwexp_sc)
-         gpredty <- getType env pred
-         predty <- getTerm gpredty
+         let predty = Bind loc parg (Pi loc top Explicit ltyTm)
+                          (TType loc (MN "top" 0))
+
          exptm <- quote defs env expected
 
          -- if the rewritten expected type converts with the original,

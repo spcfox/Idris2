@@ -67,7 +67,6 @@ modules =
     Core.Env,
     Core.Erase,
     Core.FC,
-    Core.GetType,
     Core.Hash,
     Core.InitPrimitives,
     Core.LinearCheck,
