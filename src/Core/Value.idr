@@ -103,6 +103,9 @@ mutual
        NTCon    : FC -> Name -> (tag : Int) -> (arity : Nat) ->
                   Spine vars -> NF vars
        NAs      : FC -> UseSide -> NF vars -> NF vars -> NF vars
+       NCase    : FC -> CaseType ->
+                  RigCount -> (sc : NF vars) -> (scTy : Closure vars) ->
+                  List (NCaseAlt vars) -> NF vars
        NDelayed : FC -> LazyReason -> NF vars -> NF vars
        NDelay   : FC -> LazyReason -> Closure vars -> Closure vars -> NF vars
        NForce   : FC -> LazyReason -> NF vars -> Spine vars -> NF vars
@@ -110,6 +113,25 @@ mutual
        NErased  : FC -> WhyErased (NF vars) -> NF vars
        NUnmatched : FC -> String -> NF vars
        NType    : FC -> Name -> NF vars
+
+  public export
+  0 NCaseScope : SnocList (RigCount, Name) -> SnocList Name -> Type
+  NCaseScope [<] vars = Core (Closure vars)
+  NCaseScope (xs :< x) vars = Core (Closure vars) -> NCaseScope xs vars
+
+  public export
+  data NCaseAlt : SnocList Name -> Type where
+       ||| Constructor for a data type; bind the arguments and subterms.
+       NConCase : Name -> (tag : Int) ->
+                  (args : SnocList (RigCount, Name)) ->
+                  NCaseScope args vars -> NCaseAlt vars
+       ||| Lazy match for the Delay type use for codata types
+       NDelayCase : (ty : Name) -> (arg : Name) ->
+                    NCaseScope [<(Preorder.top, arg), (Semiring.erased, ty)] vars -> NCaseAlt vars
+       ||| Match against a literal
+       NConstCase : Constant -> Closure vars -> NCaseAlt vars
+       ||| Catch-all case
+       NDefaultCase : Closure vars -> NCaseAlt vars
 
 %name LocalEnv lenv
 %name Closure cl
@@ -154,6 +176,7 @@ getLoc (NApp fc _ _) = fc
 getLoc (NDCon fc _ _ _ _) = fc
 getLoc (NTCon fc _ _ _ _) = fc
 getLoc (NAs fc _ _ _) = fc
+getLoc (NCase fc _ _ _ _ _) = fc
 getLoc (NDelayed fc _ _) = fc
 getLoc (NDelay fc _ _ _) = fc
 getLoc (NForce fc _ _ _) = fc
@@ -171,12 +194,16 @@ HasNames (NHead free) where
   resolved defs hd = pure hd
 
 export
+HasNames (NCaseAlt free)
+
+export
 HasNames (NF free) where
   full defs (NBind fc x bd f) = pure $ NBind fc x bd f
   full defs (NApp fc hd xs) = pure $ NApp fc !(full defs hd) xs
   full defs (NDCon fc n tag arity xs) = pure $ NDCon fc !(full defs n) tag arity xs
   full defs (NTCon fc n tag arity xs) = pure $ NTCon fc !(full defs n) tag arity xs
   full defs (NAs fc side nf nf1) = pure $ NAs fc side !(full defs nf) !(full defs nf1)
+  full defs (NCase fc ct rc sc scTy alts) = pure $ NCase fc ct rc !(full defs sc) scTy !(traverse (full defs) alts)
   full defs (NDelayed fc lz nf) = pure $ NDelayed fc lz !(full defs nf)
   full defs (NDelay fc lz cl cl1) = pure $ NDelay fc lz cl cl1
   full defs (NForce fc lz nf xs) = pure $ NForce fc lz !(full defs nf) xs
@@ -190,6 +217,7 @@ HasNames (NF free) where
   resolved defs (NDCon fc n tag arity xs) = pure $ NDCon fc !(resolved defs n) tag arity xs
   resolved defs (NTCon fc n tag arity xs) = pure $ NTCon fc !(resolved defs n) tag arity xs
   resolved defs (NAs fc side nf nf1) = pure $ NAs fc side !(resolved defs nf) !(resolved defs nf1)
+  resolved defs (NCase fc ct rc sc scTy alts) = pure $ NCase fc ct rc !(resolved defs sc) scTy !(resolved defs alts)
   resolved defs (NDelayed fc lz nf) = pure $ NDelayed fc lz !(resolved defs nf)
   resolved defs (NDelay fc lz cl cl1) = pure $ NDelay fc lz cl cl1
   resolved defs (NForce fc lz nf xs) = pure $ NForce fc lz !(resolved defs nf) xs
@@ -197,6 +225,18 @@ HasNames (NF free) where
   resolved defs (NErased fc imp) = pure $ NErased fc imp
   resolved defs (NUnmatched fc n) = pure $ NUnmatched fc n
   resolved defs (NType fc n) = pure $ NType fc !(resolved defs n)
+
+export
+HasNames (NCaseAlt free) where
+  full defs (NConCase n tag args cl) = pure $ NConCase !(full defs n) tag args cl
+  full defs (NDelayCase n arg cl) = pure $ NDelayCase !(full defs n) arg cl
+  full defs (NConstCase c cl) = pure $ NConstCase c cl
+  full defs (NDefaultCase cl) = pure $ NDefaultCase cl
+
+  resolved defs (NConCase n tag args cl) = pure $ NConCase !(resolved defs n) tag args cl
+  resolved defs (NDelayCase n arg cl) = pure $ NDelayCase !(resolved defs n) arg cl
+  resolved defs (NConstCase c cl) = pure $ NConstCase c cl
+  resolved defs (NDefaultCase cl) = pure $ NDefaultCase cl
 
 mutual
   export
@@ -246,6 +286,7 @@ mutual
     show (NDCon _ n _ _ args) = show n ++ " %DCon [" ++ show (length args) ++ " closures " ++ showClosureSnocList (map @{Compose} snd args) ++ "]"
     show (NTCon _ n _ _ args) = show n ++ " %TCon [" ++ show (length args) ++ " closures " ++ showClosureSnocList (map @{Compose} snd args) ++ "]"
     show (NAs _ _ n tm) = show n ++ "@" ++ show tm
+    show (NCase {}) = "Case"
     show (NDelayed _ _ tm) = "%Delayed " ++ show tm
     show (NDelay _ _ _ _) = "%Delay [closure]"
     show (NForce _ _ tm args) = "%Force " ++ show tm ++ " [" ++ show (length args) ++ " closures " ++ showClosureSnocList (map @{Compose} snd args) ++ "]"
