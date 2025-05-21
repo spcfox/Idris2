@@ -104,6 +104,10 @@ data Elab : Type -> Type where
      ReadFile : LookupDir -> (path : String) -> Elab $ Maybe String
      -- Writes to a file, replacing existing contents, if were present
      WriteFile : LookupDir -> (path : String) -> (contents : String) -> Elab ()
+     -- Read the contents of a binary file, if it is present
+     ReadBinaryFile : LookupDir -> (path : String) -> Elab $ Maybe (List Bits8)
+     -- Writes to a binary file, replacing existing contents, if were present
+     WriteBinaryFile : LookupDir -> (path : String) -> (contents : List Bits8) -> Elab ()
      -- Returns the specified type of dir related to the current idris project
      IdrisDir : LookupDir -> Elab String
 
@@ -212,6 +216,12 @@ interface Monad m => Elaboration m where
   ||| Writes to a file, replacing existing contents, if were present
   writeFile : LookupDir -> (path : String) -> (contents : String) -> m ()
 
+  ||| Read the contents of a binary file, if it is present
+  readBinaryFile : LookupDir -> (path : String) -> m $ Maybe (List Bits8)
+
+  ||| Writes to a binary file, replacing existing contents, if were present
+  writeBinaryFile : LookupDir -> (path : String) -> (contents : List Bits8) -> m ()
+
   ||| Returns the specified type of dir related to the current idris project
   idrisDir : LookupDir -> m String
 
@@ -232,31 +242,33 @@ logGoal str n msg = whenJust !goal $ logTerm str n msg
 
 export
 Elaboration Elab where
-  failAt         = Fail
-  warnAt         = Warn
-  try            = Try
-  logMsg         = LogMsg
-  logTerm        = LogTerm
-  logSugaredTerm = LogSugaredTerm
-  resugarTerm    = ResugarTerm
-  check          = Check
-  quote          = Quote
-  lambda         = Lambda
-  goal           = Goal
-  localVars      = LocalVars
-  genSym         = GenSym
-  inCurrentNS    = InCurrentNS
-  getType        = GetType
-  getInfo        = GetInfo
-  getVis         = GetVis
-  getLocalType   = GetLocalType
-  getCons        = GetCons
-  getReferredFns = GetReferredFns
-  getCurrentFn   = GetCurrentFn
-  declare        = Declare
-  readFile       = ReadFile
-  writeFile      = WriteFile
-  idrisDir       = IdrisDir
+  failAt          = Fail
+  warnAt          = Warn
+  try             = Try
+  logMsg          = LogMsg
+  logTerm         = LogTerm
+  logSugaredTerm  = LogSugaredTerm
+  resugarTerm     = ResugarTerm
+  check           = Check
+  quote           = Quote
+  lambda          = Lambda
+  goal            = Goal
+  localVars       = LocalVars
+  genSym          = GenSym
+  inCurrentNS     = InCurrentNS
+  getType         = GetType
+  getInfo         = GetInfo
+  getVis          = GetVis
+  getLocalType    = GetLocalType
+  getCons         = GetCons
+  getReferredFns  = GetReferredFns
+  getCurrentFn    = GetCurrentFn
+  declare         = Declare
+  readFile        = ReadFile
+  writeFile       = WriteFile
+  readBinaryFile  = ReadBinaryFile
+  writeBinaryFile = WriteBinaryFile
+  idrisDir        = IdrisDir
 
 public export
 Elaboration m => MonadTrans t => Monad (t m) => Elaboration (t m) where
@@ -284,6 +296,8 @@ Elaboration m => MonadTrans t => Monad (t m) => Elaboration (t m) where
   declare             = lift . declare
   readFile            = lift .: readFile
   writeFile d         = lift .: writeFile d
+  readBinaryFile      = lift .: readBinaryFile
+  writeBinaryFile d   = lift .: writeBinaryFile d
   idrisDir            = lift . idrisDir
 
 ||| Catch failures and use the `Maybe` monad instead

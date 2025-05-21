@@ -45,6 +45,7 @@ incLoc i c = { loc $= (+i) } c
 
 -- TODO: remove this function once Idris2 v0.8.0 has been released
 --       and use the version from base instead.
+export
 covering
 bufferData' : HasIO io => Buffer -> io (List Bits8)
 bufferData' buf

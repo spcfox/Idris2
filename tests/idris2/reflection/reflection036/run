@@ -1,0 +1,8 @@
+. ../../../testutils.sh
+
+rm -rf copy.png
+
+check Main.idr
+cmp logo.png copy.png
+
+rm -rf copy.png

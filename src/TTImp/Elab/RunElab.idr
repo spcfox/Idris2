@@ -13,6 +13,8 @@ import Core.Unify
 import Core.TT
 import Core.Value
 
+import Data.Buffer
+
 import Idris.Resugar
 import Idris.REPL.Opts
 import Idris.Pretty
@@ -21,6 +23,7 @@ import Idris.Syntax
 import Libraries.Data.NameMap
 import Libraries.Data.WithDefault
 import Libraries.Text.PrettyPrint.Prettyprinter.Doc -- for PageWidth
+import Libraries.Utils.Binary
 import Libraries.Utils.Path
 
 import TTImp.Elab.Check
@@ -31,6 +34,7 @@ import TTImp.TTImp.Functor
 import TTImp.Unelab
 
 import System.File.Meta
+import System.File.Buffer
 
 %default covering
 
@@ -352,6 +356,35 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
              whenJust (parent fullPath) ensureDirectoryExists
              writeFile fullPath contents
              scriptRet ()
+    elabCon defs "ReadBinaryFile" [lk, pth]
+        = do pathPrefix <- lookupDir defs !(evalClosure defs lk)
+             path <- reify defs !(evalClosure defs pth)
+             validatePath defs path
+             let fullPath = joinPath [pathPrefix, path]
+             True <- coreLift $ exists fullPath
+               | False => scriptRet $ Nothing {ty=String}
+             Right buffer <- coreLift $ createBufferFromFile fullPath
+               | Left err => throw $ FileErr fullPath err
+             contents <- coreLift $ with Binary.bufferData' bufferData' buffer
+             scriptRet $ Just contents
+    elabCon defs "WriteBinaryFile" [lk, pth, contents]
+        = do pathPrefix <- lookupDir defs !(evalClosure defs lk)
+             path <- reify defs !(evalClosure defs pth)
+             validatePath defs path
+             contents <- reify defs !(evalClosure defs contents)
+             let fullPath = joinPath [pathPrefix, path]
+             whenJust (parent fullPath) ensureDirectoryExists
+             let size = cast $ length contents
+             Just buf <- coreLift $ newBuffer size
+               | Nothing => throw $ InternalError "Buffer creation failed"
+             coreLift $ go buf 0 contents
+             Right ok <- coreLift $ writeBufferToFile fullPath buf (cast size)
+               | Left (err, _) => throw $ FileErr fullPath err
+             scriptRet ()
+        where
+          go : Buffer -> Int -> List Bits8 -> IO ()
+          go _ _ [] = pure ()
+          go buf i (c :: cs) = setBits8 buf i c >> go buf (i + 1) cs
     elabCon defs "IdrisDir" [lk]
         = do evalClosure defs lk >>= lookupDir defs >>= scriptRet
     elabCon defs n args = failWith defs $ "unexpected Elab constructor " ++ n ++
