@@ -356,7 +356,7 @@ parameters {auto c : Ref Ctxt Defs} (eflags : EvalFlags)
             Core (Glued vars)
   evalRef locs env fc (DataCon t a) n
       = pure $ VDCon fc n t a [<]
-  evalRef locs env fc (TyCon _ a) n
+  evalRef locs env fc (TyCon a) n
       = pure $ VTCon fc n a [<]
   evalRef locs env fc nt n
       = do defs <- get Ctxt

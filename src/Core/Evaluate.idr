@@ -361,7 +361,7 @@ parameters {auto c : Ref Ctxt Defs}
              pure (applyStackWithFC (Ref fc (DataCon t a) n) (toList args'), u)
       repSub (VTCon fc n a args)
         = do (args', u) <- repArgAll args
-             pure (applyStackWithFC (Ref fc (TyCon ?tag a) n) (toList args'), u)
+             pure (applyStackWithFC (Ref fc (TyCon a) n) (toList args'), u)
       repSub (VAs fc s a pat)
           = do (a', u) <- repSub a
                (pat', u') <- repSub pat

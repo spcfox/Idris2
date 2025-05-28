@@ -113,7 +113,7 @@ data Def : Type where
                  Def
     DCon : DataConInfo -> (tag : Int) -> (arity : Nat) ->
            Def -- data constructor
-    TCon : (tag : Int) -> (arity : Nat) ->
+    TCon : (arity : Nat) ->
            (parampos : List Nat) -> -- parameters
            (detpos : List Nat) -> -- determining arguments
            (flags : TypeFlags) -> -- should 'auto' implicits check
@@ -149,7 +149,7 @@ defNameType (Function {}) = Just Func
 defNameType (ExternDef {}) = Just Func
 defNameType (ForeignDef {}) = Just Func
 defNameType (DCon _ tag ar) = Just (DataCon tag ar)
-defNameType (TCon tag ar _ _ _ _ _ _) = Just (TyCon tag ar)
+defNameType (TCon ar _ _ _ _ _ _) = Just (TyCon ar)
 defNameType (Hole {}) = Just Func
 defNameType (BySearch {}) = Nothing
 defNameType (Guess {}) = Nothing
@@ -167,8 +167,8 @@ Show Def where
       = "DataCon " ++ show t ++ " " ++ show a
            ++ maybe "" (\n => " (newtype by " ++ show n ++ ")")
                     (newTypeArg di)
-  show (TCon t a ps ds u ms cons det)
-      = "TyCon " ++ show t ++ " " ++ show a ++ " params: " ++ show ps ++
+  show (TCon a ps ds u ms cons det)
+      = "TyCon " ++ show a ++ " params: " ++ show ps ++
         " constructors: " ++ show cons ++
         " mutual with: " ++ show ms ++
         " detaggable by: " ++ show det

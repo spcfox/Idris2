@@ -305,7 +305,7 @@ namespace Pattern
       = applySpine fc (Ref fc (DataCon tag arity) x)
                       (map @{Compose} (mkTerm vars) xs)
   mkTerm vars (PTyCon fc x arity xs)
-      = applySpine fc (Ref fc (TyCon 0 arity) x)
+      = applySpine fc (Ref fc (TyCon arity) x)
                       (map @{Compose} (mkTerm vars) xs)
   mkTerm vars (PConst fc c) = PrimVal fc c
   mkTerm vars (PArrow fc x s t)

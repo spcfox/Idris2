@@ -684,9 +684,9 @@ checkClause {vars} mult vis totreq hashit n opts nest env
       defs <- get Ctxt
 
       let eqName = NS builtinNS (UN $ Basic "Equal")
-      Just (TCon t ar _ _ _ _ _ _) <- lookupDefExact eqName (gamma defs)
+      Just (TCon ar _ _ _ _ _ _) <- lookupDefExact eqName (gamma defs)
         | _ => throw (InternalError "Cannot find builtin Equal")
-      let eqTyCon = Ref vfc (TyCon t ar) !(toResolvedNames eqName)
+      let eqTyCon = Ref vfc (TyCon ar) !(toResolvedNames eqName)
 
       let wargn : Name
           wargn = MN "warg" 0

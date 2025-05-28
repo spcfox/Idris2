@@ -146,7 +146,7 @@ mutual
            -- covered!
            let head = case definition gdef of
                         DCon _ t a => DataCon t a
-                        TCon t a _ _ _ _ _ _ => TyCon t a
+                        TCon a _ _ _ _ _ _ => TyCon a
                         _ => Func
            processArgs (Ref fc head (Resolved i)) tynf exps autos named
 

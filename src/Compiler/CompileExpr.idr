@@ -33,7 +33,7 @@ data Args
 ||| Extract the number of arguments from a term, or return that it's
 ||| a newtype by a given argument position
 numArgs : Defs -> Term vars -> Core Args
-numArgs defs (Ref _ (TyCon tag arity) n) = pure (Arity arity)
+numArgs defs (Ref _ (TyCon arity) n) = pure (Arity arity)
 numArgs defs (Ref _ _ n)
     = do Just gdef <- lookupCtxtExact n (gamma defs)
               | Nothing => pure (Arity 0)
@@ -363,7 +363,7 @@ toCExpTm n (Ref fc (DataCon tag arity) fn)
               SUCC => do x <- newMN "succ"
                          pure $ CLam fc x $ COp fc (Add IntegerType) [CPrimVal fc (BI 1), CLocal fc First]
               _ => pure $ CCon fc cn fl (Just tag) []
-toCExpTm n (Ref fc (TyCon _ arity) fn)
+toCExpTm n (Ref fc (TyCon arity) fn)
     = pure $ CCon fc fn TYCON Nothing []
 toCExpTm n (Ref fc _ fn)
     = do full <- getFullName fn
@@ -649,7 +649,7 @@ toCDef n _ _ (DCon pos tag arity)
                  EraseArgs ar erased => ar `minus` length erased
                  Arity ar => ar
          pure $ MkCon (Just tag) arity' nt
-toCDef n _ _ (TCon tag arity _ _ _ _ _ _)
+toCDef n _ _ (TCon arity _ _ _ _ _ _)
     = pure $ MkCon Nothing arity Nothing
 -- We do want to be able to compile these, but also report an error at run time
 -- (and, TODO: warn at compile time)

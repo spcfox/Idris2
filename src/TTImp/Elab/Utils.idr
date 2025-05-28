@@ -18,7 +18,7 @@ import Data.SnocList
 detagSafe : {auto c : Ref Ctxt Defs} ->
             Defs -> ClosedNF -> Core Bool
 detagSafe defs (VTCon _ n _ args)
-    = do Just (TCon _ _ _ _ _ _ _ (Just detags)) <- lookupDefExact n (gamma defs)
+    = do Just (TCon _ _ _ _ _ _ (Just detags)) <- lookupDefExact n (gamma defs)
               | _ => pure False
          args' <- traverseSnocList spineVal (reverse args)
          pure $ notErased 0 detags args'

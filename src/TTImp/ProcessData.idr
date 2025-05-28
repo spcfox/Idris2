@@ -272,7 +272,7 @@ firstArg (Bind _ _ (Pi _ c _ val) sc)
 firstArg tm = Nothing
 
 typeCon : Term vs -> Maybe Name
-typeCon (Ref _ (TyCon _ _) n) = Just n
+typeCon (Ref _ (TyCon _) n) = Just n
 typeCon (App _ fn _ _) = typeCon fn
 typeCon _ = Nothing
 
@@ -429,7 +429,7 @@ processData {vars} eopts nest env fc def_vis mbtot (MkImpLater dfc n_in ty_raw)
 
          -- Add the type constructor as a placeholder
          tidx <- addDef n (newDef fc n top vars fullty def_vis
-                          (TCon 0 arity [] [] defaultFlags [] Nothing Nothing))
+                          (TCon arity [] [] defaultFlags [] Nothing Nothing))
          addMutData (Resolved tidx)
          defs <- get Ctxt
          traverse_ (\n => setMutWith fc n (mutData defs)) (mutData defs)
@@ -502,7 +502,7 @@ processData {vars} eopts nest env fc def_vis mbtot (MkImpData dfc n_in mty_raw o
                       _ => pure $ mbtot <|> declTot
 
                     case definition ndef of
-                      TCon _ _ _ _ flags mw Nothing _ => case mfullty of
+                      TCon _ _ _ flags mw Nothing _ => case mfullty of
                         Nothing => pure (mw, vis, tot, type ndef)
                         Just fullty =>
                             do ok <- convert ScopeEmpty fullty (type ndef)
@@ -519,7 +519,7 @@ processData {vars} eopts nest env fc def_vis mbtot (MkImpData dfc n_in mty_raw o
          -- Add the type constructor as a placeholder while checking
          -- data constructors
          tidx <- addDef n (newDef fc n linear vars fullty (specified vis)
-                          (TCon 0 arity [] [] defaultFlags [] Nothing Nothing))
+                          (TCon arity [] [] defaultFlags [] Nothing Nothing))
          case vis of
               Private => pure ()
               _ => do addHashWithNames n

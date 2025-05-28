@@ -294,7 +294,7 @@ searchName fc rigc opts hints env target topty (n, ndef)
          let namety : NameType
                  = case definition ndef of
                         DCon _ tag arity => DataCon tag arity
-                        TCon tag arity _ _ _ _ _ _ => TyCon tag arity
+                        TCon arity _ _ _ _ _ _ => TyCon arity
                         _ => Func
          log "interaction.search" 5 $ "Trying " ++ show (fullname ndef)
          nty <- expand !(nf env (embed ty))
@@ -412,7 +412,7 @@ tryRecursive fc rig opts hints env ty topty rdata
                  Bool
       appsDiff (Ref _ (DataCon _ _) f) (Ref _ (DataCon _ _) f') args args'
          = f /= f' || any (uncurry argDiff) (zip args args')
-      appsDiff (Ref _ (TyCon _ _) f) (Ref _ (TyCon _ _) f') args args'
+      appsDiff (Ref _ (TyCon _) f) (Ref _ (TyCon _) f') args args'
          = f /= f' || any (uncurry argDiff) (zip args args')
       appsDiff (Ref _ _ f) (Ref _ _ f') args args'
          = f == f'
@@ -678,7 +678,7 @@ tryIntermediateRec fc rig opts hints env ty topty (Just rd)
     isSingleCon defs (VBind fc x (Pi _ _ _ _) sc)
         = isSingleCon defs !(expand !(sc (pure (VErased fc Placeholder))))
     isSingleCon defs (VTCon _ n _ _)
-        = do Just (TCon _ _ _ _ _ _ (Just [con]) _) <- lookupDefExact n (gamma defs)
+        = do Just (TCon _ _ _ _ _ (Just [con]) _) <- lookupDefExact n (gamma defs)
                   | _ => pure False
              pure True
     isSingleCon _ _ = pure False
@@ -708,7 +708,7 @@ searchType {vars} fc rig opts hints env topty Z (Bind bfc n b@(Pi fc' c info ty)
                              (Bind bfc n' (Lam fc' c info ty) sc, ds)) scVal))]
 searchType fc rig opts hints env topty _ ty
     = case getFnArgs ty of
-           (Ref rfc (TyCon t ar) n, args) =>
+           (Ref rfc (TyCon ar) n, args) =>
                 do defs <- get Ctxt
                    if length args == ar
                      then do sd <- getSearchData fc False n

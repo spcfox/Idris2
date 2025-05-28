@@ -148,7 +148,7 @@ processFnOpt fc _ ndef (SpecArgs ns)
       getDeps inparam (VTCon _ n a args) ns
           = do defs <- get Ctxt
                params <- case !(lookupDefExact n (gamma defs)) of
-                              Just (TCon _ _ ps _ _ _ _ _) => pure ps
+                              Just (TCon _ ps _ _ _ _ _) => pure ps
                               _ => pure []
                let (ps, ds) = splitPs 0 params
                                       (cast !(traverseSnocList spineVal args))

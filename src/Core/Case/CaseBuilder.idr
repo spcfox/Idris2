@@ -1167,7 +1167,7 @@ export
 mkPat : {auto c : Ref Ctxt Defs} -> List (RigCount, Pat) -> ClosedTerm -> ClosedTerm -> Core Pat
 mkPat [] orig (Ref fc Bound n) = pure $ PLoc fc n
 mkPat args orig (Ref fc (DataCon t a) n) = pure $ PCon fc n t a (cast args)
-mkPat args orig (Ref fc (TyCon t a) n) = pure $ PTyCon fc n a (cast args)
+mkPat args orig (Ref fc (TyCon a) n) = pure $ PTyCon fc n a (cast args)
 mkPat args orig (Ref fc Func n)
   = do prims <- getPrimitiveNames
        mtm <- normalisePrims (const True) isPConst True prims n (cast $ map snd args) orig ScopeEmpty

@@ -32,8 +32,8 @@ conflictMatch ((x, tm) :: ms) = conflictArgs x tm ms || conflictMatch ms
     clash : Term vars -> Term vars -> ClashResult
     clash (Ref _ (DataCon t _) _) (Ref _ (DataCon t' _) _)
         = if t /= t' then Distinct else Same
-    clash (Ref _ (TyCon t _) _) (Ref _ (TyCon t' _) _)
-        = if t /= t' then Distinct else Same
+    clash (Ref _ (TyCon n) _) (Ref _ (TyCon n') _)
+        = if n /= n' then Distinct else Same
     clash (PrimVal _ c) (PrimVal _ c') = if  c /= c' then Distinct else Same
     clash (Ref _ t _) (PrimVal _ _) = if isJust (isCon t) then Distinct else Incomparable
     clash (PrimVal _ _) (Ref _ t _) = if isJust (isCon t) then Distinct else Incomparable
@@ -148,8 +148,8 @@ isEmpty defs env (VTCon fc n a args)
   = do Just nty <- lookupDefExact n (gamma defs)
          | _ => pure False
        case nty of
-            TCon _ _ _ _ flags _ Nothing _ => pure False
-            TCon _ _ _ _ flags _ (Just cons) _
+            TCon _ _ _ flags _ Nothing _ => pure False
+            TCon _ _ _ flags _ (Just cons) _
                  => if not (external flags)
                        then allM (conflict defs env (VTCon fc n a args)) cons
                        else pure False

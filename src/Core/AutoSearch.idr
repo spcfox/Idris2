@@ -414,7 +414,7 @@ searchName fc rigc defaults trying depth def top env target (n, ndef)
          let namety : NameType
                  = case definition ndef of
                         DCon _ tag arity => DataCon tag arity
-                        TCon tag arity _ _ _ _ _ _ => TyCon tag arity
+                        TCon arity _ _ _ _ _ _ => TyCon arity
                         _ => Func
          nty <- expand !(nf env (embed ty))
          logNF "auto" 10 ("Searching Name " ++ show n) env nty

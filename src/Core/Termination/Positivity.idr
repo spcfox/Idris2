@@ -63,7 +63,7 @@ posArg tyns nf@(VTCon loc tc _ args) =
   do logNF "totality.positivity" 50 "Found a type constructor" [<] nf
      defs <- get Ctxt
      testargs <- case !(lookupDefExact tc (gamma defs)) of
-                    Just (TCon _ _ params _ _ _ _ _) => do
+                    Just (TCon _ params _ _ _ _ _) => do
                          logC "totality.positivity" 50 $
                            do pure $ unwords [show tc, "has", show (length params), "parameters"]
                          pure $ splitParams 0 params !(traverseSnocList value args)
@@ -161,7 +161,7 @@ calcPositive loc n
     = do defs <- get Ctxt
          logC "totality.positivity" 6 $ do pure $ "Calculating positivity: \{show !(toFullNames n)}"
          case !(lookupDefTyExact n (gamma defs)) of
-              Just (TCon _ _ _ _ _ tns dcons _, ty) =>
+              Just (TCon _ _ _ _ tns dcons _, ty) =>
                 let dcons = fromMaybe [] dcons in
                   case !(totRefsIn defs ty) of
                        IsTerminating =>

@@ -37,7 +37,7 @@ getCon : {vars : _} ->
 getCon fc defs n
     = case !(lookupDefExact n (gamma defs)) of
            Just (DCon _ t a) => resolved (gamma defs) (Ref fc (DataCon t a) n)
-           Just (TCon t a _ _ _ _ _ _) => resolved (gamma defs) (Ref fc (TyCon t a) n)
+           Just (TCon a _ _ _ _ _ _) => resolved (gamma defs) (Ref fc (TyCon a) n)
            Just _ => resolved (gamma defs) (Ref fc Func n)
            _ => throw (UndefinedName fc n)
 
@@ -497,10 +497,9 @@ Reify NameType where
                   => do t' <- reify defs !(expand t)
                         i' <- reify defs !(expand i)
                         pure (DataCon t' i')
-             (UN (Basic "TyCon"), [t, i])
-                  => do t' <- reify defs !(expand t)
-                        i' <- reify defs !(expand i)
-                        pure (TyCon t' i')
+             (UN (Basic "TyCon"), [i])
+                  => do i' <- reify defs !(expand i)
+                        pure (TyCon i')
              _ => cantReify val "NameType"
   reify defs val = cantReify val "NameType"
 
@@ -512,10 +511,9 @@ Reflect NameType where
       = do t' <- reflect fc defs lhs env t
            i' <- reflect fc defs lhs env i
            appCon fc defs (reflectiontt "DataCon") [(top, t'), (top, i')]
-  reflect fc defs lhs env (TyCon t i)
-      = do t' <- reflect fc defs lhs env t
-           i' <- reflect fc defs lhs env i
-           appCon fc defs (reflectiontt "TyCon") [(top, t'), (top, i')]
+  reflect fc defs lhs env (TyCon i)
+      = do i' <- reflect fc defs lhs env i
+           appCon fc defs (reflectiontt "TyCon") [(top, i')]
 
 export
 Reify PrimType where

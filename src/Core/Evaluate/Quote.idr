@@ -283,7 +283,7 @@ parameters {auto c : Ref Ctxt Defs} {auto q : Ref QVar Int}
                          HNF _ => BlockApp
                          _ => s
            sp' <- quoteSpine s' bounds env sp
-           pure $ applySpine (Ref fc (TyCon ?tag a) n) sp'
+           pure $ applySpine (Ref fc (TyCon a) n) sp'
   quoteGen bounds env (VAs fc use as pat) s
       = do pat' <- quoteGen bounds env pat s
            as' <- quoteGen bounds env as s
