@@ -85,7 +85,7 @@ import System.Clock
 import System.Directory
 import System.File
 import System.Info
-import System.Path
+-- import System.Path
 import System.Concurrency
 
 -- [ Options ]
@@ -315,6 +315,11 @@ runTest opts testPath = do
           spent = length time + length path + msgl
           pad   = pack $ replicate (width `minus` spent) ' '
       in putStrLn $ concat [path, ": ", msg, pad, time]
+
+||| The character that separates multiple paths.
+export
+pathSeparator : Char
+pathSeparator = if isWindows then ';' else ':'
 
 ||| Find the first occurrence of an executable on `PATH`.
 export
