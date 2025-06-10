@@ -102,11 +102,11 @@ test-lib: contrib
 linear: prelude base
 	${MAKE} -C libs/linear IDRIS2=${TARGET} IDRIS2_INC_CGS=${IDRIS2_CG} IDRIS2_PATH=${IDRIS2_BOOT_PATH}
 
-papers: contrib linear
-	${MAKE} -C libs/papers IDRIS2=${TARGET} IDRIS2_INC_CGS=${IDRIS2_CG} IDRIS2_PATH=${IDRIS2_BOOT_PATH}
+# papers: contrib linear
+# 	${MAKE} -C libs/papers IDRIS2=${TARGET} IDRIS2_INC_CGS=${IDRIS2_CG} IDRIS2_PATH=${IDRIS2_BOOT_PATH}
 
 bootstrap-libs : prelude base linear network
-libs : prelude base contrib network test-lib linear papers
+libs : prelude base contrib network test-lib linear # papers
 
 libdocs:
 	${MAKE} -C libs/prelude docs IDRIS2=${TARGET} IDRIS2_PATH=${IDRIS2_BOOT_PATH}
@@ -178,7 +178,7 @@ clean-libs:
 	${MAKE} -C libs/network clean
 	${MAKE} -C libs/test clean
 	${MAKE} -C libs/linear clean
-	${MAKE} -C libs/papers clean
+#	${MAKE} -C libs/papers clean
 
 clean: clean-libs clean-support testenv-clean
 	-${IDRIS2_BOOT} --clean ${IDRIS2_APP_IPKG}
