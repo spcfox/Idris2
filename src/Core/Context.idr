@@ -1220,17 +1220,13 @@ getVisibility : {auto c : Ref Ctxt Defs} ->
 getVisibility fc n
     = do defs <- get Ctxt
          Just def <- lookupCtxtExact n (gamma defs)
-              | Nothing => throw (UndefinedName fc n)
+              | Nothing => pure defaulted -- throw (UndefinedName fc n)
          pure $ visibility def
 
 export
 getVisibilityWeaked : {auto c : Ref Ctxt Defs} ->
                 FC -> Name -> Core (WithDefault Visibility Private)
-getVisibilityWeaked fc n
-    = catch (getVisibility fc n) $ \e =>
-        case e of
-          UndefinedName _ _ => pure defaulted
-          x => throw x
+getVisibilityWeaked = getVisibility
 
 maybeMisspelling : {auto c : Ref Ctxt Defs} ->
                    Error -> Name -> Core a
