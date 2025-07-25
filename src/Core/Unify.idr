@@ -961,6 +961,11 @@ mutual
            let pargs = if isLin margs' then margs else margs ++ margs'
            defs <- get Ctxt
            logNF "elab" 10 ("Trying to solve " ++ show mname ++ " with") env tmnf
+           logC "unify.hole" 10
+                   (do qargs <- traverse (quote env) margs
+                       qtm <- quote env tmnf
+                       pure $ "Unifying: " ++ show mname ++ " " ++ show qargs ++
+                              " with " ++ show qtm) -- first attempt, try 'empty', only try 'defs' when on 'retry'?
            case !(patternEnv env pargs) of
                 Nothing =>
                   do Just hdef <- lookupCtxtExact (Resolved mref) (gamma defs)
