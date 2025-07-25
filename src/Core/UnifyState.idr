@@ -659,6 +659,11 @@ dumpHole s n hole
                     do logString depth s.topic n $
                          "\t  " ++ show !(toFullNames x)
                               ++ " =?= " ++ show !(toFullNames y)
+                       empty <- clearDefs defs
+                       log s 5 $
+                         "\t    from " ++ show !(full (gamma empty) x)
+                            ++ " =?= " ++ show !(full (gamma empty) y)
+                            ++ if lazy then "\n\t(lazy allowed)" else ""
                Just (MkSeqConstraint _ _ xs ys) =>
                     logString depth s.topic n $ "\t\t" ++ show xs ++ " =?= " ++ show ys
 
@@ -675,4 +680,4 @@ dumpConstraints s n all
            unless (isNil hs) $
              do depth <- getDepth
                 logString depth s.topic n "--- CONSTRAINTS AND HOLES ---"
-                traverse_ (dumpHole s n) (map fst hs)
+                logDepth $ traverse_ (dumpHole s n) (map fst hs)
