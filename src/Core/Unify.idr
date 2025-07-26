@@ -1051,8 +1051,18 @@ mutual
            then unifySpine mode fc env spx spy
            else convertError fc env x y
   unifyNotMetavar mode fc env x@(VTCon fcx nx ax spx) y@(VTCon fcy ny ay spy)
-      = if nx == ny
-           then unifySpine mode fc env spx spy
+      = do logC "unify" 20 $ do
+             x <- toFullNames nx
+             y <- toFullNames ny
+             pure $ "Comparing type constructors " ++ show x ++ " and " ++ show y
+           if nx == ny
+             then do logC "unify" 20 $
+                       pure $ "Constructor " ++ show nx
+                     logC "unify" 20 $ map (const "") $
+                        traverse_ (\x => logNF "unify" 20 "NF" env !x) (map value spx)
+                     logC "unify" 20 $ map (const "") $
+                        traverse_ (\y => logNF "unify" 20 "NF" env !y) (map value spy)
+                     unifySpine mode fc env spx spy
            else convertError fc env x y
   unifyNotMetavar mode fc env (VDelayed _ _ x) (VDelayed _ _ y)
       = unify (lower mode) fc env x y
@@ -1348,7 +1358,7 @@ mutual
              {vars : _} ->
              UnifyInfo -> FC -> Env Term vars ->
              Glued vars -> Glued vars -> Core UnifyResult
-  unifyVal mode fc env x y = unifyExpandApps False mode fc env x y
+  unifyVal mode fc env x y = logDepth $ unifyExpandApps False mode fc env x y
 
   unifyValLazy : {auto c : Ref Ctxt Defs} ->
                  {auto u : Ref UST UState} ->
@@ -1438,15 +1448,20 @@ retry mode c
                      logNF "unify" 5 ("Retrying " ++ show c ++ " " ++ show (umode mode))
                            env x
                      logNF "unify" 5 "....with" env y
+                     log "unify.retry" 5 $ if withLazy
+                                then "(lazy allowed)"
+                                else "(no lazy)"
 
                      catch
                        (do cs <- ifThenElse withLazy
                                     (unifyWithLazy mode loc env x y)
                                     (unify (lower mode) loc env x y)
                            case constraints cs of
-                             [] => do deleteConstraint c
+                             [] => do log "unify.retry" 5 $ "Success " ++ show (addLazy cs)
+                                      deleteConstraint c
                                       pure cs
-                             _ => pure cs)
+                             _ => do log "unify.retry" 5 $ "Constraints " ++ show (addLazy cs)
+                                     pure cs)
                       (\err => do defs <- get Ctxt
                                   throw (WhenUnifying loc (gamma defs) env
                                                       !(quote env x)
