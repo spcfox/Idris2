@@ -233,13 +233,12 @@ Weaken (NamedPats todo) where
 tail : NamedPats (p :: ps) vars -> NamedPats ps vars
 tail (x :: xs) = xs
 
-data PatClause : (todo : List Name) -> Scoped where
-     MkPatClause : List Name -> -- names matched so far (from original lhs)
-                   NamedPats todo vars ->
-                   Int -> (rhs : Term vars) -> PatClause todo vars
-
-getNPs : PatClause todo vars -> NamedPats todo vars
-getNPs (MkPatClause _ lhs pid rhs) = lhs
+record PatClause (todo : List Name) (vars : Scope) where
+  constructor MkPatClause
+  clauseVars : List Name -- names matched so far (from original lhs)
+  clausePats : NamedPats todo vars
+  clauseId   : Int
+  clauseRHS  : Term vars
 
 covering
 {vars : _} -> {todo : _} -> Show (PatClause todo vars) where
@@ -890,10 +889,10 @@ mutual
   -- inspect next has a concrete type that is the same in all cases, and
   -- has the most distinct constructors (via pickNextViable)
   match {todo = _ :: _} fc fn phase clauses err
-      = do let nps = getNPs <$> clauses
+      = do let nps = clausePats <$> clauses
            let (_ ** (MkNVar next)) = nextIdxByScore (caseTreeHeuristics !getSession) phase nps
            let prioritizedClauses = shuffleVars next <$> clauses
-           (n ** MkNVar next') <- pickNextViable fc phase fn (getNPs <$> prioritizedClauses)
+           (n ** MkNVar next') <- pickNextViable fc phase fn (clausePats <$> prioritizedClauses)
            log "compile.casetree.pick" 25 $ "Picked " ++ show n ++ " as the next split"
            let clauses' = shuffleVars next' <$> prioritizedClauses
            log "compile.casetree.clauses" 25 $
