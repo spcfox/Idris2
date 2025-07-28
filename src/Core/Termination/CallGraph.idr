@@ -4,18 +4,15 @@ import Core.Case.CaseTree
 import Core.Context
 import Core.Context.Log
 import Core.Env
-import Core.Normalise
+import Core.Evaluate
 import Core.Options
-import Core.Value
 import Core.Name.CompatibleVars
 
-import Libraries.Data.List.SizeOf
-
-import Libraries.Data.IntMap
 import Libraries.Data.SparseMatrix
 import Libraries.Data.SnocList.SizeOf
 
 import Data.String
+import Data.Vect
 
 %default covering
 
@@ -34,9 +31,9 @@ sizeEq : {auto 0 cv : CompatibleVars rhsVars lhsVars} ->
 sizeEq (Local _ _ idx _) (Local _ _ idx' _) = idx == idx'
 sizeEq (Ref _ _ n) (Ref _ _ n') = n == n'
 sizeEq (Meta _ _ i args) (Meta _ _ i' args')
-    = i == i' && assert_total (all (uncurry sizeEq) (zip args args'))
+    = i == i' && assert_total (all (uncurry sizeEq) (zip (map snd args) (map snd args')))
 sizeEq (Bind _ _ b sc) (Bind _ _ b' sc') = eqBinderBy sizeEq b b' && sizeEq sc sc'
-sizeEq (App _ f a) (App _ f' a') = sizeEq f f' && sizeEq a a'
+sizeEq (App _ f _ a) (App _ f' _ a') = sizeEq f f' && sizeEq a a'
 sizeEq (As _ _ a p) p' = sizeEq p p'
 sizeEq p (As _ _ a p') = sizeEq p a || sizeEq p p'
 sizeEq (TDelayed _ _ t) (TDelayed _ _ t') = sizeEq t t'
@@ -66,10 +63,10 @@ delazy defs (TForce fc r t)
     = case r of
            LInf => TForce fc r (delazy defs t)
            _ => delazy defs t
-delazy defs (Meta fc n i args) = Meta fc n i (map (delazy defs) args)
+delazy defs (Meta fc n i args) = Meta fc n i (map @{Compose} (delazy defs) args)
 delazy defs (Bind fc x b sc)
     = Bind fc x (map (delazy defs) b) (delazy defs sc)
-delazy defs (App fc f a) = App fc (delazy defs f) (delazy defs a)
+delazy defs (App fc f c a) = App fc (delazy defs f) c (delazy defs a)
 delazy defs (As fc s a p) = As fc s (delazy defs a) (delazy defs p)
 delazy defs tm = tm
 
@@ -83,7 +80,7 @@ mutual
   findSC {vars} defs env g pats (Bind fc n b sc)
        = pure $
             !(findSCbinder b) ++
-            !(findSC defs (b :: env) g (map weaken pats) sc)
+            !(findSC defs (env :< b) g (map weaken pats) sc)
     where
       findSCbinder : Binder (Term vars) -> Core (List SCCall)
       findSCbinder (Let _ c val ty) = findSC defs env g pats val
@@ -171,16 +168,16 @@ mutual
   -- otherwise try to expand RHS meta
   sizeCompare fuel s@(Meta n _ i args) t = do
     Just gdef <- lookupCtxtExact (Resolved i) (gamma defs) | _ => pure Unknown
-    let (PMDef _ [] (STerm _ tm) _ _) = definition gdef | _ => pure Unknown
-    tm <- substMeta (embed tm) args zero Subst.empty
+    let (Function _ tm _ _) = definition gdef | _ => pure Unknown
+    tm <- substMeta (embed tm) (map snd args) zero ScopeEmpty
     sizeCompare fuel tm t
     where
       substMeta : {0 drop, vs : _} ->
-                  Term (drop ++ vs) -> List (Term vs) ->
+                  Term (vs ++ drop) -> List (Term vs) ->
                   SizeOf drop -> SubstEnv drop vs ->
                   Core (Term vs)
       substMeta (Bind bfc n (Lam _ c e ty) sc) (a :: as) drop env
-          = substMeta sc as (suc drop) (a :: env)
+          = substMeta sc as (suc drop) (env :< a)
       substMeta (Bind bfc n (Let _ c val ty) sc) as drop env
           = substMeta (subst val sc) as drop env
       substMeta rhs [] drop env = pure (substs drop env rhs)
@@ -204,8 +201,8 @@ mutual
     let (f, args) = getFnArgs t in
     let (g, args') = getFnArgs s in
     case f of
-      Ref _ (TyCon _ _) cn => case g of
-        Ref _ (TyCon _ _) cn' => if cn == cn'
+      Ref _ (TyCon _) cn => case g of
+        Ref _ (TyCon _) cn' => if cn == cn'
             then (Unknown /=) <$> sizeCompareProdConArgs fuel args' args
             else pure False
         _ => pure False
@@ -234,7 +231,7 @@ mutual
           Unknown => sizeCompareConArgs fuel s ts
           _ => pure True
 
-  sizeCompareApp fuel (App _ f _) t = sizeCompare fuel f t
+  sizeCompareApp fuel (App _ f _ _) t = sizeCompare fuel f t
   sizeCompareApp _ _ t = pure Unknown
 
   sizeCompareAsserted : {auto defs : Defs} -> Nat -> Maybe (Term vars) -> Term vars -> Core SizeChange
@@ -278,13 +275,13 @@ mutual
                                          List (Term vs), Term vs))))
 
   getCasePats {vars} defs n pats args
-      = do Just (PMDef _ _ _ _ pdefs) <- lookupDefExact n (gamma defs)
+      = do Just (Function _ _ _ (Just pdefs)) <- lookupDefExact n (gamma defs)
              | _ => pure Nothing
            log "totality" 20 $
              unwords ["Looking at the", show (length pdefs), "cases of", show  n]
            let pdefs' = map matchArgs pdefs
            logC "totality" 20 $ do
-              old <- for pdefs $ \ (_ ** (_, lhs, rhs)) => do
+              old <- for pdefs $ \ (MkClause _ lhs rhs) => do
                        lhs <- toFullNames lhs
                        rhs <- toFullNames rhs
                        pure $ "    " ++ show lhs ++ " => " ++ show rhs
@@ -306,8 +303,8 @@ mutual
           urhs : Term vs -> Term vs'
           urhs (Local fc _ _ _) = Erased fc Placeholder
           urhs (Ref fc nt n) = Ref fc nt n
-          urhs (Meta fc m i margs) = Meta fc m i (map (updateRHS ms) margs)
-          urhs (App fc f a) = App fc (updateRHS ms f) (updateRHS ms a)
+          urhs (Meta fc m i margs) = Meta fc m i (map @{Compose} (updateRHS ms) margs)
+          urhs (App fc f c a) = App fc (updateRHS ms f) c (updateRHS ms a)
           urhs (As fc s a p) = As fc s (updateRHS ms a) (updateRHS ms p)
           urhs (TDelayed fc r ty) = TDelayed fc r (updateRHS ms ty)
           urhs (TDelay fc r ty tm)
@@ -317,10 +314,17 @@ mutual
               = Bind fc x (map (updateRHS ms) b)
                   (updateRHS (map (\vt => (weaken (fst vt), weaken (snd vt))) ms) sc)
           urhs (PrimVal fc c) = PrimVal fc c
+          urhs (PrimOp fc op args) = PrimOp fc op (map (updateRHS ms) args)
           urhs (Erased fc Impossible) = Erased fc Impossible
           urhs (Erased fc Placeholder) = Erased fc Placeholder
           urhs (Erased fc (Dotted t)) = Erased fc (Dotted (updateRHS ms t))
+          urhs (Unmatched fc s) = Unmatched fc s
           urhs (TType fc u) = TType fc u
+          urhs (Case fc ct c sc scty alts)
+              = Erased fc Placeholder
+              -- = Case fc ct c (updateRHS ms sc) (updateRHS ms scty) []
+              -- spcfox: I expect this should never happen,
+              --         but perhaps we should process it
 
           lookupTm : Term vs -> List (Term vs, Term vs') -> Maybe (Term vs')
           lookupTm tm [] = Nothing
@@ -342,9 +346,9 @@ mutual
                   List (Term vs, Term vs') -> Term vs -> Term vs'
       updatePat ms tm = updateRHS ms tm
 
-      matchArgs : (vs ** (Env Term vs, Term vs, Term vs)) ->
+      matchArgs : Clause ->
                   (vs ** (Env Term vs, List (Term vs), Term vs))
-      matchArgs (_ ** (env', lhs, rhs))
+      matchArgs (MkClause env' lhs rhs)
          = let patMatch = reverse (zip args (getArgs lhs)) in
                (_ ** (env', map (updatePat patMatch) pats, rhs))
 
@@ -383,20 +387,20 @@ mutual
                    do ps <- traverse toFullNames pats
                       pure ("Looking in case args " ++ show ps)
           logTermNF "totality" 10 "        =" env tm
-          rhs <- normaliseOpts tcOnly defs env tm
+          rhs <- quote env !(nfTotality env tm)
           findSC defs env g pats (delazy defs rhs)
 
 findCalls : {auto c : Ref Ctxt Defs} ->
-            Defs -> (vars ** (Env Term vars, Term vars, Term vars)) ->
+            Defs -> Clause ->
             Core (List SCCall)
-findCalls defs (_ ** (env, lhs, rhs_in))
+findCalls defs (MkClause env lhs rhs_in)
    = do let pargs = getArgs (delazy defs lhs)
-        rhs <- normaliseOpts tcOnly defs env rhs_in
+        rhs <- quote env !(nfTotality env rhs_in)
         findSC defs env Toplevel pargs (delazy defs rhs)
 
 getSC : {auto c : Ref Ctxt Defs} ->
         Defs -> Def -> Core (List SCCall)
-getSC defs (PMDef _ args _ _ pats)
+getSC defs (Function _ _ _ (Just pats))
    = do sc <- traverse (findCalls defs) pats
         pure $ nub (concat sc)
 getSC defs _ = pure []
