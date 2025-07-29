@@ -228,12 +228,15 @@ caseBlock {vars} rigc elabinfo fc nest env opts scr scrtm scrty caseRig alts exp
          put UST ({ delayedElab := [] } ust)
          processDecl [InCase] nest' ScopeEmpty (IDef fc casen alts')
 
-         -- Set the case block to always reduce, so we get the core 'Case'
-         updateDef casen
-            (\d => case d of
-                        Function fi ct rt cs =>
-                          Just (Function ({ alwaysReduce := True } fi) ct rt cs)
-                        _ => Nothing)
+         -- If there's no duplication of the scrutinee in the block,
+         -- flag it as inlinable.
+         -- This will be the case either if the scrutinee is a variable, in
+         -- which case the duplication won't hurt, or if there's no variable
+         -- duplicated in the body (what ghc calls W-safe)
+         -- We'll check that second condition later, after generating the
+         -- runtime (erased) case trees
+         let inlineOK = maybe False (const True) splitOn
+         when inlineOK $ setFlag fc casen Inline
 
          ust <- get UST
          put UST ({ delayedElab := olddelayed } ust)
