@@ -170,8 +170,9 @@ caseBlock {vars} rigc elabinfo fc nest env opts scr scrtm scrty caseRig alts exp
          u <- uniVar fc
          (caseretty, _) <- bindImplicits fc (implicitMode elabinfo) defs env
                                          fullImps caseretty_in (TType fc u)
+         let env' = allow splitOn (explicitPi env)
          let casefnty
-               = abstractFullEnvType fc (allow splitOn (explicitPi env))
+               = abstractFullEnvType fc env'
                             (maybe (Bind fc scrn (Pi fc caseRig Explicit scrty)
                                        (weaken caseretty))
                                    (const caseretty) splitOn)
@@ -202,7 +203,7 @@ caseBlock {vars} rigc elabinfo fc nest env opts scr scrtm scrty caseRig alts exp
          setFlag fc (Resolved cidx) (SetTotal tot)
          let caseRef : Term vars = Ref fc Func (Resolved cidx)
 
-         let applyEnv = applyToFull fc caseRef env
+         let applyEnv = applyToFull fc caseRef env'
          let appTm : Term vars
                    = maybe (Bind fc (MN "sc" 0)
                                  (Let fc caseRig scrtm scrty)
