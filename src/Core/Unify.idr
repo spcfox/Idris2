@@ -306,8 +306,8 @@ unifySpine mode fc env (cxs :< ex) (cys :< ey)
          -- reduce any newly solved holes
          cx' <- nf env !(quote env !(value ex))
          cy' <- nf env !(quote env !(value ey))
-         cs <- unify (lower mode) fc env cx' cy'
-         res <- unifySpine mode fc env cxs cys
+         res <- unify (lower mode) fc env cx' cy'
+         cs <- unifySpine mode fc env cxs cys
          pure (union cs res)
 unifySpine mode fc env _ _ = ufail fc ""
 
