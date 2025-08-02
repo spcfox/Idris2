@@ -304,9 +304,14 @@ unifySpine mode fc env [<] [<] = pure success
 unifySpine mode fc env (cxs :< ex) (cys :< ey)
     = do -- We might know more about cx and cy now, so normalise again to
          -- reduce any newly solved holes
-         cx' <- nf env !(quote env !(value ex))
-         cy' <- nf env !(quote env !(value ey))
+         cx' <- logQuiet $ nf env !(quote env !(value ex))
+         cy' <- logQuiet $ nf env !(quote env !(value ey))
          res <- unify (lower mode) fc env cx' cy'
+
+         logNF "unify.application" 20 "unifySpine cx'" env cx'
+         logNF "unify.application" 20 "unifySpine cy'" env cy'
+         log "unify.application" 20 "unifySpine res \{show res}"
+
          cs <- logDepth $ unifySpine mode fc env cxs cys
          pure (union cs res)
 unifySpine mode fc env _ _ = ufail fc ""
@@ -1067,7 +1072,7 @@ mutual
              pure $ "Comparing type constructors " ++ show x ++ " and " ++ show y
            if nx == ny
              then do logC "unify" 20 $
-                       pure $ "Constructor " ++ show nx
+                       pure $ "Constructor " ++ show !(toFullNames x)
                      logC "unify" 20 $ map (const "") $
                         traverse_ (\x => logNF "unify" 20 "NF" env !x) (map value spx)
                      logC "unify" 20 $ map (const "") $
@@ -1324,22 +1329,30 @@ mutual
                                    xs <- traverse (quote env) xs'
                                    yx' <- traverse value spy
                                    ys <- traverse (quote env) yx'
-                                   pure $ "Attempt to convertSpine (func equal already): " ++ show xs ++ "\n and " ++ show ys
+                                   pure $ "Attempt to convertSpine (func equal already): \{show x} (\{show !(toFullNames xs)}) \n and \{show y} (\{show !(toFullNames ys)})"
                    c <- convertSpine fc env spx spy
                    if c
                       then
                         do logC "unify.equal" 10 $
                                 do x <- toFullNames nx
                                    y <- toFullNames ny
-                                   pure $ "Skipped unification (equal already): " ++ show x ++ "\n and " ++ show y
+                                   pure $ "Skipped unification (equal already): \{show x} \n and \{show y}"
                            pure success
                       else do valx' <- expand x
                               valy' <- expand y
+                              logC "unify.equal" 10 $
+                                do x <- toFullNames valx'
+                                   y <- toFullNames valy'
+                                   pure $ "Begin unification (non-convertable) \{show lazy}: \{show x} \n and \{show y}"
                               if lazy
                                 then unifyLazy mode fc env valx' valy'
                                 else unifyWithEta mode fc env valx' valy'
            else do valx' <- expand x
                    valy' <- expand y
+                   logC "unify.equal" 10 $
+                     do x <- toFullNames valx'
+                        y <- toFullNames valy'
+                        pure $ "Begin unification (func non-equal) \{show lazy}: \{show x} \n and \{show y}"
                    if lazy
                       then unifyLazy mode fc env valx' valy'
                       else unifyWithEta mode fc env valx' valy'
@@ -1694,7 +1707,7 @@ checkDots
              pure (Just n')
 
     checkConstraint : (Name, DotReason, Constraint) -> Core ()
-    checkConstraint (n, reason, MkConstraint fc wl env xold yold)
+    checkConstraint (n, reason, MkConstraint fc _ env xold yold)
         = do defs <- get Ctxt
              x <- nf env xold
              y <- nf env yold
