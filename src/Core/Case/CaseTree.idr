@@ -19,8 +19,7 @@ mutual
   public export
   data CaseTree : Scoped where
        ||| case x return scTy of { p1 => e1 ; ... }
-       Case : {name : _} ->
-              (idx : Nat) ->
+       Case : (idx : Nat) ->
               (0 p : IsVar name idx vars) ->
               (scTy : Term vars) -> List (CaseAlt vars) ->
               CaseTree vars
@@ -132,8 +131,8 @@ IsConPat = So . isConPat
 showCT : {vars : _} -> (indent : String) -> CaseTree vars -> String
 showCA : {vars : _} -> (indent : String) -> CaseAlt vars  -> String
 
-showCT indent (Case {name} idx prf ty alts)
-  = "case " ++ show name ++ "[" ++ show idx ++ "] : " ++ show ty ++ " of"
+showCT indent (Case idx prf ty alts)
+  = "case " ++ show (nameAt prf) ++ "[" ++ show idx ++ "] : " ++ show ty ++ " of"
   ++ "\n" ++ indent ++ " { "
   ++ showSep ("\n" ++ indent ++ " | ")
              (assert_total (map (showCA ("  " ++ indent)) alts))

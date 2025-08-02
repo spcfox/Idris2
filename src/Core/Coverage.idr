@@ -273,7 +273,7 @@ buildArgs : {auto c : Ref Ctxt Defs} ->
                                     -- (because a previous case matches)
             List ClosedTerm -> -- ^ arguments, with explicit names
             CaseTree vars -> Core (List (List ClosedTerm))
-buildArgs fc defs known not ps cs@(Case {name = var} idx el ty altsIn)
+buildArgs fc defs known not ps cs@(Case idx el ty altsIn)
   -- If we've already matched on 'el' in this branch, restrict the alternatives
   -- to the tag we already know. Otherwise, add missing cases and filter out
   -- the ones it can't possibly be (the 'not') because a previous case
@@ -293,20 +293,21 @@ buildArgs fc defs known not ps cs@(Case {name = var} idx el ty altsIn)
     buildArgAlt not' (ConCase n t args sc)
         = do let l = mkSizeOf args
              let con = Ref fc (DataCon t (size l)) n
-             let ps' = map (substName var
+             let ps' = map (substName (nameAt el)
                              (apply fc
                                     con (map (Ref fc Bound) args))) ps
              buildArgs fc defs (weakenNs l ((MkVar el, t) :: known))
                                (weakenNs l not') ps' sc
     buildArgAlt not' (DelayCase t a sc)
         = let l = mkSizeOf [t, a]
-              ps' = map (substName var (TDelay fc LUnknown
+              ps' = map (substName (nameAt el)
+                                   (TDelay fc LUnknown
                                              (Ref fc Bound t)
                                              (Ref fc Bound a))) ps in
               buildArgs fc defs (weakenNs l known) (weakenNs l not')
                                 ps' sc
     buildArgAlt not' (ConstCase c sc)
-        = do let ps' = map (substName var (PrimVal fc c)) ps
+        = do let ps' = map (substName (nameAt el) (PrimVal fc c)) ps
              buildArgs fc defs known not' ps' sc
     buildArgAlt not' (DefaultCase sc)
         = buildArgs fc defs known not' ps sc

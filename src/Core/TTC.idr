@@ -468,8 +468,8 @@ TTC Pat where
 mutual
   export
   {vars : _} -> TTC (CaseTree vars) where
-    toBuf (Case {name} idx x scTy xs)
-        = do tag 0; toBuf name; toBuf idx; toBuf xs
+    toBuf (Case idx x scTy xs)
+        = do tag 0; toBuf idx; toBuf xs
     toBuf (STerm _ x)
         = do tag 1; toBuf x
     toBuf (Unmatched msg)
@@ -478,8 +478,10 @@ mutual
 
     fromBuf
         = case !getTag of
-               0 => do name <- fromBuf; idx <- fromBuf
+               0 => do idx <- fromBuf
                        xs <- fromBuf
+                       name <- maybe (corrupt "Term") pure
+                                     (getAt idx vars)
                        pure (Case {name} idx (mkPrf idx) (Erased emptyFC Placeholder) xs)
                1 => do x <- fromBuf
                        pure (STerm 0 x)
