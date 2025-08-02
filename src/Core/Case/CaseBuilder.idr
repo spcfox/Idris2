@@ -1,6 +1,6 @@
 module Core.Case.CaseBuilder
 
-import Core.Case.CaseTree
+import Core.Case.Optimise
 import Core.Case.Util
 import Core.Context.Log
 import Core.Env
@@ -1263,6 +1263,8 @@ getPMDef fc phase fn ty clauses@(_ :: _)
            "Reached clauses: " ++ (show reached)
          extraDefaults <- findExtraDefaults fc defs t
          let unreachable = getUnreachable 0 (reached \\ extraDefaults) clauses
+         let t = optimiseTree [] t
+         log "compile.casetree.getpmdef" 20 $ "Optimised to: " ++ show !(toFullNames t)
          pure (_ ** (t, unreachable))
   where
     getUnreachable : Int -> List Int -> List Clause -> List Clause

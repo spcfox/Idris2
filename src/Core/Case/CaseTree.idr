@@ -245,6 +245,55 @@ export
 Weaken CaseTree where
   weakenNs ns t = insertCaseNames zero ns t
 
+-- export
+-- shrinkCaseTree : Shrinkable CaseTree
+
+-- shrinkCaseAlt : Shrinkable CaseAlt
+-- shrinkCaseAlt (ConCase n t args sc) prf
+--     = pure $ ConCase n t args !(shrinkCaseTree sc $ keeps args prf)
+-- shrinkCaseAlt (DelayCase tyn valn sc) prf
+--     = pure $ DelayCase tyn valn !(shrinkCaseTree sc $ Keep $ Keep prf)
+-- shrinkCaseAlt (ConstCase c sc) prf = pure $ ConstCase c !(shrinkCaseTree sc prf)
+-- shrinkCaseAlt (DefaultCase sc) prf = pure $ DefaultCase !(shrinkCaseTree sc prf)
+
+-- shrinkCaseAlts : Shrinkable (List . CaseAlt)
+-- shrinkCaseAlts alts prf = for alts $ flip shrinkCaseAlt prf
+
+-- shrinkCaseTree (Case idx loc scTy alts) prf
+--     = do (MkVar loc') <- shrinkIsVar loc prf
+--          pure $ Case _ loc' !(shrink scTy prf) !(shrinkCaseAlts alts prf)
+-- shrinkCaseTree (STerm i x) prf = pure $ STerm i !(shrink x prf)
+-- shrinkCaseTree (Unmatched msg) prf = pure $ Unmatched msg
+-- shrinkCaseTree Impossible prf = pure Impossible
+
+export
+substCaseTree : Substitutable Var CaseTree
+
+substCaseAlt : Substitutable Var CaseAlt
+substCaseAlt sOuter sDropped env (ConCase n t args sc)
+    = ConCase n t args $
+        rewrite appendAssociative args outer vars in
+          substCaseTree (mkSizeOf args + sOuter) sDropped env $
+            rewrite sym $ appendAssociative args outer (dropped ++ vars) in sc
+substCaseAlt outer dropped env (DelayCase tyn valn sc)
+    = DelayCase tyn valn (substCaseTree (suc $ suc outer) dropped env sc)
+substCaseAlt outer dropped env (ConstCase c sc)
+    = ConstCase c (substCaseTree outer dropped env sc)
+substCaseAlt outer dropped env (DefaultCase sc)
+    = DefaultCase (substCaseTree outer dropped env sc)
+
+substCaseAlts : Substitutable Var (List . CaseAlt)
+substCaseAlts outer dropped env = map (substCaseAlt outer dropped env)
+
+substCaseTree outer dropped env (Case idx prf scTy alts)
+    = do let MkVar p = Subst.find id outer dropped (MkVar prf) env
+         Case _ p (substTermVar outer dropped env scTy)
+                  (substCaseAlts outer dropped env alts)
+substCaseTree outer dropped env (STerm i x)
+    = STerm i (substTermVar outer dropped env x)
+substCaseTree outer dropped env (Unmatched msg) = Unmatched msg
+substCaseTree outer dropped env Impossible = Impossible
+
 total
 getNames : (forall vs . NameMap Bool -> Term vs -> NameMap Bool) ->
            NameMap Bool -> CaseTree vars -> NameMap Bool
