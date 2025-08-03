@@ -24,8 +24,7 @@ data TCaseAlt : SnocList Name -> Type
 public export
 data CaseTree : Scoped where
      ||| case x return scTy of { p1 => e1 ; ... }
-     TCase : {name : _} ->
-             FC -> RigCount ->
+     TCase : FC -> RigCount ->
              (idx : Nat) ->
              (0 p : IsVar name idx vars) ->
              (scTy : Term vars) -> List (TCaseAlt vars) ->
@@ -137,8 +136,8 @@ mkCaseAlt ct (TDefaultCase fc tm) = DefaultCase fc (mkTerm ct tm)
 showCT : {vars : _} -> (indent : String) -> CaseTree vars -> String
 showCA : {vars : _} -> (indent : String) -> TCaseAlt vars  -> String
 
-showCT indent (TCase {name} _ _ idx prf ty alts)
-  = "case " ++ show name ++ "[" ++ show idx ++ "] : " ++ show ty ++ " of"
+showCT indent (TCase _ _ idx prf ty alts)
+  = "case " ++ show (nameAt prf) ++ "[" ++ show idx ++ "] : " ++ show ty ++ " of"
   ++ "\n" ++ indent ++ " { "
   ++ showSep ("\n" ++ indent ++ " | ")
              (assert_total (map (showCA ("  " ++ indent)) alts))
