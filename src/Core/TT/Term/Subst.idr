@@ -4,6 +4,7 @@ import Algebra
 import Core.Name
 import Core.Name.Scoped
 
+import Core.FC
 import Core.TT.Binder
 import Core.TT.Subst
 import Core.TT.Term
@@ -118,3 +119,8 @@ substs dropped env tm = substTerm zero dropped env tm
 export
 subst : Term vars -> Term (vars :< x) -> Term vars
 subst val tm = substs (suc zero) (ScopeSingle val) tm
+
+export
+substTermVar : Substitutable Var Term
+substTermVar outer dropped env tm =
+  substTerm outer dropped (map (\(MkVar p) => Local emptyFC Nothing _ p) env) tm

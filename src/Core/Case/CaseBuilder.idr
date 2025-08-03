@@ -1523,6 +1523,79 @@ findExtraDefaults defs ctree@(TCase fc _ idx el ty altsIn)
 
 findExtraDefaults defs ctree = pure []
 
+mkSubst : {vars : _} -> List Name -> Subst Var dropped vars
+mkSubst = go
+  where
+    go : List Name -> Subst Var dropped vars
+    go [] = believe_me $ [<] {tm=Var} {vars=vars}
+    go (x :: xs) = believe_me $ (go xs :< (fromJust @{believe_me ()} $ isVar x vars)) {d=x}
+
+data MatchResult : Type where
+    ConPat   : Name -> (tag : Int) -> List Name -> MatchResult
+    DelayPat : (ty, arg : Name) -> MatchResult
+    ConstPat : Constant -> MatchResult
+
+Show MatchResult where
+  show (ConPat n tag args) = "ConPat " ++ show n ++ " " ++ show tag ++ " " ++ show args
+  show (DelayPat ty arg) = "DelayPat " ++ show ty ++ " " ++ show arg
+  show (ConstPat c) = "ConstPat " ++ show c
+
+findMatch : MatchResult -> List (TCaseAlt vars) -> Maybe (TCaseAlt vars)
+findMatch m = find $ matchAlt m
+  where
+    matchAlt : MatchResult -> TCaseAlt vars -> Bool
+    matchAlt (ConPat n tag _) (TConCase _ n' tag' _) = n == n' && tag == tag'
+    matchAlt (DelayPat _ _) (TDelayCase _ _ _ _) = True
+    matchAlt (ConstPat c) (TConstCase _ c' _) = c == c'
+    matchAlt _ (TDefaultCase _ _) = True
+    matchAlt _ _ = False
+
+optimiseTree : {vars : _} -> List (Name, MatchResult) -> CaseTree vars -> CaseTree vars
+
+optimiseCaseScope : {vars : _} -> List (Name, MatchResult) -> Name -> Name -> Int -> List Name -> TCaseScope vars -> TCaseScope vars
+optimiseCaseScope ps nm n tag args (TRHS tm) = TRHS $ optimiseTree ((nm, ConPat n tag args) :: ps) tm
+optimiseCaseScope ps nm n tag args (TArg c x sc)
+    = TArg c x $ optimiseCaseScope ps nm n tag (x :: args) sc
+
+optimiseAlt : {vars : _} -> List (Name, MatchResult) -> Name -> TCaseAlt vars -> TCaseAlt vars
+optimiseAlt ps nm (TConCase fc n tag vs)
+    -- = ConCase n tag args (optimiseTree ((nm, ConPat n tag args) :: ps) sc)
+    = TConCase fc n tag $ optimiseCaseScope ps nm n tag [] vs
+optimiseAlt ps nm (TDelayCase fc ty arg sc)
+    = TDelayCase fc ty arg $ optimiseTree ((nm, DelayPat ty arg) :: ps) sc
+optimiseAlt ps nm (TConstCase fc c sc)
+    = TConstCase fc c $ optimiseTree ((nm, ConstPat c) :: ps) sc
+optimiseAlt ps nm (TDefaultCase fc sc) = TDefaultCase fc $ optimiseTree ps sc
+
+pickCaseScope : {vars : _} -> {dropped : _} ->
+                List (Name, MatchResult) -> List Name ->
+                TCaseScope (vars ++ dropped) -> CaseTree vars
+pickCaseScope ps args (TRHS sc) = optimiseTree ps $ substCaseTree {vars} zero (mkSizeOf dropped) substEnv sc
+  where
+    substEnv : Subst Var dropped vars
+    substEnv = mkSubst args
+pickCaseScope ps args (TArg c x sc) = pickCaseScope {dropped=dropped:<x} ps args sc
+
+pickAlt : {vars : _} -> List (Name, MatchResult) -> MatchResult -> TCaseAlt vars -> CaseTree vars
+pickAlt ps (ConPat _ _ args) (TConCase _ _ _ vs)
+    = pickCaseScope {dropped=[<]} ps args vs
+pickAlt ps (DelayPat ty arg) (TDelayCase fc ty' arg' sc)
+    = optimiseTree ps $ substCaseTree {vars} zero (mkSizeOf [< ty', arg']) substEnv sc
+  where
+    substEnv : Subst Var [< ty', arg'] vars
+    substEnv = mkSubst [ty, arg]
+pickAlt ps _ (TConstCase fc _ sc) = optimiseTree ps sc
+pickAlt ps _ (TDefaultCase fc sc) = optimiseTree ps sc
+pickAlt _ _ _ = ?Impossible
+
+optimiseTree ps (TCase fc c idx el ty alts)
+    = let name = nameAt el in
+        fromMaybe (TCase fc c idx el ty (map (optimiseAlt ps name) alts)) $ do
+          p <- lookup name ps
+          alt <- findMatch p alts
+          pure $ pickAlt ps p alt
+optimiseTree _ tm = tm
+
 -- Returns the case tree under the yet-to-be-bound lambdas,
 -- and a list of the clauses that aren't reachable
 makePMDef : {auto c : Ref Ctxt Defs} ->
@@ -1549,6 +1622,8 @@ makePMDef fc ct phase fn ty clauses
          logC "compile.casetree.getpmdef" 20 $
            do t <- toFullNames treeTm
               pure $ "Compiled to: " ++ show t ++ "\nWith " ++ show args'
+         let t = optimiseTree [] t
+         log "compile.casetree.getpmdef" 20 $ "Optimised to: " ++ show t
          let allRHS = findReached t
          log "compile.casetree.clauses" 25 $
            "All RHSes: " ++ (show allRHS)

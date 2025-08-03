@@ -279,6 +279,39 @@ export
 Weaken TCaseScope where
   weakenNs ns t = insertCaseScopeNames zero ns t
 
+export
+substCaseTree : Substitutable Var CaseTree
+
+substCaseScope : Substitutable Var TCaseScope
+substCaseScope outer dropped env (TRHS tm)
+    = TRHS $ substCaseTree outer dropped env tm
+substCaseScope outer dropped env (TArg c x sc)
+    = TArg c x $ substCaseScope (suc outer) dropped env sc
+
+substCaseAlt : Substitutable Var TCaseAlt
+substCaseAlt sOuter sDropped env (TConCase fc n t sc)
+    = TConCase fc n t $ substCaseScope sOuter sDropped env sc
+substCaseAlt outer dropped env (TDelayCase fc tyn valn sc)
+    = TDelayCase fc tyn valn (substCaseTree (suc $ suc outer) dropped env sc)
+substCaseAlt outer dropped env (TConstCase fc c sc)
+    = TConstCase fc c (substCaseTree outer dropped env sc)
+substCaseAlt outer dropped env (TDefaultCase fc sc)
+    = TDefaultCase fc (substCaseTree outer dropped env sc)
+
+substCaseAlts : Substitutable Var (List . TCaseAlt)
+substCaseAlts outer dropped env = map (substCaseAlt outer dropped env)
+
+substCaseTree outer dropped env (TCase fc c idx prf scTy alts)
+    = do let MkVar p = Subst.find id outer dropped (MkVar prf) env
+         TCase fc c _ p (substTermVar outer dropped env scTy)
+                        (substCaseAlts outer dropped env alts)
+substCaseTree outer dropped env (STerm i vs x)
+    = STerm i
+        (map (bimap (flip (Subst.find id outer dropped) env) (substTermVar outer dropped env)) vs)
+        (substTermVar outer dropped env x)
+substCaseTree outer dropped env (TUnmatched fc msg) = TUnmatched fc msg
+substCaseTree outer dropped env (TImpossible fc) = TImpossible fc
+
 total
 getNames : (forall vs . NameMap Bool -> Term vs -> NameMap Bool) ->
            NameMap Bool -> CaseTree vars -> NameMap Bool

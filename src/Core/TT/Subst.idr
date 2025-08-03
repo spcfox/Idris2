@@ -65,3 +65,8 @@ Substitutable val tm
     Subst val dropped vars ->
     tm ((vars ++ dropped) ++ outer) ->
     tm (vars ++ outer)
+
+export
+map : (forall vars. tm vars -> tm' vars) -> Subst tm dropped vars -> Subst tm' dropped vars
+map f [<] = [<]
+map f (ts :< t) = map f ts :< f t
