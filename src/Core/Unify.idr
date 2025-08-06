@@ -888,11 +888,7 @@ mutual
                          | _ => postponeS swap loc mode "Delayed hole" env
                                           (NApp loc (NMeta mname mref margs) $ map (EmptyFC,) margs')
                                           tmnf
-                     let qopts = MkQuoteOpts False False
-                                             (Just defs.options.elabDirectives.nfThreshold)
-                     tm <- catch (quoteOpts qopts
-                                            empty env tmnf)
-                                 (\err => quote defs env tmnf)
+                     tm <- quote empty env tmnf
                      Just tm <- occursCheck loc env mode mname tm
                          | _ => postponeS swap loc mode "Occurs check failed" env
                                           (NApp loc (NMeta mname mref margs) $ map (EmptyFC,) margs')
@@ -1346,32 +1342,7 @@ mutual
                 else
                   do xnf <- evalClosure defs x
                      ynf <- evalClosure defs y
-                     -- If one's a meta and the other isn't, don't reduce at
-                     -- all
-                     case (xnf, ynf) of
-                         -- They might be equal, don't want to make a cycle
-                         (NApp _ (NMeta _ _ _) _, NApp _ (NMeta _ _ _) _)
-                               => unify mode loc env xnf ynf
-                         (NApp _ (NMeta _ i _) _, _) =>
-                            do ynf' <- evalClosure empty y
-                               xtm <- quote empty env xnf
-                               ytm <- quote empty env ynf'
-                               cs <- unify mode loc env !(nf empty env xtm)
-                                                        !(nf empty env ytm)
-                               case constraints cs of
-                                    [] => pure cs
-                                    _ => do ynf <- evalClosure defs y
-                                            unify mode loc env xnf ynf
-                         (_, NApp _ (NMeta _ i _ ) _) =>
-                            do xnf' <- evalClosure empty x
-                               xtm <- quote empty env xnf'
-                               ytm <- quote empty env ynf
-                               cs <- unify mode loc env !(nf empty env ytm)
-                                                        !(nf empty env xtm)
-                               case constraints cs of
-                                    [] => pure cs
-                                    _ => unify mode loc env xnf ynf
-                         _ => unify mode loc env xnf ynf
+                     unify mode loc env xnf ynf
 
 export
 setInvertible : {auto c : Ref Ctxt Defs} ->
