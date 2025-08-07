@@ -991,18 +991,21 @@ mutual
   caseGroups : {pvar, vars, todo : _} ->
                {auto i : Ref PName Int} ->
                {auto c : Ref Ctxt Defs} ->
-               FC -> Name -> Phase ->
+               FC -> Name -> Phase -> (allCases : Bool) ->
                {idx : Nat} -> (0 p : IsVar pvar idx vars) -> Term vars ->
                List (Group vars todo) -> Maybe (CaseTree vars) ->
                Core (CaseTree vars)
-  caseGroups {vars} fc fn phase el ty gs errorCase
+  caseGroups {vars} fc fn phase allCases el ty gs errorCase
       = do g <- altGroups gs
            pure (Case _ el (resolveNames vars ty) g)
     where
       altGroups : List (Group vars todo) -> Core (List (CaseAlt vars))
-      altGroups [] = maybe (pure [])
-                           (\e => pure [DefaultCase e])
-                           errorCase
+      altGroups []
+          = if allCases
+               then pure []
+               else maybe (pure [])
+                          (\e => pure [DefaultCase e])
+                          errorCase
       altGroups (ConGroup {newargs} cn tag rest :: cs)
           = do crest <- match fc fn phase rest (map (weakenNs (mkSizeOf newargs)) errorCase)
                cs' <- altGroups cs
@@ -1034,7 +1037,16 @@ mutual
            ty <- case fty of
                       Known _ t => pure t
                       _ => throw (CaseCompile fc fn UnknownType)
-           caseGroups fc fn phase pprf ty groups err
+           singleCon <- do let (t, _) = getFnArgs ty
+                           let Ref _ _ n = t
+                             | _ => pure False
+                           defs <- get Ctxt
+                           Just gdef <- lookupCtxtExact n (gamma defs)
+                             | _ => pure False
+                           let TCon _ _ _ _ _ _ (Just cons) _ = definition gdef
+                             | _ => pure False
+                           pure $ length cons == 1
+           caseGroups fc fn phase singleCon pprf ty groups err
 
   varRule : {a, vars, todo : _} ->
             {auto i : Ref PName Int} ->
