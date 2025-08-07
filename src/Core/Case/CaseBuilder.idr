@@ -11,6 +11,8 @@ import Core.Options
 import Core.TT
 import Core.Value
 
+import TTImp.ProcessBuiltin
+
 import Idris.Pretty.Annotations
 
 import Data.List
@@ -1037,13 +1039,19 @@ mutual
            ty <- case fty of
                       Known _ t => pure t
                       _ => throw (CaseCompile fc fn UnknownType)
-           singleCon <- do let (t, _) = getFnArgs ty
-                           let Ref _ _ n = t
+           singleCon <- do let PCon _ dn _ _ _ = pat
                              | _ => pure False
                            defs <- get Ctxt
-                           Just gdef <- lookupCtxtExact n (gamma defs)
+                           Just dataDef <- lookupCtxtExact dn (gamma defs)
                              | _ => pure False
-                           let TCon _ _ _ _ _ _ (Just cons) _ = definition gdef
+                           let Just (_ ** t) = getReturnType (type dataDef)
+                             | _ => pure False
+                           let Ref _ _ tn = getFn t
+                             | _ => pure False
+                           defs <- get Ctxt
+                           Just tyDef <- lookupCtxtExact tn (gamma defs)
+                             | _ => pure False
+                           let TCon _ _ _ _ _ _ (Just cons) _ = definition tyDef
                              | _ => pure False
                            pure $ length cons == 1
            caseGroups fc fn phase singleCon pprf ty groups err

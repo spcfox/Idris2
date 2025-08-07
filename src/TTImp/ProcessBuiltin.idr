@@ -32,6 +32,7 @@ showDefType (UniverseLevel {}) = "universe level"
 showDefType Delayed = "delayed"
 
 ||| Get the return type.
+export
 getReturnType : {vars : _} -> Term vars -> Maybe (vars ** Term vars)
 getReturnType tm@(Bind _ x b scope) = case b of
     Let _ _ val _ => getReturnType $ subst {x} val scope
