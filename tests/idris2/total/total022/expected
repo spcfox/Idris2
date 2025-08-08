@@ -12,15 +12,9 @@ Compile time tree: case {arg:0} of
     _ => case {arg:3} of
       Just {e:0} {e:1} => case {e:1} of
         Refl {e:2} {e:3} => f {arg:2} {arg:1} {arg:2} Nothing
-  _ => case {arg:3} of
-    Just {e:0} {e:1} => case {e:1} of
-      Refl {e:2} {e:3} => f {arg:2} {arg:1} {arg:2} Nothing
 Compiled: \ {arg:0}, {arg:1}, {arg:2}, {arg:3} => case {arg:0} of
   { _builtin.NIL {tag = 0} [nil] => case {arg:3} of  { _builtin.NOTHING {tag = 0} [nothing] => ___; _ => case {arg:3} of  { _builtin.JUST {tag = 1} [just] {e:1} => Main.f {arg:2} {arg:1} {arg:2} (_builtin.NOTHING {tag = 0} [nothing])}}
   ; _builtin.CONS {tag = 1} [cons] {e:6} {e:7} => case {arg:3} of  { _builtin.NOTHING {tag = 0} [nothing] => Main.f {e:7} {arg:1} {arg:2} (_builtin.NOTHING {tag = 0} [nothing]); _ => case {arg:3} of  { _builtin.JUST {tag = 1} [just] {e:1} => Main.f {arg:2} {arg:1} {arg:2} (_builtin.NOTHING {tag = 0} [nothing])}}
-  ; _ => case {arg:3} of
-           { _builtin.JUST {tag = 1} [just] {e:1} => Main.f {arg:2} {arg:1} {arg:2} (_builtin.NOTHING {tag = 0} [nothing])
-           }
   }
 Refers to: Main.f, Prelude.Basics.List, Prelude.Basics.(::), Builtin.MkUnit, Builtin.(===), Prelude.Types.Nothing
 Refers to (runtime): _builtin.CONS, _builtin.JUST, _builtin.NIL, _builtin.NOTHING, Main.f

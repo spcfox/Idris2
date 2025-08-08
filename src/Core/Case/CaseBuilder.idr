@@ -23,6 +23,7 @@ import Data.Vect
 import Libraries.Data.List.SizeOf
 import Libraries.Data.List.LengthMatch
 import Libraries.Data.List.Quantifiers.Extra as Lib
+import Libraries.Data.NatSet
 import Libraries.Data.SortedSet
 import Libraries.Data.SnocList.SizeOf
 import Libraries.Data.SnocList.LengthMatch
@@ -993,17 +994,17 @@ mutual
   caseGroups : {pvar, vars, todo : _} ->
                {auto i : Ref PName Int} ->
                {auto c : Ref Ctxt Defs} ->
-               FC -> Name -> Phase -> (allCases : Bool) ->
+               FC -> Name -> Phase -> (allMatched : Bool) ->
                {idx : Nat} -> (0 p : IsVar pvar idx vars) -> Term vars ->
                List (Group vars todo) -> Maybe (CaseTree vars) ->
                Core (CaseTree vars)
-  caseGroups {vars} fc fn phase allCases el ty gs errorCase
+  caseGroups {vars} fc fn phase allMatched el ty gs errorCase
       = do g <- altGroups gs
            pure (Case _ el (resolveNames vars ty) g)
     where
       altGroups : List (Group vars todo) -> Core (List (CaseAlt vars))
       altGroups []
-          = if allCases
+          = if allMatched
                then pure []
                else maybe (pure [])
                           (\e => pure [DefaultCase e])
@@ -1039,19 +1040,33 @@ mutual
            ty <- case fty of
                       Known _ t => pure t
                       _ => throw (CaseCompile fc fn UnknownType)
-           singleCon <- do let PCon _ dn _ _ _ = pat
-                             | _ => pure False
-                           defs <- get Ctxt
-                           Just dataDef <- lookupCtxtExact dn (gamma defs)
-                             | _ => pure False
-                           let DCon _ _ tn _ = definition dataDef
-                             | _ => pure False
-                           Just tyDef <- lookupCtxtExact tn (gamma defs)
-                             | _ => pure False
-                           let TCon _ _ _ _ _ _ (Just cons) _ = definition tyDef
-                             | _ => pure False
-                           pure $ length cons == 1
-           caseGroups fc fn phase singleCon pprf ty groups err
+           allMached <- checkAllMatched groups
+           caseGroups fc fn phase allMached pprf ty groups err
+      where
+        collectMatchedCons : NatSet -> List (Group vars todo) -> Core NatSet
+        collectMatchedCons m [] = pure m
+        collectMatchedCons m (ConGroup _ i _ :: gs)
+            = collectMatchedCons (insert (cast i) m) gs
+        collectMatchedCons m _
+            = throw (InternalError "Impossible happened: ConGroup with non-constructor group")
+
+        checkAllMatched : List (Group vars todo) -> Core Bool
+        checkAllMatched [] = throw (InternalError "Impossible happened: empty group list")
+        checkAllMatched (DelayGroup _ :: _) = pure True
+        checkAllMatched (ConstGroup _ _ :: _) = pure False
+        checkAllMatched gs@(ConGroup n _ _ :: _)
+          = do defs <- get Ctxt
+               Just dataDef <- lookupCtxtExact n (gamma defs)
+                 | _ => pure False -- Can be primitive type
+               let DCon _ _ tyn _ = definition dataDef
+                 | _ => pure False
+               Just tyDef <- lookupCtxtExact tyn (gamma defs)
+                 | _ => undefinedName fc tyn
+               let TCon _ _ _ _ _ _ (Just cons) _ = definition tyDef
+                 | _ => throw (InternalError "Impossible happened: type of data constructor is not a type constructor")
+               res <- collectMatchedCons empty gs
+               let allMatched = cast {to=Integer} res == cast (allLessThan $ length cons)
+               pure allMatched
 
   varRule : {a, vars, todo : _} ->
             {auto i : Ref PName Int} ->
