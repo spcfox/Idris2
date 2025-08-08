@@ -89,6 +89,7 @@ data Def : Type where
                  Def
     Builtin : {arity : Nat} -> PrimFn arity -> Def
     DCon : (tag : Int) -> (arity : Nat) ->
+           (type : Name) ->
            (newtypeArg : Maybe (Bool, Nat)) ->
                -- if only constructor, and only one argument is non-Rig0,
                -- flag it here. The Nat is the unerased argument position.
@@ -134,7 +135,7 @@ defNameType (PMDef {}) = Just Func
 defNameType (ExternDef {}) = Just Func
 defNameType (ForeignDef {}) = Just Func
 defNameType (Builtin {}) = Just Func
-defNameType (DCon tag ar _) = Just (DataCon tag ar)
+defNameType (DCon tag ar _ _) = Just (DataCon tag ar)
 defNameType (TCon tag ar _ _ _ _ _ _) = Just (TyCon tag ar)
 defNameType (Hole {}) = Just Func
 defNameType (BySearch {}) = Nothing
@@ -152,7 +153,7 @@ Show Def where
                 , "Compile time tree: " ++ show ct
                 , "Run time tree: " ++ show rt
                 ]
-  show (DCon t a nt)
+  show (DCon t a _ nt)
       = "DataCon " ++ show t ++ " " ++ show a
            ++ maybe "" (\n => " (newtype by " ++ show n ++ ")") nt
   show (TCon t a ps ds u ms cons det)

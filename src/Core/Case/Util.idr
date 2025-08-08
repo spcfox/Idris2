@@ -34,7 +34,7 @@ getCons defs (NTCon _ tn _ _ _)
         = do Just gdef <- lookupCtxtExact cn (gamma defs)
                   | _ => pure Nothing
              case (gdef.definition, gdef.type) of
-                  (DCon t arity _, ty) =>
+                  (DCon t arity _ _, ty) =>
                         pure . Just $ MkDataCon cn t arity
                   _ => pure Nothing
 getCons defs _ = pure []

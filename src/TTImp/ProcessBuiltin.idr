@@ -32,7 +32,6 @@ showDefType (UniverseLevel {}) = "universe level"
 showDefType Delayed = "delayed"
 
 ||| Get the return type.
-export
 getReturnType : {vars : _} -> Term vars -> Maybe (vars ** Term vars)
 getReturnType tm@(Bind _ x b scope) = case b of
     Let _ _ val _ => getReturnType $ subst {x} val scope
@@ -200,7 +199,7 @@ checkNatCons c cons ty fc = case !(foldr checkCon (pure (Nothing, Nothing)) cons
     checkCon : (Name, GlobalDef) -> Core (Maybe Name, Maybe Name) -> Core (Maybe Name, Maybe Name)
     checkCon (n, gdef) cons = do
         (zero, succ) <- cons
-        let DCon _ arity _ = gdef.definition
+        let DCon _ arity _ _ = gdef.definition
             | def => throw $ GenericMsg fc $ "Expected data constructor, found:" ++ showDefType def
         case arity `minus` size gdef.eraseArgs of
             0 => case zero of

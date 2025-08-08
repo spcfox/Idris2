@@ -514,9 +514,9 @@ compileBody redok n (PMDef pminfo args treeCT treeRT pats)
 compileBody _ n (ExternDef arity) = pure $ blockedAppWith n []
 compileBody _ n (ForeignDef arity xs) = pure $ blockedAppWith n []
 compileBody _ n (Builtin x) = pure $ compileBuiltin n x
-compileBody _ n (DCon tag Z newtypeArg)
+compileBody _ n (DCon tag Z _ newtypeArg)
     = pure $ Vector (cast tag) [toScheme !(toResolvedNames n), toScheme emptyFC]
-compileBody _ n (DCon tag arity newtypeArg)
+compileBody _ n (DCon tag arity _ newtypeArg)
     = do let args = mkArgNs 0 arity
          argvs <- mkArgs args
          let body

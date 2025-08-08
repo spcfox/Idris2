@@ -48,7 +48,7 @@ lookupNameInfo n ctxt
                    res)
   where
     getNameType : Def -> NameType
-    getNameType (DCon t a _) = DataCon t a
+    getNameType (DCon t a _ _) = DataCon t a
     getNameType (TCon t a _ _ _ _ _ _) = TyCon t a
     getNameType _ = Func
 

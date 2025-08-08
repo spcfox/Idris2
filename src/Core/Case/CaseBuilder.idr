@@ -1044,11 +1044,8 @@ mutual
                            defs <- get Ctxt
                            Just dataDef <- lookupCtxtExact dn (gamma defs)
                              | _ => pure False
-                           let Just (_ ** t) = getReturnType (type dataDef)
+                           let DCon _ _ tn _ = definition dataDef
                              | _ => pure False
-                           let Ref _ _ tn = getFn t
-                             | _ => pure False
-                           defs <- get Ctxt
                            Just tyDef <- lookupCtxtExact tn (gamma defs)
                              | _ => pure False
                            let TCon _ _ _ _ _ _ (Just cons) _ = definition tyDef

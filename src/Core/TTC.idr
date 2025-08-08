@@ -1000,7 +1000,7 @@ TTC Def where
       = do tag 3; toBuf a; toBuf cs
   toBuf (Builtin a)
       = throw (InternalError "Trying to serialise a Builtin")
-  toBuf (DCon t arity nt) = do tag 4; toBuf t; toBuf arity; toBuf nt
+  toBuf (DCon t arity ty nt) = do tag 4; toBuf t; toBuf arity; toBuf ty; toBuf nt
   toBuf (TCon t arity parampos detpos u ms datacons dets)
       = do tag 5; toBuf t; toBuf arity; toBuf parampos
            toBuf detpos; toBuf u; toBuf ms; toBuf datacons
@@ -1028,8 +1028,8 @@ TTC Def where
              3 => do a <- fromBuf
                      cs <- fromBuf
                      pure (ForeignDef a cs)
-             4 => do t <- fromBuf; a <- fromBuf; nt <- fromBuf
-                     pure (DCon t a nt)
+             4 => do t <- fromBuf; a <- fromBuf;  ty <- fromBuf; nt <- fromBuf
+                     pure (DCon t a ty nt)
              5 => do t <- fromBuf; a <- fromBuf
                      ps <- fromBuf; dets <- fromBuf;
                      u <- fromBuf

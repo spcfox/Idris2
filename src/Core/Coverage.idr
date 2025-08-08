@@ -83,7 +83,7 @@ conflict defs env nfty n
     = do Just gdef <- lookupCtxtExact n (gamma defs)
               | Nothing => pure False
          case (definition gdef, type gdef) of
-              (DCon t arity _, dty)
+              (DCon t arity _ _, dty)
                   => do Nothing <- conflictNF 0 nfty !(nf defs Env.empty dty)
                             | Just ms => pure $ conflictMatch ms
                         pure True

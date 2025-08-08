@@ -47,7 +47,7 @@ namespace Raw
         [ "Arguments" <++> cast (prettyList $ toList args)
         , header "Compile time tree" <++> reAnnotate Syntax ct
         ]
-  prettyDef (DCon tag arity nt) =
+  prettyDef (DCon tag arity _ nt) =
       vcat $ header "Data constructor" :: map (indent 2)
           ([ "tag:" <++> byShow tag
            , "arity:" <++> byShow arity
@@ -99,7 +99,7 @@ namespace Resugared
         [ "Arguments" <++> cast (prettyList $ toList args)
         , header "Compile time tree" <++> reAnnotate Syntax ct
         ]
-  prettyDef (DCon tag arity nt) = pure $
+  prettyDef (DCon tag arity _ nt) = pure $
       vcat $ header "Data constructor" :: map (indent 2)
           ([ "tag:" <++> byShow tag
            , "arity:" <++> byShow arity

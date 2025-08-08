@@ -38,8 +38,8 @@ numArgs defs (Ref _ _ n)
     = do Just gdef <- lookupCtxtExact n (gamma defs)
               | Nothing => pure (Arity 0)
          case definition gdef of
-           DCon _ arity Nothing => pure (EraseArgs arity (eraseArgs gdef))
-           DCon _ arity (Just (_, pos)) => pure (NewTypeBy arity pos)
+           DCon _ arity _ Nothing => pure (EraseArgs arity (eraseArgs gdef))
+           DCon _ arity _ (Just (_, pos)) => pure (NewTypeBy arity pos)
            PMDef _ args _ _ _ => pure (EraseArgs (length args) (eraseArgs gdef))
            ExternDef arity => pure (Arity arity)
            ForeignDef arity _ => pure (Arity arity)
@@ -231,7 +231,7 @@ mutual
                         pure $ MkConAlt xn TYCON Nothing args !(toCExpTree n sc)
                                   :: !(conCases n ns)
            case (definition gdef) of
-                DCon _ arity (Just pos) => conCases n ns -- skip it
+                DCon _ arity _ (Just pos) => conCases n ns -- skip it
                 _ => do xn <- getFullName x
                         let (args' ** sub)
                             = mkDropSubst 0 (eraseArgs gdef) vars args
@@ -242,7 +242,7 @@ mutual
                            else pure $ MkConAlt xn !(dconFlag xn) Nothing args' (shrinkCExp sub sc') :: ns'
     where
       dcon : Def -> Bool
-      dcon (DCon _ _ _) = True
+      dcon (DCon _ _ _ _) = True
       dcon _ = False
   conCases n (_ :: ns) = conCases n ns
 
@@ -280,7 +280,7 @@ mutual
                 -- that we've erased, it means it has interacted with the
                 -- outside world, so we need to evaluate to keep the
                 -- side effect.
-                Just (DCon _ arity (Just (noworld, pos))) =>
+                Just (DCon _ arity _ (Just (noworld, pos))) =>
 -- FIXME: We don't need the commented out bit *for now* because io_bind
 -- isn't being inlined, but it does need to be a little bit cleverer to
 -- get the best performance.
@@ -579,7 +579,7 @@ toCDef n ty _ (Builtin {arity} op)
     = let (ns ** args) = mkArgList 0 arity in
           pure $ MkFun _ (COp emptyFC op (map toArgExp (getVars args)))
 
-toCDef n _ _ (DCon tag arity pos)
+toCDef n _ _ (DCon tag arity _ pos)
     = do let nt = snd <$> pos
          defs <- get Ctxt
          args <- numArgs {vars = Scope.empty} defs (Ref EmptyFC (DataCon tag arity) n)
