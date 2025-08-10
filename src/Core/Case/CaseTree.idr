@@ -232,6 +232,10 @@ mutual
       = DefaultCase (insertCaseNames outer ns ct)
 
 export
+Weaken CaseAlt where
+  weakenNs ns t = insertCaseAltNames zero ns t
+
+export
 Weaken CaseTree where
   weakenNs ns t = insertCaseNames zero ns t
 

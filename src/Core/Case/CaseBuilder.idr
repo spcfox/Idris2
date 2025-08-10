@@ -957,7 +957,7 @@ mutual
           {auto i : Ref PName Int} ->
           {auto c : Ref Ctxt Defs} ->
           FC -> Name -> Phase ->
-          List01 True (PatClause vars todo) -> (err : Maybe (CaseTree vars)) ->
+          List01 True (PatClause vars todo) -> (err : List (CaseAlt vars)) ->
           Core (CaseTree vars)
   -- Before 'partition', reorder the arguments so that the one we
   -- inspect next has a concrete type that is the same in all cases, and
@@ -986,26 +986,24 @@ mutual
                {auto c : Ref Ctxt Defs} ->
                FC -> Name -> Phase ->
                {idx : Nat} -> (0 p : IsVar pvar idx vars) -> Term vars ->
-               List (Group vars todo) -> Maybe (CaseTree vars) ->
+               List (Group vars todo) -> List (CaseAlt vars) ->
                Core (CaseTree vars)
-  caseGroups {vars} fc fn phase el ty gs errorCase
+  caseGroups {vars} fc fn phase el ty gs errorCases
       = do g <- altGroups gs
            pure (Case _ el (resolveNames vars ty) g)
     where
       altGroups : List (Group vars todo) -> Core (List (CaseAlt vars))
-      altGroups [] = maybe (pure [])
-                           (\e => pure [DefaultCase e])
-                           errorCase
+      altGroups [] = pure errorCases
       altGroups (ConGroup {newargs} cn tag rest :: cs)
-          = do crest <- match fc fn phase rest (map (weakenNs (mkSizeOf newargs)) errorCase)
+          = do crest <- match fc fn phase rest (map (weakenNs (mkSizeOf newargs)) errorCases)
                cs' <- altGroups cs
                pure (ConCase cn tag newargs crest :: cs')
       altGroups (DelayGroup {tyarg} {valarg} rest :: cs)
-          = do crest <- match fc fn phase rest (map (weakenNs (mkSizeOf [tyarg, valarg])) errorCase)
+          = do crest <- match fc fn phase rest (map (weakenNs (mkSizeOf [tyarg, valarg])) errorCases)
                cs' <- altGroups cs
                pure (DelayCase tyarg valarg crest :: cs')
       altGroups (ConstGroup c rest :: cs)
-          = do crest <- match fc fn phase rest errorCase
+          = do crest <- match fc fn phase rest errorCases
                cs' <- altGroups cs
                pure (ConstCase c crest :: cs')
 
@@ -1014,7 +1012,7 @@ mutual
             {auto c : Ref Ctxt Defs} ->
             FC -> Name -> Phase ->
             List01 True (PatClause vars (a :: todo)) ->
-            Maybe (CaseTree vars) ->
+            List (CaseAlt vars) ->
             Core (CaseTree vars)
   -- ASSUMPTION, not expressed in the type, that the patterns all have
   -- the same variable (pprf) for the first argument. If not, the result
@@ -1033,7 +1031,7 @@ mutual
             {auto c : Ref Ctxt Defs} ->
             FC -> Name -> Phase ->
             List01 True (PatClause vars (a :: todo)) ->
-            Maybe (CaseTree vars) ->
+            List (CaseAlt vars) ->
             Core (CaseTree vars)
   varRule {vars} {a} fc fn phase cs err
       = do alts' <- traverseList01 updateVar cs
@@ -1063,17 +1061,17 @@ mutual
             {ps : List01 True (PatClause vars (a :: todo))} ->
             FC -> Name -> Phase ->
             Partitions ps ->
-            Maybe (CaseTree vars) ->
+            List (CaseAlt vars) ->
             Core (CaseTree vars)
   mixture fc fn phase (ConClauses {ps} cs rest) err
       = do fallthrough <- case ps of
                 [] => pure err
-                _ :: _ => Just <$> mixture fc fn phase rest err
+                _ :: _ => singleton . DefaultCase <$> mixture fc fn phase rest err
            conRule fc fn phase cs fallthrough
   mixture fc fn phase (VarClauses {ps} vs rest) err
       = do fallthrough <- case ps of
                 [] => pure err
-                _ :: _ => Just <$> mixture fc fn phase rest err
+                _ :: _ => singleton . DefaultCase <$> mixture fc fn phase rest err
            varRule fc fn phase vs fallthrough
 
 export
@@ -1167,9 +1165,8 @@ export
 patCompile : {auto c : Ref Ctxt Defs} ->
              FC -> Name -> Phase ->
              ClosedTerm -> List01 True (List Pat, ClosedTerm) ->
-             Maybe (CaseTree Scope.empty) ->
              Core (args ** CaseTree args)
-patCompile fc fn phase ty (p :: ps) def
+patCompile fc fn phase ty (p :: ps)
     = do let (ns ** n) = getNames 0 (fst p)
          pats <- mkPatClausesFrom 0 ns (p :: ps)
          -- low verbosity level: pretty print fully resolved names
@@ -1180,9 +1177,7 @@ patCompile fc fn phase ty (p :: ps) def
          -- higher verbosity: dump the raw data structure
          log "compile.casetree" 10 $ show $ forget pats
          i <- newRef PName (the Int 0)
-         cases <- match fc fn phase pats
-                        (rewrite sym (appendNilRightNeutral ns) in
-                                 map (weakenNs n) def)
+         cases <- match fc fn phase pats []
          pure (_ ** cases)
   where
     mkPatClausesFrom : Int -> (args : Scope) ->
@@ -1219,10 +1214,10 @@ toPatClause fc n (lhs, rhs)
 -- the names of the top level variables we created are returned in 'args'
 export
 simpleCase : {auto c : Ref Ctxt Defs} ->
-             FC -> Phase -> Name -> ClosedTerm -> (def : Maybe (CaseTree Scope.empty)) ->
+             FC -> Phase -> Name -> ClosedTerm ->
              (clauses : List01 True (ClosedTerm, ClosedTerm)) ->
              Core (args ** CaseTree args)
-simpleCase fc phase fn ty def clauses
+simpleCase fc phase fn ty clauses
     = do logC "compile.casetree" 5 $
                 do cs <- traverse (\ (c,d) => [| MkPair (toFullNames c) (toFullNames d) |]) (forget clauses)
                    pure $ "simpleCase: Clauses:\n" ++ show (
@@ -1230,7 +1225,7 @@ simpleCase fc phase fn ty def clauses
                        byShow (fst lrhs) <++> pretty "=" <++> byShow (snd lrhs))
          ps <- traverseList01 (toPatClause fc fn) clauses
          defs <- get Ctxt
-         patCompile fc fn phase ty ps def
+         patCompile fc fn phase ty ps
 
 mutual
   findReachedAlts : CaseAlt ns' -> List Int
@@ -1339,7 +1334,7 @@ getPMDef fc phase fn ty []
 getPMDef fc phase fn ty clauses@(_ :: _)
     = do defs <- get Ctxt
          let cs = map (toClosed defs) (labelPat 0 $ fromList clauses)
-         (_ ** t) <- simpleCase fc phase fn ty Nothing cs
+         (_ ** t) <- simpleCase fc phase fn ty cs
          logC "compile.casetree.getpmdef" 20 $
            pure $ "Compiled to: " ++ show !(toFullNames t)
          let reached = findReached t
