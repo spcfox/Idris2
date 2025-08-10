@@ -1065,16 +1065,16 @@ mutual
             Partitions ps ->
             Maybe (CaseTree vars) ->
             Core (CaseTree vars)
-  mixture fc fn phase (ConClauses {ps=[]} cs rest) err
-      = conRule fc fn phase cs err
-  mixture fc fn phase (ConClauses {ps=_::_} cs rest) err
-      = do fallthrough <- mixture fc fn phase rest err
-           conRule fc fn phase cs (Just fallthrough)
-  mixture fc fn phase (VarClauses {ps=[]} vs rest) err
-      = varRule fc fn phase vs err
-  mixture fc fn phase (VarClauses {ps=_::_} vs rest) err
-      = do fallthrough <- mixture fc fn phase rest err
-           varRule fc fn phase vs (Just fallthrough)
+  mixture fc fn phase (ConClauses {ps} cs rest) err
+      = do fallthrough <- case ps of
+                [] => pure err
+                _ :: _ => Just <$> mixture fc fn phase rest err
+           conRule fc fn phase cs fallthrough
+  mixture fc fn phase (VarClauses {ps} vs rest) err
+      = do fallthrough <- case ps of
+                [] => pure err
+                _ :: _ => Just <$> mixture fc fn phase rest err
+           varRule fc fn phase vs fallthrough
 
 export
 mkPat : {auto c : Ref Ctxt Defs} -> List Pat -> ClosedTerm -> ClosedTerm -> Core Pat
