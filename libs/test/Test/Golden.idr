@@ -519,6 +519,13 @@ data ThreadInstruction : Type where
   ||| An indication for the thread to stop
   Stop : ThreadInstruction
 
+replicateM : Monad m => Nat -> m a -> m (List a)
+replicateM 0 _ = pure []
+replicateM (S n) a = [| a :: replicateM n a |]
+
+replicateM_ : Monad m => Nat -> m () -> m ()
+replicateM_ = ignore .: replicateM
+
 ||| Sends the given tests on the given @Channel@, then sends `nThreads` many
 ||| 'Stop' @ThreadInstruction@s to stop the threads running the tests.
 |||
@@ -534,7 +541,7 @@ testSender testChan (S k) [] =
   do channelPut testChan Stop
      testSender testChan k []
 testSender testChan nThreads (test :: tests) =
-  do channelPut testChan (Run test)
+  do replicateM_ 10000 $ channelPut testChan (Run test)
      testSender testChan nThreads tests
 
 ||| A result from a test-runner/thread

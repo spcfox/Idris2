@@ -1,5 +1,5 @@
 INTERACTIVE ?= --interactive
-threads ?= $(shell (nproc || sysctl -n hw.ncpu) 2>/dev/null || echo 1)
+threads ?= 1
 
 .PHONY: testbin test
 
