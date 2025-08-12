@@ -541,7 +541,7 @@ testSender testChan (S k) [] =
   do channelPut testChan Stop
      testSender testChan k []
 testSender testChan nThreads (test :: tests) =
-  do replicateM_ 10000 $ channelPut testChan (Run test)
+  do replicateM_ 10 $ channelPut testChan (Run test)
      testSender testChan nThreads tests
 
 ||| A result from a test-runner/thread
