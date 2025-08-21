@@ -647,10 +647,6 @@ dumpHole s n hole
                     do logString depth s.topic n $
                          "\t  " ++ show !(toFullNames x)
                                 ++ " =?= " ++ show !(toFullNames y)
-                       empty <- clearDefs defs
-                       log s 5 $
-                         "\t    from " ++ show !(full (gamma empty) x)
-                            ++ " =?= " ++ show !(full (gamma empty) y)
                             ++ if lazy then "\n\t(lazy allowed)" else ""
 
 export
