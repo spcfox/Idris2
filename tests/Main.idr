@@ -204,7 +204,39 @@ commandLineTests = testsInDir "cli" "Command-line interface"
 
 main : IO ()
 main = runner $
-  [ !chezTests
+  [ !ttimpTests
+  , !idrisTestsBasic
+  --, !idrisTestsCoverage
+  , !idrisTestsTermination
+  , !idrisTestsCasetree
+  , !idrisTestsError
+  , !idrisTestsFailing
+  , !idrisTestsWarning
+  , !idrisTestsInteractive
+  , !idrisTestsInterface
+  , !idrisTestsLiterate
+  , !idrisTestsLinear
+  , !idrisTestsPerformance
+  , !idrisTestsRegression
+  , !idrisTestsData
+  , !idrisTestsBuiltin
+  , !idrisTestsEvaluator
+  , !idrisTestsREPL
+  , !idrisTestsTotality
+  , !idrisTestsSchemeEval
+  , !idrisTestsReflection
+  , !idrisTestsWith
+  , !idrisTestsOperators
+  , !idrisTestsDebug
+  , !idrisTestsIPKG
+  , testPaths "idris2/misc" idrisTests
+  , !typeddTests
+  , !ideModeTests
+  , !preludeTests
+  , !baseLibraryTests
+  , !linearLibraryTests
+  , !contribLibraryTests
+  , !chezTests
   , !refcTests
   , !racketTests
   , !nodeTests
