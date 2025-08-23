@@ -206,7 +206,7 @@ main : IO ()
 main = runner $
   [ !ttimpTests
   , !idrisTestsBasic
-  --, !idrisTestsCoverage
+  , !idrisTestsCoverage
   , !idrisTestsTermination
   , !idrisTestsCasetree
   , !idrisTestsError
