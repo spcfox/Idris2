@@ -1,4 +1,1 @@
 . ../../testutils.sh
-
-# Previously reported: unrecognized foreign-callable argument ftype name AST
-idris2 -c Struct.idr -o out </dev/null

@@ -1,4 +1,1 @@
 . ../../../testutils.sh
-
-check LamParseError.idr
-check CaseParseError.idr

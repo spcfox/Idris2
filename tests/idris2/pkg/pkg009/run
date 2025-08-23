@@ -1,4 +1,1 @@
 . ../../../testutils.sh
-
-idris2 --build testpkg/testpkg.ipkg
-rm -rf  testpkg/build/

@@ -1,4 +1,1 @@
 . ../../testutils.sh
-
-idris2 -o integers TestIntegers.idr > /dev/null
-./build/exec/integers

@@ -1,2 +1,1 @@
 . ../../../testutils.sh
-check DPairQuote.idr

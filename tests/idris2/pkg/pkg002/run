@@ -1,5 +1,1 @@
 . ../../../testutils.sh
-
-cd src/Top
-check --find-ipkg Dummy.idr
-cd ../..

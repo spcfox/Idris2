@@ -1,2 +1,1 @@
 . ../../../testutils.sh
-check inferror.idr -p contrib

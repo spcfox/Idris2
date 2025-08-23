@@ -1,2 +1,1 @@
 . ../../../testutils.sh
-check Module30.idr

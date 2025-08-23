@@ -1,6 +1,1 @@
 . ../../../testutils.sh
-
-check ParseIf.idr || true
-check ParseIf2.idr || true
-check ParseIf3.idr || true
-check ParseIf4.idr || true

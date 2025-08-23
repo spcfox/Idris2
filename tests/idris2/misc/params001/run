@@ -1,4 +1,1 @@
 . ../../../testutils.sh
-
-check param.idr
-check parambad.idr

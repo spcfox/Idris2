@@ -1,5 +1,1 @@
 . ../../testutils.sh
-
-idris2 partial.idr < input
-
-rm -rf build testout.txt

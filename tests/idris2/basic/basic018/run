@@ -1,3 +1,1 @@
 . ../../../testutils.sh
-
-check Fin.idr

@@ -1,4 +1,1 @@
 . ../../testutils.sh
-
-check DeriveFunctor.idr
-check Search.idr

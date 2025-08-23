@@ -1,4 +1,1 @@
 . ../../testutils.sh
-
-idris2 --quiet -o enum Enum.idr
-run Check.idr

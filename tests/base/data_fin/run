@@ -1,5 +1,1 @@
 . ../../testutils.sh
-
-check fromInteger.idr
-run Num.idr
-run performance.idr

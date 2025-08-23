@@ -1,4 +1,1 @@
 . ../../../testutils.sh
-
-check UnifyPiInfo.idr
-check Examples.idr

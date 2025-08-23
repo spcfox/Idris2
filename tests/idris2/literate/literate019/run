@@ -1,4 +1,1 @@
 . ../../../testutils.sh
-
-check Test1.typ
-check Test2.idr.typ

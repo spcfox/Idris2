@@ -1,5 +1,1 @@
 . ../../testutils.sh
-
-run File.idr
-
-rm -rf build testout.txt

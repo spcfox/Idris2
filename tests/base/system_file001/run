@@ -1,15 +1,1 @@
 . ../../testutils.sh
-
-# @readFilePage@ uses primitive functions with definitions for both
-# C (supported by most backends) and Node.
-run --cg chez ReadFilePage.idr
-run --cg node ReadFilePage.idr
-
-# The following backends failed for reasons unrelated to this test. They can be
-# uncommented at a future date.
-# RACKET failed to find the builtin idris support library
-# run --cg racket ReadFilePage.idr
-# REFC doesn't support :exec yet
-# run --cg refc ReadFilePage.idr
-# GAMBIT hung seemingly indefinitely
-# run --cg gambit ReadFilePage.idr

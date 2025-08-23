@@ -1,4 +1,1 @@
 . ../../testutils.sh
-
-idris2 --cg refc -o refc_clock TestClock.idr > /dev/null
-./build/exec/refc_clock

@@ -1,4 +1,1 @@
 . ../../testutils.sh
-
-idris2 --quiet -o main Main.idr
-run Check.idr

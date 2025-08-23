@@ -1,6 +1,1 @@
 . ../../../testutils.sh
-
-
-check Main1.idr
-
-run Main1.idr

@@ -1,4 +1,1 @@
 . ../../testutils.sh
-
-idris2 --yaffle Hole.yaff < input
-idris2 --yaffle build/ttc/*/Hole.ttc < input

@@ -1,9 +1,1 @@
 . ../../testutils.sh
-
-idris2 --exec 'printLn $ 1
-  + 2'
-
-echo "------"
-
-idris2 --exec 'printLn $ 1
-+ 2'

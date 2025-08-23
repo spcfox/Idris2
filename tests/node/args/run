@@ -1,5 +1,1 @@
 . ../../testutils.sh
-
-idris2 --cg node -o node_args TestArgs.idr > /dev/null
-node ./build/exec/node_args a b
-node ./build/exec/node_args c

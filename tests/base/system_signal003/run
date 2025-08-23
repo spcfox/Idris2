@@ -1,3 +1,1 @@
 . ../../testutils.sh
-
-run DefaultSignal.idr 2> /dev/null

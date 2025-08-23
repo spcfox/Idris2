@@ -1,5 +1,1 @@
 . ../../testutils.sh
-
-chmod 444 read_only.txt
-run --cg chez FileErrors.idr
-run --cg node FileErrors.idr

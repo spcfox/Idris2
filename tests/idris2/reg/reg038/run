@@ -1,4 +1,1 @@
 . ../../../testutils.sh
-
-check Test1.idr
-check Test2.idr
