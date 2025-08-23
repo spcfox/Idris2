@@ -1,0 +1,7 @@
+parent data initialized to: 13
+parent data now: "hello"
+child data: "hello"
+child data now: 17
+parent data still: "hello"
+child exiting
+parent exiting

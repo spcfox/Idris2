@@ -1,1 +1,4 @@
 . ../../../testutils.sh
+
+# expect a coverage error
+check Issue3477.idr

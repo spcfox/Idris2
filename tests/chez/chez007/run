@@ -1,1 +1,3 @@
 . ../../testutils.sh
+
+run TypeCase.idr

@@ -1,1 +1,3 @@
 . ../../testutils.sh
+
+run Issue775.idr

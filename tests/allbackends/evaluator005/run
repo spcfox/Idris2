@@ -1,1 +1,3 @@
 . ../../testutils.sh
+
+run Issue1200.idr

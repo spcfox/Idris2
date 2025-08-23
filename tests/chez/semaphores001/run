@@ -1,1 +1,3 @@
 . ../../testutils.sh
+
+run --cg chez Main.idr

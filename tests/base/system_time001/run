@@ -1,1 +1,15 @@
 . ../../testutils.sh
+
+# @time@ uses a primitive function with definitions for both
+# C (supported by most backends) and Javascript (Node & Browsers).
+run --cg chez Time.idr
+run --cg node Time.idr
+
+# The following backends failed for reasons unrelated to this test. They can be
+# uncommented at a future date.
+# RACKET failed to find the builtin idris support library
+# run --cg racket ReadFilePage.idr
+# REFC doesn't support :exec yet
+# run --cg refc ReadFilePage.idr
+# GAMBIT hung seemingly indefinitely
+# run --cg gambit ReadFilePage.idr

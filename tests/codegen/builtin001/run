@@ -1,1 +1,6 @@
 . ../../testutils.sh
+rm Main.cases
+
+idris2 --dumpcases Main.cases -o Main Main.idr
+
+cat Main.cases | grep 'Main.plus\|Main.bah'

@@ -1,1 +1,16 @@
 . ../../testutils.sh
+
+case $(uname -s) in
+    OpenBSD | FreeBSD | NetBSD)
+        MAKE=gmake
+        ;;
+
+    *)
+        MAKE=make
+        ;;
+esac
+
+${MAKE} all > /dev/null
+run usealloc.idr
+. ../../testutils.sh
+${MAKE} clean > /dev/null

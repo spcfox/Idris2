@@ -1,1 +1,8 @@
 . ../../testutils.sh
+
+run -p contrib CopyDir.idr
+ls -R resultDir | sed '/^resultDir:$/d'
+base64 -i resultDir/source.bin
+cat resultDir/nestedDir/anotherFile.txt
+
+rm -rf resultDir

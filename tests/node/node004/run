@@ -1,1 +1,5 @@
 . ../../testutils.sh
+
+rm test.buf
+
+run --cg node Buffer.idr

@@ -1,1 +1,3 @@
 . ../../testutils.sh
+
+echo ':q' | idris2 --yaffle bigsuc.yaff

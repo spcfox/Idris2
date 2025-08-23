@@ -1,1 +1,4 @@
 . ../../testutils.sh
+
+run -p contrib Buffer.idr
+rm -rf build test.buf

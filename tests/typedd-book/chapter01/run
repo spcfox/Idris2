@@ -1,1 +1,4 @@
 . ../../testutils.sh
+
+check All.idr
+idris2 HoleFix.idr < input

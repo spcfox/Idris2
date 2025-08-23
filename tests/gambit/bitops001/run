@@ -1,1 +1,7 @@
 . ../../testutils.sh
+
+run --cg gambit BitOps.idr > output
+
+# We finish with cmp so that the test fails if the comparison fails
+diff expected output
+cmp expected output

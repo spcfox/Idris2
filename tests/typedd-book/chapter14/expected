@@ -1,0 +1,16 @@
+1/4: Building DoorJam (DoorJam.idr)
+2/4: Building ATM (ATM.idr)
+3/4: Building Hangman (Hangman.idr)
+Warning: We are about to implicitly bind the following lowercase names.
+You may be unintentionally shadowing the associated global definitions:
+  letters is shadowing Main.letters
+
+Hangman:28:3--33:74
+ 28 |   Guess : (c : Char) ->
+ 29 |           GameCmd GuessResult
+ 30 |                   (Running (S guesses) (S letters))
+ 31 |                   (\res => case res of
+ 32 |                                 Correct => Running (S guesses) letters
+ 33 |                                 Incorrect => Running guesses (S letters))
+
+4/4: Building All (All.idr)

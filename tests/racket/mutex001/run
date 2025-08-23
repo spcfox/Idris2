@@ -1,1 +1,3 @@
 . ../../testutils.sh
+
+run --cg racket Main.idr

@@ -1,1 +1,4 @@
 . ../../testutils.sh
+
+idris2 Issue735.idr < input
+run Issue735.idr

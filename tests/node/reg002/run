@@ -1,1 +1,3 @@
 . ../../testutils.sh
+
+run --cg node Issue1843.idr

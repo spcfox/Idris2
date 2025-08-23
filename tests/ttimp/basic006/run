@@ -1,1 +1,3 @@
 . ../../testutils.sh
+
+idris2 --yaffle Ambig.yaff < input

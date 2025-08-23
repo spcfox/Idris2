@@ -1,1 +1,3 @@
 . ../../testutils.sh
+
+run Issue2362.idr

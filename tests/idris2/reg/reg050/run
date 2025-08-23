@@ -1,1 +1,2 @@
 . ../../../testutils.sh
+check loopy.idr -p contrib

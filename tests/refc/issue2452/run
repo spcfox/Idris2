@@ -1,1 +1,4 @@
 . ../../testutils.sh
+
+idris2 --cg refc -o bits_case BitsCase.idr
+$VALGRIND ./build/exec/bits_case

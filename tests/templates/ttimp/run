@@ -1,1 +1,4 @@
 . ../../testutils.sh
+
+idris2 --yaffle Interp.yaff < input
+idris2 --yaffle build/ttc/$(ls build/ttc/)/Interp.ttc < input

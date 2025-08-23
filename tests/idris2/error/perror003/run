@@ -1,1 +1,4 @@
 . ../../../testutils.sh
+
+check PError.idr
+check PError2.idr

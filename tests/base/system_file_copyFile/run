@@ -1,1 +1,6 @@
 . ../../testutils.sh
+
+run CopyFile.idr
+base64 -i dest.bin
+
+rm dest.bin

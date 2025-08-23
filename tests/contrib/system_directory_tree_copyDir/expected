@@ -1,0 +1,7 @@
+nestedDir
+source.bin
+
+resultDir/nestedDir:
+anotherFile.txt
+AQIDBA==
+Hello, world

@@ -1,1 +1,5 @@
 . ../../testutils.sh
+
+run File.idr
+
+rm -rf build test.txt
