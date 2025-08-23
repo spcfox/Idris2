@@ -236,14 +236,14 @@ main = runner $
   , !baseLibraryTests
   , !linearLibraryTests
   , !contribLibraryTests
-  -- , !chezTests
-  -- , !refcTests
-  -- , !racketTests
-  -- , !nodeTests
-  -- , !vmcodeInterpTests
-  -- , !templateTests
-  -- , !codegenTests
-  -- , !commandLineTests
+  , !chezTests
+  , !refcTests
+  , !racketTests
+  , !nodeTests
+  , !vmcodeInterpTests
+  , !templateTests
+  , !codegenTests
+  , !commandLineTests
   ]
   ++ !(traverse idrisTestsAllSchemes [Chez, Racket])
   ++ map (testPaths "allbackends" . idrisTestsAllBackends) [Chez, Node, Racket, C]
