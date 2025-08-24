@@ -1,7 +1,0 @@
-package a2
-
-modules = A
-
-sourcedir = "."
-
-options = "--no-prelude"

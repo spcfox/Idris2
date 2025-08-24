@@ -1,2 +1,0 @@
-natField Prelude.Types.Nat
-boolField Bool

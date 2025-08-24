@@ -1,5 +1,0 @@
-package hello
-
-executable = hello
-
-main = Main

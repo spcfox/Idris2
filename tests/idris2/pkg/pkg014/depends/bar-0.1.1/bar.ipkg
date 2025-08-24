@@ -1,3 +1,0 @@
-package bar
-version = 0.1.1
-depends = baz < 0.2.0

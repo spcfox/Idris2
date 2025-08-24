@@ -1,5 +1,0 @@
-. ../../testutils.sh
-
-idris2 --yaffle Lazy.yaff < input
-idris2 --yaffle LazyInf.yaff < input
-idris2 --yaffle build/ttc/*/LazyInf.ttc < input

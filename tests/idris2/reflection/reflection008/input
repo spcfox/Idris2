@@ -1,5 +1,0 @@
-:printdef evalAdd
-:printdef evalBlock
-:printdef evalBlock'
-evalAdd 2 3
-:q

@@ -1,3 +1,0 @@
-%default total
-
-namespace a

@@ -1,4 +1,0 @@
-. ../../../testutils.sh
-
-check Issue1236.idr
-check Issue1236-2.idr

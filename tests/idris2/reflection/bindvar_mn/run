@@ -1,4 +1,0 @@
-. ../../../testutils.sh
-
-check Id.idr
-check Plus.idr

@@ -1,4 +1,0 @@
-:t (3 : Nat)
-:cd ..
-:load expected
-:log with

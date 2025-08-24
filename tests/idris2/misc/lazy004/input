@@ -1,2 +1,0 @@
-:exec putStrLn $ show ys
-:exec putStrLn $ show ys'

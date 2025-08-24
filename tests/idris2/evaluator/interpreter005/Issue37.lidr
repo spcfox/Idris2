@@ -1,2 +1,0 @@
-> test : String
-> test = "LIDR"

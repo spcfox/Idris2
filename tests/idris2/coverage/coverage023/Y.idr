@@ -1,1 +1,0 @@
-data Y = MkY

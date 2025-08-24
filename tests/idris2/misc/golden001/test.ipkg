@@ -1,7 +1,0 @@
-package test
-
-depends = contrib, test
-
-executable = runtests
-
-main = Test

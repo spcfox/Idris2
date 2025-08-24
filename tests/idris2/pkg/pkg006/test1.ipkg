@@ -1,3 +1,0 @@
-package test1
-
-depends = foo, bar, foo-bar, quux, bar-baz

@@ -1,4 +1,0 @@
-. ../../testutils.sh
-
-idris2 --yaffle Record.yaff < input
-idris2 --yaffle build/ttc/*/Record.ttc < input

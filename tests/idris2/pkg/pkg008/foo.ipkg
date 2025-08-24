@@ -1,4 +1,0 @@
-package foo
-
-modules = Foo
-opts = "--no-prelude --no-color --console-width 0"

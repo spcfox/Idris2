@@ -1,7 +1,0 @@
-:di leaveAlone
-:di forceInline
-:di forceNoInline
-:di heuristicPublicInline
-:di exportedForced
-:di exportedUnforced
-:q

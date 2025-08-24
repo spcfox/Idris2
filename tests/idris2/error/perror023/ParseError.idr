@@ -1,3 +1,0 @@
-module ParseError
-
-String : Type

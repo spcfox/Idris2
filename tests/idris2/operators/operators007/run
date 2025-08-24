@@ -1,5 +1,0 @@
-. ../../../testutils.sh
-
-check Test.idr
-
-check Test2.idr

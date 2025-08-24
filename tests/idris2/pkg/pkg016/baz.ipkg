@@ -1,4 +1,0 @@
-package baz
-sourcedir = "baz"
-modules = Baz
-depends = bar

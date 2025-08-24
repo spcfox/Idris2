@@ -1,3 +1,0 @@
-1/1: Building nameinfo (nameinfo.idr)
-Main> (TyCon 0 0, (DataCon 1 1, Func))
-Main> Bye for now!
