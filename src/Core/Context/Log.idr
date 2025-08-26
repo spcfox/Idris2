@@ -27,13 +27,6 @@ logString' lvl =
             (verbosity lvl)
 
 export
-logging' : {auto c : Ref Ctxt Defs} ->
-           LogLevel -> Core Bool
-logging' lvl = do
-    opts <- getSession
-    pure $ verbosity lvl == 0 || (logEnabled opts && keepLog lvl (logLevel opts))
-
-export
 unverifiedLogging : {auto c : Ref Ctxt Defs} ->
                     String -> Nat -> Core Bool
 unverifiedLogging str Z = pure True
@@ -56,13 +49,6 @@ logTerm s n msg tm
     = when !(logging s n)
         $ do tm' <- toFullNames tm
              logString s.topic n $ msg ++ ": " ++ show tm'
-
-export
-log' : {auto c : Ref Ctxt Defs} ->
-       LogLevel -> Lazy String -> Core ()
-log' lvl msg
-    = when !(logging' lvl)
-        $ logString' lvl msg
 
 ||| Log a message with the given log level. Use increasingly
 ||| high log level numbers for more granular logging.
