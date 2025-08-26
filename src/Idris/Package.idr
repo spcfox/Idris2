@@ -1037,6 +1037,7 @@ partitionOpts opts = foldr pOptUpdate (MkPFR [] [] False) opts
     optType WarningsAsErrors       = POpt
     optType HashesInsteadOfModTime = POpt
     optType Profile                = POpt
+    optType NoCSE                  = POpt
     optType (ConsoleWidth n)       = PIgnore
     optType (Color b)              = PIgnore
     optType NoBanner               = PIgnore
@@ -1056,6 +1057,7 @@ errorMsg = unlines
   , "    --quiet"
   , "    --verbose"
   , "    --timing"
+  , "    --no-cse"
   , "    --log <log level>"
   , "    --dumpcases <file>"
   , "    --dumplifted <file>"
