@@ -377,7 +377,7 @@ setIncrementalCG failOnError cgn
                                then do coreLift $ putStrLn $ cgn ++ " does not support incremental builds"
                                        coreLift $ exitWith (ExitFailure 1)
                                else pure ()
-                  setSession ({ incrementalCGs $= (cg :: )} !getSession)
+                  updateSession { incrementalCGs $= (cg :: ) }
            Nothing =>
               if failOnError
                  then do coreLift $ putStrLn "No such code generator"
@@ -393,33 +393,33 @@ preOptions : {auto c : Ref Ctxt Defs} ->
              List CLOpt -> Core Bool
 preOptions [] = pure True
 preOptions (NoBanner :: opts)
-    = do setSession ({ nobanner := True } !getSession)
+    = do updateSession { nobanner := True }
          preOptions opts
 -- These things are processed later, but imply nobanner too
 preOptions (OutputFile _ :: opts)
-    = do setSession ({ nobanner := True } !getSession)
+    = do updateSession { nobanner := True }
          preOptions opts
 preOptions (ExecFn _ :: opts)
-    = do setSession ({ nobanner := True } !getSession)
+    = do updateSession { nobanner := True }
          preOptions opts
 preOptions (IdeMode :: opts)
-    = do setSession ({ nobanner := True,
-                       ideMode := True } !getSession)
+    = do updateSession { nobanner := True,
+                         ideMode := True }
          preOptions opts
 preOptions (IdeModeSocket _ :: opts)
-    = do setSession ({ nobanner := True } !getSession)
+    = do updateSession { nobanner := True }
          preOptions opts
 preOptions (CheckOnly :: opts)
-    = do setSession ({ nobanner := True } !getSession)
+    = do updateSession { nobanner := True }
          preOptions opts
 preOptions (Profile :: opts)
-    = do setSession ({ profile := True } !getSession)
+    = do updateSession { profile := True }
          preOptions opts
 preOptions (Quiet :: opts)
     = do setOutput (REPL VerbosityLvl.ErrorLvl)
          preOptions opts
 preOptions (NoPrelude :: opts)
-    = do setSession ({ noprelude := True } !getSession)
+    = do updateSession { noprelude := True }
          preOptions opts
 preOptions (SetCG e :: opts)
     = do defs <- get Ctxt
@@ -432,7 +432,7 @@ preOptions (SetCG e :: opts)
                                  showSep ", " (map fst (availableCGs (options defs)))
                  coreLift $ exitWith (ExitFailure 1)
 preOptions (Directive d :: opts)
-    = do setSession ({ directives $= (d::) } !getSession)
+    = do updateSession { directives $= (d::) }
          preOptions opts
 preOptions (PkgPath p :: opts)
     = do addPkgDir p anyBounds
@@ -460,71 +460,68 @@ preOptions (DebugElabCheck :: opts)
     = do setDebugElabCheck True
          preOptions opts
 preOptions (AltErrorCount c :: opts)
-    = do setSession ({ logErrorCount := c } !getSession)
+    = do updateSession { logErrorCount := c }
          preOptions opts
 preOptions (RunREPL _ :: opts)
     = do setOutput (REPL VerbosityLvl.ErrorLvl)
-         setSession ({ nobanner := True } !getSession)
+         updateSession { nobanner := True }
          preOptions opts
 preOptions (FindIPKG :: opts)
-    = do setSession ({ findipkg := True } !getSession)
+    = do updateSession { findipkg := True }
          preOptions opts
 preOptions (IgnoreMissingIPKG :: opts)
-    = do setSession ({ ignoreMissingPkg := True } !getSession)
+    = do updateSession { ignoreMissingPkg := True }
          preOptions opts
 preOptions (DumpCases f :: opts)
-    = do setSession ({ dumpcases := Just f } !getSession)
+    = do updateSession { dumpcases := Just f }
          preOptions opts
 preOptions (DumpLifted f :: opts)
-    = do setSession ({ dumplifted := Just f } !getSession)
+    = do updateSession { dumplifted := Just f }
          preOptions opts
 preOptions (DumpANF f :: opts)
-    = do setSession ({ dumpanf := Just f } !getSession)
+    = do updateSession { dumpanf := Just f }
          preOptions opts
 preOptions (DumpVMCode f :: opts)
-    = do setSession ({ dumpvmcode := Just f } !getSession)
+    = do updateSession { dumpvmcode := Just f }
          preOptions opts
 preOptions (Logging n :: opts)
-    = do setSession ({ logEnabled := True,
-                       logLevel $= insertLogLevel n } !getSession)
+    = do updateSession { logEnabled := True,
+                         logLevel $= insertLogLevel n }
          preOptions opts
 preOptions (ConsoleWidth n :: opts)
     = do setConsoleWidth n
          preOptions opts
 preOptions (ShowImplicits :: opts)
-    = do pp <- getPPrint
-         setPPrint ({ showImplicits := True } pp)
+    = do updatePPrint { showImplicits := True }
          preOptions opts
 preOptions (ShowMachineNames :: opts)
-    = do pp <- getPPrint
-         setPPrint ({ showMachineNames := True } pp)
+    = do updatePPrint { showMachineNames := True }
          preOptions opts
 preOptions (ShowNamespaces :: opts)
-    = do pp <- getPPrint
-         setPPrint ({ fullNamespace := True } pp)
+    = do updatePPrint { fullNamespace := True }
          preOptions opts
 preOptions (Color b :: opts)
     = do setColor b
          preOptions opts
 preOptions (WarningsAsErrors :: opts)
-    = do updateSession ({ warningsAsErrors := True })
+    = do updateSession { warningsAsErrors := True }
          preOptions opts
 preOptions (IgnoreShadowingWarnings :: opts)
-    = do updateSession ({ showShadowingWarning := False })
+    = do updateSession { showShadowingWarning := False }
          preOptions opts
 preOptions (HashesInsteadOfModTime :: opts)
     = do throw (InternalError "-Xcheck-hashes disabled (see issue #1935)")
-         updateSession ({ checkHashesInsteadOfModTime := True })
+         updateSession { checkHashesInsteadOfModTime := True }
          preOptions opts
 preOptions (CaseTreeHeuristics :: opts)
-    = do updateSession ({ caseTreeHeuristics := True })
+    = do updateSession { caseTreeHeuristics := True }
          preOptions opts
 preOptions (IncrementalCG e :: opts)
     = do defs <- get Ctxt
          setIncrementalCG True e
          preOptions opts
 preOptions (WholeProgram :: opts)
-    = do updateSession ({ wholeProgram := True })
+    = do updateSession { wholeProgram := True }
          preOptions opts
 preOptions (BashCompletion a b :: _)
     = do os <- opts a b
@@ -537,10 +534,10 @@ preOptions (ZshCompletionScript fun :: _)
     = do coreLift $ putStrLn $ zshCompletionScript fun
          pure False
 preOptions (Total :: opts)
-    = do updateSession ({ totalReq := Total })
+    = do updateSession { totalReq := Total }
          preOptions opts
 preOptions (NoCSE :: opts)
-    = do updateSession ({ noCSE := True })
+    = do updateSession { noCSE := True }
          preOptions opts
 preOptions (_ :: opts) = preOptions opts
 

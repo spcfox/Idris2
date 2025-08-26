@@ -2137,6 +2137,10 @@ setPPrint : {auto c : Ref Ctxt Defs} -> PPrinter -> Core ()
 setPPrint ppopts = update Ctxt { options->printing := ppopts }
 
 export
+updatePPrint : {auto c : Ref Ctxt Defs} -> (PPrinter -> PPrinter) -> Core ()
+updatePPrint f = setPPrint (f !getPPrint)
+
+export
 setCG : {auto c : Ref Ctxt Defs} -> CG -> Core ()
 setCG cg = update Ctxt { options->session->codegen := cg }
 

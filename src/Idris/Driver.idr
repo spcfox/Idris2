@@ -147,7 +147,7 @@ stMain cgs opts
 
          setWorkingDir "."
          when (ignoreMissingIpkg opts) $
-            setSession ({ ignoreMissingPkg := True } !getSession)
+            updateSession { ignoreMissingPkg := True }
 
          let ide = ideMode opts
          let ideSocket = ideModeSocket opts
