@@ -164,7 +164,7 @@ parameters {auto c : Ref Ctxt Defs} (eflags : EvalFlags)
       evalForced : forall free . {free: _} -> LocalEnv free vars ->
                    (Var (vars ++ free), Term (vars ++ free)) ->
                    Core (Glued vars, Glued vars)
-      evalForced {free} locs (MkVar v, tm)
+      evalForced locs (MkVar v, tm)
           = do v' <- eval locs env (Local fc Nothing _ v)
                tm' <- eval locs env tm
                pure (v', tm')
@@ -172,11 +172,11 @@ parameters {auto c : Ref Ctxt Defs} (eflags : EvalFlags)
       getScope : forall free . {free: _} -> LocalEnv free vars ->
                  (sc : CaseScope (vars ++ free)) ->
                  VCaseScope (CaseArgs sc) vars
-      getScope {free} locs (RHS fs tm)
+      getScope locs (RHS fs tm)
           = do tm' <- eval locs env tm
                fs' <- traverse (evalForced {free} locs) fs
                pure (fs', tm')
-      getScope {free} locs (Arg r x sc) = \v => getScope {free} (locs :< v) sc
+      getScope locs (Arg r x sc) = \v => getScope {free} (locs :< v) sc
 
   evalCaseAlt locs env (DelayCase fc t a tm)
       = pure $ VDelayCase fc t a
