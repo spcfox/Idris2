@@ -12,6 +12,8 @@ import Data.List
 import Data.SnocList
 import Data.Vect
 
+import System
+
 data HolesMode
     = HolesAll -- expand all defined holes, and nothing else
     | HolesArgs -- expand 'alwaysInline', evaluate holes which are relevant arguments, but don't expand any 'let' at all
@@ -266,14 +268,14 @@ parameters {auto c : Ref Ctxt Defs} (eflags : EvalFlags)
              Term (vars ++ free) -> Term (vars ++ free) ->
              List (CaseAlt (vars ++ free)) -> Core (Glued vars)
   evalCase locs env fc t r sc ty alts
-      = do logC "eval.casetree" 5 $ do
-             xval <- toFullNames sc
-             pure "Evaluated \{show t} to \{show xval}"
-           sc' <- case eflags of
+      = do sc' <- case eflags of
                        -- Don't expand in totality mode or we might reduce too
                        -- much
                        Totality => believe_me $ eval locs env sc
                        _ => expand !(eval locs env sc)
+           logC "eval.casetree" 5 $ do
+             xval <- toFullNames sc
+             pure "Evaluated (\{show t}) \{show xval} to \{show !(toFullNames sc')}"
            locs' <- case sc of
                          Local _ _ _ p => pure $ updateEnv locs p (pure (asGlued sc'))
                          _ => pure locs
