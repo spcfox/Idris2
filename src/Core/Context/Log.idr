@@ -32,7 +32,9 @@ unverifiedLogging : {auto c : Ref Ctxt Defs} ->
 unverifiedLogging str Z = pure True
 unverifiedLogging str n = do
     opts <- getSession
-    pure $ logEnabled opts && keepLog (mkUnverifiedLogLevel str n) (logLevel opts)
+    pure $ not (ideMode opts)
+        && logEnabled opts
+        && keepLog (mkUnverifiedLogLevel str n) (logLevel opts)
 
 %inline
 export

@@ -403,7 +403,8 @@ preOptions (ExecFn _ :: opts)
     = do setSession ({ nobanner := True } !getSession)
          preOptions opts
 preOptions (IdeMode :: opts)
-    = do setSession ({ nobanner := True } !getSession)
+    = do setSession ({ nobanner := True,
+                       ideMode := True } !getSession)
          preOptions opts
 preOptions (IdeModeSocket _ :: opts)
     = do setSession ({ nobanner := True } !getSession)
