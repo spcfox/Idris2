@@ -275,7 +275,7 @@ parameters {auto c : Ref Ctxt Defs} (eflags : EvalFlags)
                        _ => expand !(eval locs env sc)
            logC "eval.casetree" 5 $ do
              xval <- toFullNames sc
-             pure "Evaluated (\{show t}) \{show xval} to \{show !(toFullNames sc')}"
+             pure "Evaluated \{show t} \{show xval} to \{show !(toFullNames sc')}"
            locs' <- case sc of
                          Local _ _ _ p => pure $ updateEnv locs p (pure (asGlued sc'))
                          _ => pure locs
@@ -350,11 +350,18 @@ parameters {auto c : Ref Ctxt Defs} (eflags : EvalFlags)
             logTerm "eval.def.stuck" 50 "evalMeta fn" fn
             if alwaysReduce fi || (reduceForTC eflags (multiplicity def))
                then do evalfn <- eval locs env (embed fn)
+                       logC "eval.def.stuck" 50 $ pure "Reduce Meta: evalfn \{show evalfn}"
                        applyAll fc evalfn scope'
-               else pure $ VMeta fc n i scope' [<] $
-                       do evalfn <- eval locs env (embed fn)
-                          res <- applyAll fc evalfn scope'
-                          pure (Just res)
+               else do logC "eval.def.stuck" 50 $ do
+                         def <- toFullNames def
+                         pure "Refusing to reduce Meta: \{show $ definition def}"
+                       pure $ VMeta fc n i scope' [<] $
+                         do logC "eval.def.stuck" 50 $ pure "Attempt to reduce refused previously Meta: n: \{show !(toFullNames n)}, tree: \{show !(toFullNames fn)}"
+                            evalfn <- eval locs env (embed fn)
+                            logC "eval.def.stuck" 50 $ pure "Attempt to reduce refused previously Meta: evalfn \{show !(toFullNames evalfn)}"
+                            res <- applyAll fc evalfn scope'
+                            logC "eval.def.stuck" 50 $ pure "Attempt to reduce refused previously Meta: res \{show !(toFullNames res)}"
+                            pure (Just res)
     where
       reduceForTC : EvalFlags -> RigCount -> Bool
       reduceForTC Totality c = not (isErased c)
@@ -388,10 +395,11 @@ parameters {auto c : Ref Ctxt Defs} (eflags : EvalFlags)
               then do eval locs env (embed fn)
               else do logC "eval.def.stuck" 50 $ do
                         def <- toFullNames def
-                        pure "Refusing to reduce \{show $ definition def}"
+                        pure "Refusing to reduce Ref: \{show $ definition def}"
                       pure $ VApp fc nt n [<] $
-                          do logC "eval.def.stuck" 50 $ pure "Attempt to reduce refused previously args: n: \{show !(toFullNames n)}, tree: \{show fn}"
+                          do logC "eval.def.stuck" 50 $ pure "Attempt to reduce refused previously Ref: n: \{show !(toFullNames n)}, tree: \{show !(toFullNames fn)}"
                              res <- eval locs env (embed fn)
+                             logC "eval.def.stuck" 50 $ pure "Attempt to reduce refused previously Ref: res \{show !(toFullNames res)}"
                              pure (Just res)
     where
       reduceForTC : EvalFlags -> List DefFlag -> Bool
