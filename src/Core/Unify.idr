@@ -1394,11 +1394,65 @@ mutual
   -- Otherwise, make sure the top level thing is expanded (so not a reducible
   -- VApp or VMeta node) then move on
   unifyExpandApps lazy mode fc env x y
-      = do x' <- expand x
-           y' <- expand y
-           if lazy
-              then unifyLazy mode fc env x' y'
-              else unifyWithEta mode fc env x' y'
+      = do logC "unify.equal" 10 $
+             do x <- logQuiet $ quote env x
+                x <- toFullNames x
+                y <- logQuiet $ quote env y
+                y <- toFullNames y
+                pure $ "Begin unification (non-application) \{show lazy}: \{show x} and \{show y}"
+           unifySpineEntry x y
+    where
+      unifyFn : Glued vars -> Glued vars -> Core UnifyResult
+      unifyFn x y
+          = do
+               x' <- expand x
+               y' <- expand y
+               logC "unify.equal" 10 $
+                 do x <- logQuiet $ quote env x'
+                    x <- toFullNames x
+                    y <- logQuiet $ quote env y'
+                    y <- toFullNames y
+                    pure $ "Begin unification (non-application) \{show lazy} expanded: \{show x} and \{show y}"
+
+               if lazy
+                 then unifyLazy mode fc env x' y'
+                 else unifyWithEta mode fc env x' y'
+
+      unifySpineEntry : Glued vars -> Glued vars -> Core UnifyResult
+      unifySpineEntry xnf ynf
+          = do defs <- get Ctxt
+               empty <- clearDefs defs
+               -- If one's a meta and the other isn't, don't reduce at all
+               case (xnf, ynf) of
+                     (VMeta {}, VMeta {})
+                         => unifyFn xnf ynf
+                     (VMeta {}, _)
+                         => do put Ctxt empty
+                               xtm <- logQuiet $ quote env xnf
+                               ytm <- logQuiet $ quote env ynf
+                               logC "unify" 20 $
+                                 pure $ "Don't reduce at all (left): " ++ show xtm ++ " and " ++ show ytm
+                               xnf' <- nf env xtm
+                               ynf' <- nf env ytm
+                               put Ctxt defs
+                               cs <- unifyFn xnf' ynf'
+                               case constraints cs of
+                                   [] => pure cs
+                                   _  => unifyFn xnf ynf
+                     (_, VMeta {})
+                         => do put Ctxt empty
+                               xtm <- logQuiet $ quote env xnf
+                               ytm <- logQuiet $ quote env ynf
+                               logC "unify" 20 $
+                                 pure $ "Don't reduce at all (right): " ++ show {ty=Term _} ytm ++ " and " ++ show xtm
+                               xnf' <- nf env xtm
+                               ynf' <- nf env ytm
+                               put Ctxt defs
+                               cs <- unifyFn xnf' ynf'
+                               case constraints cs of
+                                   [] => pure cs
+                                   _  => do unifyFn xnf ynf
+                     _ => unifyFn xnf ynf
 
   -- Start by expanding any top level Apps (if they don't convert already)
   -- then invoke full unification, either inserting laziness coercions
