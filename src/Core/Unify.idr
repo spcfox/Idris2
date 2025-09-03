@@ -1363,7 +1363,7 @@ mutual
                                    xs <- logQuiet $ traverse (quote env) xs'
                                    yx' <- logQuiet $ traverse value spy
                                    ys <- logQuiet $ traverse (quote env) yx'
-                                   pure $ "Attempt to convertSpine (func equal already): \{show x} (\{show !(toFullNames xs)}) \n and \{show y} (\{show !(toFullNames ys)}) \n with inf: \{show inf}"
+                                   pure $ "Attempt to convertSpine (func equal already): \{show x} (\{show !(toFullNames xs)}) and \{show y} (\{show !(toFullNames ys)}) \n with inf: \{show inf}"
                    let spx' = dropInf (length spx `minus` 1) 0 inf spx
                    let spy' = dropInf (length spy `minus` 1) 0 inf spy
                    when (length inf > 0)
@@ -1372,21 +1372,21 @@ mutual
                                    xs <- logQuiet $ traverse (quote env) xs'
                                    yx' <- logQuiet $ traverse value spy'
                                    ys <- logQuiet $ traverse (quote env) yx'
-                                   pure $ "Inferred arguments (\{show inf}) are considered safe to be dropped from convert: (\{show !(toFullNames xs)}) \n and (\{show !(toFullNames ys)})"
+                                   pure $ "Inferred arguments (\{show inf}) are considered safe to be dropped from convert: (\{show !(toFullNames xs)}) and (\{show !(toFullNames ys)})"
                    c <- convertSpine fc env spx' spy'
                    if c
                       then
                         do logC "unify.equal" 10 $
                                 do x <- toFullNames nx
                                    y <- toFullNames ny
-                                   pure $ "Skipped unification (equal already): \{show x} \n and \{show y}"
+                                   pure $ "Skipped unification (equal already): \{show x} and \{show y}"
                            pure success
                       else do valx' <- expand x
                               valy' <- expand y
                               logC "unify.equal" 10 $
                                 do x <- toFullNames valx'
                                    y <- toFullNames valy'
-                                   pure $ "Begin unification (non-convertable) \{show lazy}: \{show x} \n and \{show y}"
+                                   pure $ "Begin unification (non-convertable) \{show lazy}: \{show x} and \{show y}"
                               if lazy
                                 then unifyLazy mode fc env valx' valy'
                                 else unifyWithEta mode fc env valx' valy'
@@ -1395,7 +1395,7 @@ mutual
                    logC "unify.equal" 10 $
                      do x <- toFullNames valx'
                         y <- toFullNames valy'
-                        pure $ "Begin unification (func non-equal) \{show lazy}: \{show x} \n and \{show y}"
+                        pure $ "Begin unification (func non-equal) \{show lazy}: \{show x} and \{show y}"
                    if lazy
                       then unifyLazy mode fc env valx' valy'
                       else unifyWithEta mode fc env valx' valy'
@@ -1444,7 +1444,7 @@ mutual
                 x <- toFullNames x
                 y <- logQuiet $ quote env y
                 y <- toFullNames y
-                pure $ "Begin unification (non-application) \{show lazy}: \{show x} \n and \{show y}"
+                pure $ "Begin unification (non-application) \{show lazy}: \{show x} and \{show y}"
            x' <- expand x
            y' <- expand y
            logC "unify.equal" 10 $
@@ -1452,7 +1452,7 @@ mutual
                 x <- toFullNames x
                 y <- logQuiet $ quote env y'
                 y <- toFullNames y
-                pure $ "Begin unification (non-application) \{show lazy} expanded: \{show x} \n and \{show y}"
+                pure $ "Begin unification (non-application) \{show lazy} expanded: \{show x} and \{show y}"
            if lazy
               then unifyLazy mode fc env x' y'
               else unifyWithEta mode fc env x' y'
