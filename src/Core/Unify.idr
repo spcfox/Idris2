@@ -1472,28 +1472,26 @@ mutual
                      (VMeta {}, VMeta {})
                          => unifyFn xnf ynf
                      (VMeta {}, _)
-                         => do put Ctxt empty
-                               xtm <- logQuiet $ quote env xnf
-                               ytm <- logQuiet $ quote env ynf
-                               logC "unify" 20 $
-                                 pure $ "Don't reduce at all (left): " ++ show xtm ++ " and " ++ show ytm
-                               xnf' <- nf env xtm
+                         => do ytm <- logQuiet $ quote env ynf
+                               put Ctxt empty
                                ynf' <- nf env ytm
                                put Ctxt defs
-                               cs <- unifyFn xnf' ynf'
+                               logC "unify" 20 $
+                                 do xtm <- logQuiet $ quote env xnf
+                                    pure $ "Don't reduce at all (left): " ++ show xtm ++ " and " ++ show ytm
+                               cs <- unifyFn xnf ynf'
                                case constraints cs of
                                    [] => pure cs
                                    _  => unifyFn xnf ynf
                      (_, VMeta {})
-                         => do put Ctxt empty
-                               xtm <- logQuiet $ quote env xnf
-                               ytm <- logQuiet $ quote env ynf
-                               logC "unify" 20 $
-                                 pure $ "Don't reduce at all (right): " ++ show {ty=Term _} ytm ++ " and " ++ show xtm
+                         => do xtm <- logQuiet $ quote env xnf
+                               put Ctxt empty
                                xnf' <- nf env xtm
-                               ynf' <- nf env ytm
                                put Ctxt defs
-                               cs <- unifyFn xnf' ynf'
+                               logC "unify" 20 $
+                                 do ytm <- logQuiet $ quote env ynf
+                                    pure $ "Don't reduce at all (right): " ++ show {ty=Term _} ytm ++ " and " ++ show xtm
+                               cs <- unifyFn xnf' ynf
                                case constraints cs of
                                    [] => pure cs
                                    _  => do unifyFn xnf ynf
