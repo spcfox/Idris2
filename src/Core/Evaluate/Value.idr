@@ -3,9 +3,12 @@ module Core.Evaluate.Value
 import Core.Context
 import Core.Core
 import Core.TT
+import Core.Options
 
 import Data.SnocList
 import Data.Vect
+import Data.List1
+import Data.String
 
 import Libraries.Data.WithDefault
 
@@ -168,6 +171,43 @@ getLoc (VErased fc imp) = fc
 getLoc (VUnmatched fc x) = fc
 getLoc (VType fc x) = fc
 
+-- TODO: dupe, remove me later
+logC : {auto c : Ref Ctxt Defs} ->
+                 LogTopic -> Nat -> Core String -> Core ()
+logC str n cmsg
+    = when !(logging str n)
+        $ do depth <- getDepth
+             msg <- cmsg
+             logString depth str.topic n msg
+    where
+      padLeft : Nat -> String -> String
+      padLeft pl str =
+          let whitespace = replicate (pl * 2) ' '
+          in joinBy "\n" $ toList $ map (\r => whitespace ++ r) $ split (== '\n') str
+
+      %inline
+      logString : Nat -> String -> Nat -> String -> Core ()
+      logString depth "" n msg = coreLift $
+          do putStrLn $ padLeft depth $ "LOG " ++ show n ++ ": " ++ msg
+      logString depth str n msg = coreLift $
+          do putStrLn $ padLeft depth $ "LOG " ++ str ++ ":" ++ show n ++ ": " ++ msg
+
+      unverifiedLogging : String -> Nat -> Core Bool
+      unverifiedLogging str Z = pure True
+      unverifiedLogging str n = do
+          opts <- getSession
+          pure $ logEnabled opts && keepLog (mkUnverifiedLogLevel str n) (logLevel opts)
+
+      %inline
+      logging : LogTopic -> Nat -> Core Bool
+      logging s n = unverifiedLogging s.topic n
+
+      getDepth : Core Nat
+      getDepth
+          = do defs <- get Ctxt
+               let treeLikeOutput = (logTreeEnabled $ session (options defs))
+               pure $ if treeLikeOutput then (logDepth $ session (options defs)) else 0
+
 -- If a value is an App or Meta node, then it might be reducible. Expand it
 -- just enough that we have the right top level node.
 -- Don't expand Apps to a blocked top level cases, unless 'cases' is set.
@@ -179,6 +219,7 @@ expand' cases v@(VApp fc nt n sp val)
     = do vis <- getVisibilityWeaked fc n
          defs <- get Ctxt
          let ns = currentNS defs :: nestedNS defs
+         logC "eval.def.stuck" 50 $ pure "expand'-1 ns: \{show ns}, n: \{show n}, vis: \{show $ collapseDefault vis}"
          if reducibleInAny ns n (collapseDefault vis)
             then do
                Just val' <- val
@@ -201,7 +242,8 @@ expand' cases (VErased why (Dotted t))
     = do t' <- expand' cases t
          pure (VErased why (Dotted t'))
 expand' cases v@(VMeta fc n i args sp val)
-    = do Just val' <- val
+    = do logC "eval.def.stuck" 50 $ pure "expand'-2 n: \{show n}"
+         Just val' <- val
               | Nothing => pure (believe_me v)
          expand' cases val'
 expand' cases val = pure (believe_me val)

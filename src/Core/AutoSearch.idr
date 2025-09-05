@@ -414,8 +414,9 @@ searchName fc rigc defaults trying depth def top env target (n, ndef)
                         TCon arity _ _ _ _ _ _ => TyCon arity
                         _ => Func
          nty <- expand !(nf env (embed ty))
-         logNF "auto" 10 ("Searching Name " ++ show n) env nty
+         logNF "auto" 10 ("Searching Name " ++ show !(toFullNames n)) env nty
          (args, appTy) <- mkArgs fc rigc env nty
+         logNF "auto" 10 "appTy" env appTy
          ures <- unify inTerm fc env target appTy
          let [] = constraints ures
              | _ => throw (CantSolveGoal fc (gamma defs) ScopeEmpty top Nothing)
@@ -569,7 +570,7 @@ searchType {vars} fc rigc defaults trying depth def checkdets top env target
                   if a == length args
                      then do logNF "auto" 10 "Next target NTCon" env nty
                              sd <- getSearchData fc defaults tyn
-                             log "auto" 10 $ "Next target NTCon search result detArgs: " ++ show (detArgs sd) ++ ", hintGroups: " ++ show (hintGroups sd)
+                             log "auto" 10 $ "Next target NTCon search result detArgs: " ++ show (detArgs sd) ++ ", hintGroups: " ++ show !(traverse (\(x, y) => pure (x, !(Core.Core.traverse toFullNames y))) (hintGroups sd))
                              -- Check determining arguments are okay for 'args'
                              when checkdets $
                                  checkConcreteDets fc defaults env top

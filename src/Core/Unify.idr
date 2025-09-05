@@ -334,11 +334,11 @@ unifySpineMetaArg mode fc env (cxs :< ex) (cys :< ey)
          -- reduce any newly solved holes
          cx' <- logQuiet $ do nf env !(quote env !(value ex))
          cy' <- logQuiet $ do nf env !(quote env !(value ey))
-         logNF "unify.application" 20 "unifySpineMetaArg cx'" env cx'
-         logNF "unify.application" 20 "unifySpineMetaArg cy'" env cy'
+         logNF "unify.application" 20 "unifySpine cx'" env cx'
+         logNF "unify.application" 20 "unifySpine cy'" env cy'
 
          res <- unifySpineEntry (lower mode) cx' cy'
-         log "unify.application" 20 "unifySpineMetaArg res \{show res}"
+         log "unify.application" 20 "unifySpine res \{show res}"
 
          cs <- logDepth $ unifySpineMetaArg mode fc env cxs cys
          pure (union cs res)
