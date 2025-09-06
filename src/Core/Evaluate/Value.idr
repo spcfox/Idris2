@@ -219,7 +219,7 @@ expand' cases v@(VApp fc nt n sp val)
     = do vis <- getVisibilityWeaked fc n
          defs <- get Ctxt
          let ns = currentNS defs :: nestedNS defs
-         logC "eval.def.stuck" 50 $ pure "expand'-1 ns: \{show ns}, n: \{show n}, vis: \{show $ collapseDefault vis}"
+         logC "eval.def.stuck" 50 $ pure "expand'-1 ns: \{show ns}, n: \{show n}, vis: \{show $ collapseDefault vis}, mult: \{show mult}, full_name: \{show full_name}"
          if reducibleInAny ns n (collapseDefault vis)
             then do
                Just val' <- val

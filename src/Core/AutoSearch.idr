@@ -415,6 +415,7 @@ searchName fc rigc defaults trying depth def top env target (n, ndef)
                         _ => Func
          nty <- expand !(nf env (embed ty))
          logNF "auto" 10 ("Searching Name " ++ show !(toFullNames n)) env nty
+         logNF "auto" 10 "For target" env target
          (args, appTy) <- mkArgs fc rigc env nty
          logNF "auto" 10 "appTy" env appTy
          ures <- unify inTerm fc env target appTy
