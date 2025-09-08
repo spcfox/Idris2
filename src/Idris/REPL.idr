@@ -744,10 +744,10 @@ prepareExp ctm
          let ttimpWithIt = ILocal replFC !getItDecls ttimp
          inidx <- resolveName (UN $ Basic "[input]")
          (tm, ty) <- elabTerm inidx InExpr [] (MkNested [])
-                                 ScopeEmpty ttimpWithIt Nothing
-         linearCheck replFC linear ScopeEmpty tm
+                              ScopeEmpty ttimpWithIt Nothing
+         tm_erased <- linearCheck replFC linear True ScopeEmpty tm
          compileAndInlineAll
-         pure tm
+         pure tm_erased
 
 processLocal : {vars : _} ->
              {auto c : Ref Ctxt Defs} ->

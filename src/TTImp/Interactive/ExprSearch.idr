@@ -820,7 +820,7 @@ firstLinearOK fc ((t, ds) :: next)
     = handleUnify
             (do unless (isNil ds) $
                    traverse_ (processDecl [InCase] (MkNested []) ScopeEmpty) ds
-                linearCheck fc linear ScopeEmpty t
+                ignore $ linearCheck fc linear False ScopeEmpty t
                 defs <- get Ctxt
                 nft <- normaliseHoles ScopeEmpty t
                 raw <- unelab ScopeEmpty !(toFullNames nft)

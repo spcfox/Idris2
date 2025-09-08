@@ -58,6 +58,22 @@ namesNoLet [<] = [<]
 namesNoLet (xs :< Let _ _ _ _) = namesNoLet xs
 namesNoLet {xs = _ :< x} (env :< _) = namesNoLet env :< x
 
+export
+eraseLinear : Env tm vs -> Env tm vs
+eraseLinear [<] = [<]
+eraseLinear (bs :< b)
+    = if isLinear (multiplicity b)
+         then eraseLinear bs :< setMultiplicity b erased
+         else eraseLinear bs :< b
+
+export
+getErased : {vs : _} -> Env tm vs -> List (Var vs)
+getErased [<] = []
+getErased (bs :< b)
+    = if isErased (multiplicity b)
+         then MkVar First :: map weaken (getErased bs)
+         else map weaken (getErased bs)
+
 public export
 data IsDefined : Name -> Scope -> Type where
   MkIsDefined : {idx : Nat} -> RigCount -> (0 p : IsVar n idx vars) ->
