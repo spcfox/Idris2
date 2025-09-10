@@ -333,9 +333,9 @@ mutual
                          log "quantity" 15 $ "Linearity checking failed on App"
                          needFunctionType f' gfty
                 VErased _ Placeholder =>
-                  do when (not erase) $ do
-                       log "quantity" 15 $ "Linearity checking failed on Erased"
-                       needFunctionType f' gfty
+                  do -- when (not erase) $ do
+                     --   log "quantity" 15 $ "Linearity checking failed on Erased"
+                     --   needFunctionType f' gfty
                      -- we don't do any linearity checking when `erase` is set
                      -- so returning an empty usage is fine
                      pure (App fc f c a, gErased fc, Usage.empty)
@@ -605,12 +605,12 @@ mutual
   lcheckDef fc rig True env n
       = do defs <- get Ctxt
            Just def <- lookupCtxtExact n (gamma defs)
-                | Nothing => undefinedName fc n
+                | Nothing => pure (Erased fc Placeholder)
            pure (type def)
   lcheckDef fc rig False env n
       = do defs <- get Ctxt
            let Just idx = getNameID n (gamma defs)
-                | Nothing => undefinedName fc n
+                | Nothing => pure (Erased fc Placeholder)
            Just def <- lookupCtxtExact (Resolved idx) (gamma defs)
                 | Nothing => undefinedName fc n
            rigSafe (multiplicity def) rig
