@@ -1041,8 +1041,8 @@ mutual
            logC "unify.hole" 10
                    (do qargs <- logQuiet $ traverse (quote env) margs
                        qtm <- logQuiet $ quote env tmnf
-                       pure $ "Unifying: " ++ show mname ++ "\n args " ++ show qargs ++
-                              "\n with " ++ show qtm) -- first attempt, try 'empty', only try 'defs' when on 'retry'?
+                       pure $ "Unifying: " ++ show mname ++ " args " ++ show qargs ++
+                              " with " ++ show qtm) -- first attempt, try 'empty', only try 'defs' when on 'retry'?
            case !(patternEnv env pargs) of
                 Nothing =>
                   do Just hdef <- lookupCtxtExact (Resolved mref) (gamma defs)
@@ -1298,14 +1298,20 @@ mutual
                   logNF "unify.binder" 10 "........with" env ty
                   let env' : Env Term (_ :< nx)
                            = env :< Pi fcy cy Explicit tx'
+                  logEnv "unify.binder" 10 "env'" env'
+                  logC "unify.binder" 10 $ pure "Unifying pi \{show ix} and \{show iy}"
                   case constraints csarg of
                       [] => -- No constraints, check the scope
                          do tscx <- scx (mkArg fc x')
+                            logNF "unify.binder" 10 "tscx" env tscx
                             tscy <- scy (mkArg fc x')
+                            logNF "unify.binder" 10 "tscy" env tscy
                             tmx <- quote env tscx
                             tmy <- quote env tscy
                             logTermNF "unify.binder" 10 "Unifying scope" env tmx
                             logTermNF "unify.binder" 10 "..........with" env tmy
+                            logTermNF "unify.binder" 10 "refsToLocals: Unifying scope" env' (refsToLocals (Add nx x' None) tmx)
+                            logTermNF "unify.binder" 10 "refsToLocals: ..........with" env' (refsToLocals (Add nx x' None) tmy)
                             cs <- unify (lower mode) fc env'
                               (refsToLocals (Add nx x' None) tmx)
                               (refsToLocals (Add nx x' None) tmy)

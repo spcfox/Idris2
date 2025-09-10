@@ -632,7 +632,7 @@ mutual
            expfnty <- nf env (Bind fc argn (Pi fc top Explicit argTy) (weaken retTy))
            logNF "elab.with" 10 "Expected function type" env expfnty
            -- whenJust expty (logNF "elab.with" 10 "Expected result type" env)
-           res <- checkAppWith' rig elabinfo nest env fc fntm !(expand fnty) (n, 1 + argpos) expargs autoargs namedargs kr expty
+           res <- logDepth $ checkAppWith' rig elabinfo nest env fc fntm !(expand fnty) (n, 1 + argpos) expargs autoargs namedargs kr expty
            cres <- Check.convert fc elabinfo env (asGlued ty) expfnty
            let [] = constraints cres
               | cs => do cty <- quote env expfnty

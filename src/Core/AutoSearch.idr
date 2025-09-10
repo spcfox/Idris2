@@ -379,6 +379,7 @@ searchLocalVars fc rig defaults trying depth def top env target
          exactlyOne fc env top target elabs
 
 isPairNF : {auto c : Ref Ctxt Defs} ->
+           {vars: _} ->
            Env Term vars -> NF vars -> Core Bool
 isPairNF env (VTCon _ n _ _)
     = isPairType n

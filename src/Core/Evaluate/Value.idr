@@ -12,55 +12,6 @@ import Data.String
 
 import Libraries.Data.WithDefault
 
--- public export
--- data EvalOrder = CBV | CBN
-
--- public export
--- record EvalOpts where
---   constructor MkEvalOpts
---   holesOnly : Bool -- only evaluate hole solutions
---   argHolesOnly : Bool -- only evaluate holes which are relevant arguments
---   removeAs : Bool -- reduce 'as' patterns (don't do this on LHS)
---   evalAll : Bool -- evaluate everything, including private names
---   tcInline : Bool -- inline for totality checking
---   fuel : Maybe Nat -- Limit for recursion depth
---   reduceLimit : List (Name, Nat) -- reduction limits for given names. If not
---                      -- present, no limit
---   strategy : EvalOrder
-
--- export
--- defaultOpts : EvalOpts
--- defaultOpts = MkEvalOpts False False True False False Nothing [] CBN
-
--- export
--- withHoles : EvalOpts
--- withHoles = MkEvalOpts True True False False False Nothing [] CBN
-
--- export
--- withAll : EvalOpts
--- withAll = MkEvalOpts False False True True False Nothing [] CBN
-
--- export
--- withArgHoles : EvalOpts
--- withArgHoles = MkEvalOpts False True False False False Nothing [] CBN
-
--- export
--- tcOnly : EvalOpts
--- tcOnly = { tcInline := True } withArgHoles
-
--- export
--- onLHS : EvalOpts
--- onLHS = { removeAs := False } defaultOpts
-
--- export
--- cbn : EvalOpts
--- cbn = defaultOpts
-
--- export
--- cbv : EvalOpts
--- cbv = { strategy := CBV } defaultOpts
-
-
 public export
 data Form = Glue | Normal
 
@@ -172,6 +123,12 @@ getLoc (VUnmatched fc x) = fc
 getLoc (VType fc x) = fc
 
 -- TODO: dupe, remove me later
+getDepth : {auto c : Ref Ctxt Defs} -> Core Nat
+getDepth
+    = do defs <- get Ctxt
+         let treeLikeOutput = (logTreeEnabled $ session (options defs))
+         pure $ if treeLikeOutput then (logDepth $ session (options defs)) else 0
+
 logC : {auto c : Ref Ctxt Defs} ->
                  LogTopic -> Nat -> Core String -> Core ()
 logC str n cmsg
@@ -202,11 +159,29 @@ logC str n cmsg
       logging : LogTopic -> Nat -> Core Bool
       logging s n = unverifiedLogging s.topic n
 
-      getDepth : Core Nat
-      getDepth
-          = do defs <- get Ctxt
-               let treeLikeOutput = (logTreeEnabled $ session (options defs))
-               pure $ if treeLikeOutput then (logDepth $ session (options defs)) else 0
+logDepth : {auto c : Ref Ctxt Defs} -> Core a -> Core a
+logDepth r
+    = do logDepthIncrease
+         logDepthDecrease r
+  where
+    logDepthIncrease : Core ()
+    logDepthIncrease
+        = do depth <- getDepth
+             update Ctxt { options->session->logDepth := depth + 1 }
+
+    logDepthDecrease : Core a -> Core a
+    logDepthDecrease r
+        = do r' <- r
+             depth <- getDepth
+             update Ctxt { options->session->logDepth := depth `minus` 1 }
+             pure r'
+
+export
+HasNames (Value f vars)
+
+export
+covering
+{free : _} -> Show (Value f free)
 
 -- If a value is an App or Meta node, then it might be reducible. Expand it
 -- just enough that we have the right top level node.
@@ -214,16 +189,21 @@ logC str n cmsg
 -- The 'believe_me' are there to save us deconstructing and reconstructing
 -- just to change a compile-time only index
 expand' : {auto c : Ref Ctxt Defs} ->
+          {vars: _} ->
           Bool -> Value f vars -> Core (NF vars)
 expand' cases v@(VApp fc nt n sp val)
     = do vis <- getVisibilityWeaked fc n
+         m_mult <- getMultiplicityWeaked fc n
+         full_name <- toFullNames n
          defs <- get Ctxt
          let ns = currentNS defs :: nestedNS defs
-         logC "eval.def.stuck" 50 $ pure "expand'-1 ns: \{show ns}, n: \{show n}, vis: \{show $ collapseDefault vis}"
+         logC "eval.def.stuck" 50 $ pure "expand App ns: \{show ns}, n: \{show n}, vis: \{show $ collapseDefault vis}, mult: \{show m_mult}, full_name: \{show full_name}"
          if reducibleInAny ns n (collapseDefault vis)
             then do
-               Just val' <- val
+               Just val' <- logDepth val
                     | Nothing => pure (believe_me v)
+               logC "eval.def.stuck" 50 $ do val' <- toFullNames val'
+                                             pure "Reduced \{show full_name} to \{show val'}"
                if cases
                   then expand' cases val'
                   else if !(blockedApp val')
@@ -242,19 +222,24 @@ expand' cases (VErased why (Dotted t))
     = do t' <- expand' cases t
          pure (VErased why (Dotted t'))
 expand' cases v@(VMeta fc n i args sp val)
-    = do logC "eval.def.stuck" 50 $ pure "expand'-2 n: \{show n}"
-         Just val' <- val
+    = do logC "eval.def.stuck" 50 $ pure "expand Meta n: \{show n}"
+         Just val' <- logDepth val
               | Nothing => pure (believe_me v)
+         logC "eval.def.stuck" 50 $ do n' <- toFullNames n
+                                       val' <- toFullNames val'
+                                       pure "Reduced \{show n'} to \{show val'}"
          expand' cases val'
 expand' cases val = pure (believe_me val)
 
 export
 expand : {auto c : Ref Ctxt Defs} ->
+         {vars: _} ->
          Value f vars -> Core (NF vars)
 expand = expand' False
 
 export
 expandFull : {auto c : Ref Ctxt Defs} ->
+             {vars: _} ->
              Value f vars -> Core (NF vars)
 expandFull = expand' True
 
@@ -265,6 +250,7 @@ asGlued = believe_me -- justification as above
 
 export
 spineVal : {auto c : Ref Ctxt Defs} ->
+           {vars: _} ->
            SpineEntry vars -> Core (NF vars)
 spineVal e = expand !(value e)
 

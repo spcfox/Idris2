@@ -136,7 +136,7 @@ mkEnv {vars} ext = rewrite sym (appendLinLeftNeutral ns) in go ext [<]
 
 parameters {auto c : Ref Ctxt Defs} (eflags : EvalFlags)
 
-  runOp : {ar : _} ->
+  runOp : {ar, vars : _} ->
           FC -> PrimFn ar -> Vect ar (Glued vars) -> Core (NF vars)
   runOp fc op args
       = do args' <- traverseVect expand args
@@ -349,9 +349,13 @@ parameters {auto c : Ref Ctxt Defs} (eflags : EvalFlags)
             log "eval.def.stuck" 40 ("evalMeta n: \{show n}, alwaysReduce: \{show $ alwaysReduce fi}, multiplicity: \{show $ multiplicity def}, eflags: \{show eflags}, dflags: \{show $ flags def}")
             logTerm "eval.def.stuck" 50 "evalMeta fn" fn
             if alwaysReduce fi || (reduceForTC eflags (multiplicity def))
-               then do evalfn <- eval locs env (embed fn)
+               then do evalfn <- logDepth $ eval locs env (embed fn)
                        logC "eval.def.stuck" 50 $ pure "Reduce Meta: evalfn \{show !(toFullNames evalfn)}"
-                       applyAll fc evalfn scope'
+                       res <- logDepth $ applyAll fc evalfn scope'
+                       logC "eval.ref" 50 $ do n' <- toFullNames n
+                                               res <- toFullNames res
+                                               pure "Reduced \{show n'} to \{show res}"
+                       pure res
                else do logC "eval.def.stuck" 50 $ do
                          def <- toFullNames def
                          pure "Refusing to reduce Meta: n: \{show !(toFullNames n)}, def: \{show $ definition def}"
@@ -392,7 +396,11 @@ parameters {auto c : Ref Ctxt Defs} (eflags : EvalFlags)
            log "eval.def.stuck" 40 ("evalRef n: \{show $ !(toFullNames n)}, alwaysReduce: \{show $ alwaysReduce fi}, multiplicity: \{show $ multiplicity def}, eflags: \{show eflags}, dflags: \{show $ flags def}")
            logTerm "eval.def.stuck" 50 "evalRef fn" !(toFullNames fn)
            if alwaysReduce fi || (reduceForTC eflags (flags def))
-              then do eval locs env (embed fn)
+              then do res <- logDepth $ eval locs env (embed fn)
+                      logC "eval.ref" 50 $ do n' <- toFullNames n
+                                              res <- toFullNames res
+                                              pure "Reduced \{show n'} to \{show res}"
+                      pure res
               else do logC "eval.def.stuck" 50 $ do
                         def <- toFullNames def
                         pure "Refusing to reduce Ref: n: \{show !(toFullNames n)}, def: \{show $ definition def}"
