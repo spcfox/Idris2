@@ -153,9 +153,12 @@ checkLambda rig_in elabinfo nest env fc rigl info n argTy scope (Just expty_in)
                               InLHS _ => inLHS
                               _ => inTerm
          solveConstraints solvemode Normal
-         -- `quoteOnePi` introduction requires to make a weaker version of
-         -- visibility checker: `getVisibilityWeaked`
-         expty <- quoteOnePi env !(expand expty_in)
+         
+         defs <- get Ctxt
+         empty <- clearDefs defs
+         put Ctxt empty
+         expty <- quote env !(expand expty_in)
+         put Ctxt defs
          case expty of
               Bind bfc bn (Pi fc' c _ pty) psc =>
                  do u <- uniVar fc'
