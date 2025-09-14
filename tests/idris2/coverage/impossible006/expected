@@ -1,0 +1,15 @@
+1/1: Building Issue1455 (Issue1455.idr)
+Error: issueWithPatternMatch is not covering.
+
+Issue1455:42:1--42:39
+ 38 |     :  (a : AltCon ar)
+ 39 |     -> (bs : AltBinderType a)
+ 40 |     -> Alt ar er
+ 41 | 
+ 42 | issueWithPatternMatch : Alt r q -> Int
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Missing cases:
+    issueWithPatternMatch (MkAlt (AltDataCon (AlgDataCon (_ :: _) ** _)) _)
+
+1/1: Building Issue3644 (Issue3644.idr)

@@ -316,7 +316,7 @@ checkLHS {vars} trans mult n opts nest env fc lhs_in
          log "declare.def.lhs" 5 $ "Checking LHS of " ++ show fullname
 -- todo: add Pretty RawImp instance
 --         logC "declare.def.lhs" 5 $ do pure $ show $ indent {ann = ()} 2 $ pretty lhs
-         log "declare.def.lhs" 10 $ show lhs
+         log "declare.def.lhs" 10 $ "LHS: " ++ show lhs
          logEnv "declare.def.lhs" 5 "In env" env
          let lhsMode = if trans
                           then InTransform
@@ -399,31 +399,46 @@ checkClause : {vars : _} ->
               (mult : RigCount) -> (vis : Visibility) ->
               (totreq : TotalReq) -> (hashit : Bool) ->
               Int -> List ElabOpt -> NestedNames vars -> Env Term vars ->
-              ImpClause -> Core (Either RawImp Clause)
+              ImpClause -> Core (Either (Either RawImp Clause) Clause)
 checkClause mult vis totreq hashit n opts nest env (ImpossibleClause fc lhs)
-    = do lhs_raw <- lhsInCurrentNS nest lhs
+    = do logRaw "declare.def.clause.impossible" 30 "Raw LHS" lhs
+         lhs_raw <- lhsInCurrentNS nest lhs
+         logRaw "declare.def.clause.impossible" 30 "Raw LHS in current NS: " lhs_raw
          handleUnify
            (do autoimp <- isUnboundImplicits
                setUnboundImplicits True
                (_, lhs) <- bindNames False lhs_raw
                setUnboundImplicits autoimp
+               logRaw "declare.def.clause.impossible" 30 "Raw LHS with implicits bound" lhs
 
-               log "declare.def.clause.impossible" 5 $ "Checking " ++ show lhs
+               logC "declare.def.clause.impossible" 5 $ pure $ "Checking LHS of " ++ show !(getFullName (Resolved n))
+               log "declare.def.clause.impossible" 5 $ "LHS: " ++ show lhs
                logEnv "declare.def.clause.impossible" 5 "In env" env
                (lhstm, lhstyg) <-
                            elabTerm n (InLHS mult) opts nest env
-                                      (IBindHere fc COVERAGE lhs) Nothing
+                                      (IBindHere fc PATTERN lhs) Nothing
+               logTerm "declare.def.clause.impossible" 5 "Checked LHS term" lhstm
+               lhsty <- getTerm lhstyg
+
                defs <- get Ctxt
-               lhs <- normaliseHoles defs env lhstm
-               if !(hasEmptyPat defs env lhs)
-                  then pure (Left lhs_raw)
-                  else throw (ValidCase fc env (Left lhs)))
+               lhstm <- normaliseHoles defs env lhstm
+               logTerm "declare.def.clause.impossible" 10 "Checked LHS term after normalise" lhstm
+
+               if !(hasEmptyPat defs env lhstm)
+                  then do let lstenv = letToLam env
+                          lhsty <- normaliseHoles defs env lhsty
+                          (vars' ** (sub', env', _, lhstm', _)) <- extendEnv env Refl nest lhstm lhsty
+                          logTerm "declare.def.clause.impossible" 3 "LHS term" lhstm'
+
+                          pure (Left $ Right $ MkClause env' lhstm' (Erased fc Impossible))
+                  else do log "declare.def.clause.impossible" 5 "No empty pat"
+                          throw (ValidCase fc env (Left lhstm)))
            (\err =>
               case err of
                    ValidCase {} => throw err
                    _ => do defs <- get Ctxt
                            if !(impossibleErrOK defs err)
-                              then pure (Left lhs_raw)
+                              then pure (Left $ Left lhs_raw)
                               else throw (ValidCase fc env (Right err)))
 checkClause {vars} mult vis totreq hashit n opts nest env (PatClause fc lhs_in rhs)
     = do (_, (vars'  ** (sub', env', nest', lhstm', lhsty'))) <-
@@ -1046,18 +1061,19 @@ processDef opts nest env fc n_in cs_in
             = closeEnv defs !(sc defs (toClosure defaultOpts Env.empty (Ref fc Bound x)))
         closeEnv defs nf = quote defs Env.empty nf
 
-    getClause : Either RawImp Clause -> Core (Maybe Clause)
-    getClause (Left rawlhs)
+    getClause : Either (Either RawImp Clause) Clause -> Core (Maybe Clause)
+    getClause (Left (Left rawlhs))
         = catch (do lhsp <- getImpossibleTerm env nest rawlhs
                     log "declare.def.impossible" 3 $ "Generated impossible LHS: " ++ show lhsp
                     pure $ Just $ MkClause Env.empty lhsp (Erased (getFC rawlhs) Impossible))
                 (\e => do log "declare.def" 5 $ "Error in getClause " ++ show e
                           recordWarning $ GenericWarn (fromMaybe (getFC rawlhs) $ getErrorLoc e) (show e)
                           pure Nothing)
+    getClause (Left (Right c)) = pure (Just c)
     getClause (Right c) = pure (Just c)
 
     checkCoverage : Int -> ClosedTerm -> RigCount ->
-                    List (Either RawImp Clause) ->
+                    List (Either (Either RawImp Clause) Clause) ->
                     Core Covering
     checkCoverage n ty mult cs
         = do covcs' <- traverse getClause cs -- Make stand in LHS for impossible clauses
