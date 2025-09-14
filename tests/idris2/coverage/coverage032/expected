@@ -1,0 +1,27 @@
+1/1: Building Main (Main.idr)
+Error: bar is not covering.
+
+Main:12:1--12:52
+ 08 | data IsMaybe : Maybe a -> Type where
+ 09 |   IsJust : IsMaybe (Just x)
+ 10 |   IsNothing : IsMaybe Nothing
+ 11 | 
+ 12 | bar : (m : Maybe Void) -> (0 _ : IsMaybe m) -> Void
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Missing cases:
+    bar Nothing _
+
+Error: foo is not covering.
+
+Main:5:1--5:40
+ 1 | data X : Bool -> Type where
+ 2 |   A : Void -> X True
+ 3 |   B : X False
+ 4 | 
+ 5 | foo : (b : Bool) -> (0 _ : X b) -> Void
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Missing cases:
+    foo False _
+
