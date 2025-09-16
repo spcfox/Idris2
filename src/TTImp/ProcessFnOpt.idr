@@ -102,7 +102,7 @@ processFnOpt fc _ ndef (SpecArgs ns)
     collectDDeps (VBind tfc x (Pi _ _ _ nty) sc)
         = do defs <- get Ctxt
              empty <- clearDefs defs
-             sc' <- expand !(sc (pure (VApp tfc Bound x [<] (pure Nothing))))
+             sc' <- expand !(sc (pure (vRef tfc Bound x)))
              if x `elem` ns
                 then collectDDeps sc'
                 else do aty <- quote ScopeEmpty nty
@@ -173,7 +173,7 @@ processFnOpt fc _ ndef (SpecArgs ns)
     collectSpec acc ddeps ps (VBind tfc x (Pi _ _ _ nty) sc)
         = do defs <- get Ctxt
              empty <- clearDefs defs
-             sc' <- expand !(sc (pure (VApp tfc Bound x [<] (pure Nothing))))
+             sc' <- expand !(sc (pure (vRef tfc Bound x)))
              if x `elem` ns
                 then do deps <- getDeps True !(expand nty) NameMap.empty
                         -- Get names depended on by nty
