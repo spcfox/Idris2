@@ -77,14 +77,6 @@ mutual
           defs <- get Ctxt
           processArgs (App fc fn e') !(sc defs (toClosure defaultOpts Env.empty e'))
                       exps autos named
-  processArgs fn (NBind fc x (Pi _ _ Explicit ty) sc) [] autos named
-     = do defs <- get Ctxt
-          case findNamed x named of
-            Just ((_, e), named') =>
-               do e' <- mkTerm e (Just ty) [] [] []
-                  processArgs (App fc fn e') !(sc defs (toClosure defaultOpts Env.empty e'))
-                              [] autos named'
-            Nothing => badClause fn [] autos named
   processArgs fn (NBind fc x (Pi _ _ Implicit ty) sc) exps autos named
      = do defs <- get Ctxt
           case findNamed x named of
@@ -115,6 +107,14 @@ mutual
                            processArgs (App fc fn e') !(sc defs (toClosure defaultOpts Env.empty e'))
                                        exps [] named'
   processArgs fn ty [] [] [] = pure fn
+  processArgs fn (NBind fc x (Pi _ _ Explicit ty) sc) [] autos named
+     = do defs <- get Ctxt
+          case findNamed x named of
+            Just ((_, e), named') =>
+               do e' <- mkTerm e (Just ty) [] [] []
+                  processArgs (App fc fn e') !(sc defs (toClosure defaultOpts Env.empty e'))
+                              [] autos named'
+            Nothing => badClause fn [] autos named
   processArgs fn ty exps autos named
      = badClause fn exps autos named
 
