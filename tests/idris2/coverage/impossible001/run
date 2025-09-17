@@ -1,3 +1,4 @@
 . ../../../testutils.sh
 
 check MatchFunction.idr
+check DottedType.idr
