@@ -2,3 +2,4 @@
 
 check MatchFunction.idr
 check DottedType.idr
+check DottedTypeImpossible.idr
