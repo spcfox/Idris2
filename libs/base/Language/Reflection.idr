@@ -34,8 +34,6 @@ data LookupDir =
 export
 data Elab : Type -> Type where
      Pure : a -> Elab a
-     Map  : (a -> b) -> Elab a -> Elab b
-     Ap   : Elab (a -> b) -> Elab a -> Elab b
      Bind : Elab a -> (a -> Elab b) -> Elab b
      Fail : FC -> String -> Elab a
      Warn : FC -> String -> Elab ()
@@ -109,12 +107,12 @@ data Elab : Type -> Type where
 
 export
 Functor Elab where
-  map = Map
+  map f e = Bind e $ Pure . f
 
 export
 Applicative Elab where
   pure = Pure
-  (<*>) = Ap
+  f <*> a = Bind f (<$> a)
 
 export
 Alternative Elab where
