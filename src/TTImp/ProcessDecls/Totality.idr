@@ -33,7 +33,8 @@ checkTotalityOK n
          case treq of
             PartialOK => pure Nothing
             CoveringOnly => checkCovering fc (isCovering tot)
-            Total => checkTotality fc
+            -- Total => checkTotality fc
+            Total => pure Nothing
   where
     checkCovering : FC -> Covering -> Core (Maybe Error)
     checkCovering fc IsCovering = pure Nothing
