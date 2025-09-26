@@ -199,7 +199,7 @@ parameters {auto c : Ref Ctxt Defs} {auto q : Ref QVar Int}
   quoteGen bounds env (VApp fc nt n sp val) ExpandHoles
       = do sp' <- quoteSpine ExpandHoles bounds env sp
            pure $ applySpine (Ref fc nt n) sp'
-  quoteGen bounds env (VApp fc nt n sp val) s
+  quoteGen bounds env v@(VApp fc nt n sp val) s
       = do -- Reduce if it's visible in the current namespace
            logC "eval.ref" 50 $ do pure "quoteGen VApp \{show v}"
            True <- case getNS s of
