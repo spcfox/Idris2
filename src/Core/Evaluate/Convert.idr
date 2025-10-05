@@ -5,6 +5,7 @@ import Core.Context.Log
 import Core.Core
 import Core.Env
 import Core.Evaluate.Quote
+import Core.Evaluate.Expand
 import Core.TT
 
 import Core.Evaluate.Normalise
