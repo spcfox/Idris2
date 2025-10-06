@@ -233,7 +233,7 @@ runTest opts testPath = do
   putStrLn $ "Running " ++ testPath
   fflush stdout
   ignore $ system $ "cd " ++ escapeArg testPath ++ " && " ++
-    "timeout 30m sh ./run " ++ exe ++ " | tr -d '\\r' > output"
+    "timeout 1m sh ./run " ++ exe ++ " | tr -d '\\r' > output"
   end <- clockTime UTC
 
   Right out <- readFile $ testPath ++ "/output"
