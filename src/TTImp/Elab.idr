@@ -173,7 +173,7 @@ elabTermSub {vars} defining mode opts nest env env' sub tm ty
               -- might learn a bit more later.
               _ => if (not incase)
                       then do checkUserHolesAfter constart (inTrans || inPE)
-                              linearCheck (getFC tm) rigc False env chktm
+                              pure chktm
                           -- Linearity checking looks in case blocks, so no
                           -- need to check here.
                       else pure chktm
