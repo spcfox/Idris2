@@ -371,21 +371,22 @@ checkRunElab : {vars : _} ->
                FC -> (requireExtension : Bool) -> RawImp -> Maybe (Glued vars) ->
                Core (Term vars, Glued vars)
 checkRunElab rig elabinfo nest env fc reqExt script exp
-    = do expected <- mkExpected exp
-         defs <- get Ctxt
-         unless (not reqExt || isExtension ElabReflection defs) $
-             throw (GenericMsg fc "%language ElabReflection not enabled")
-         let n = NS reflectionNS (UN $ Basic "Elab")
-         elabtt <- appCon fc defs n [expected]
-         (stm, sty) <- runDelays (const True) $
-                           check rig elabinfo nest env script (Just (gnf env elabtt))
-         solveConstraints inTerm Normal
-         defs <- get Ctxt -- checking might have resolved some holes
-         ntm <- elabScript rig fc nest env
-                           !(nfOpts withAll defs env stm) (Just (gnf env expected))
-         defs <- get Ctxt -- might have updated as part of the script
-         empty <- clearDefs defs
-         pure (!(quote empty env ntm), gnf env expected)
+    = logTime 1 "Elaboration script" $
+        do expected <- mkExpected exp
+           defs <- get Ctxt
+           unless (not reqExt || isExtension ElabReflection defs) $
+               throw (GenericMsg fc "%language ElabReflection not enabled")
+           let n = NS reflectionNS (UN $ Basic "Elab")
+           elabtt <- appCon fc defs n [expected]
+           (stm, sty) <- runDelays (const True) $
+                             check rig elabinfo nest env script (Just (gnf env elabtt))
+           solveConstraints inTerm Normal
+           defs <- get Ctxt -- checking might have resolved some holes
+           ntm <- elabScript rig fc nest env
+                             !(nfOpts withAll defs env stm) (Just (gnf env expected))
+           defs <- get Ctxt -- might have updated as part of the script
+           empty <- clearDefs defs
+           pure (!(quote empty env ntm), gnf env expected)
   where
     mkExpected : Maybe (Glued vars) -> Core (Term vars)
     mkExpected (Just ty) = pure !(getTerm ty)
