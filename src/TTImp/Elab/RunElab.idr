@@ -240,13 +240,18 @@ elabScript norm rig fc nest env script@(NDCon nfc nm t ar args) exp
              (checktm, _) <- runDelays (const True) $
                      check rig (initElabInfo InExpr) nest env !(reify defs ttimp')
                            (Just (glueBack defs env exp'))
-             empty <- clearDefs defs
-             nf empty env checktm
+             if norm
+                then nf defs env checktm
+                else do empty <- clearDefs defs
+                        nf empty env checktm
     elabCon defs "Quote" [exp, tm]
         = do tm' <- evalClosure defs tm
              defs <- get Ctxt
-             empty <- clearDefs defs
-             scriptRet $ map rawName !(unelabUniqueBinders env !(quote empty env tm'))
+             tmQ <- if norm
+                then quote defs env tm'
+                else do empty <- clearDefs defs
+                        quote empty env tm'
+             scriptRet $ map rawName !(unelabUniqueBinders env tmQ)
     elabCon defs "Lambda" [x, _, scope]
         = do empty <- clearDefs defs
              NBind bfc x (Lam fc' c p ty) sc <- evalClosure defs scope
