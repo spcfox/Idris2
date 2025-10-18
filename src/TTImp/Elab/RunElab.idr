@@ -171,7 +171,7 @@ elabScript norm rig fc nest env script@(NDCon nfc nm t ar args) exp
     elabCon defs "Ap" [_,_,actF,actX]
         -- actF : Elab (A -> B)
         -- actX : Elab A
-        = do actF <- elabScript False rig fc nest env !(evalClosure defs actF) exp
+        = do actF <- elabScript norm rig fc nest env !(evalClosure defs actF) exp
              actX <- elabScript True rig fc nest env !(evalClosure defs actX) exp
              applyToStack defs withHoles env actF [(getLoc actX, MkNFClosure withAll env actX)]
     elabCon defs "Bind" [_,_,act,k]
@@ -184,7 +184,7 @@ elabScript norm rig fc nest env script@(NDCon nfc nm t ar args) exp
         = do act <- elabScript True rig fc nest env !(evalClosure defs act) exp
              k <- evalClosure defs k
              r <- applyToStack defs withAll env k [(getLoc act, MkNFClosure withAll env act)]
-             elabScript False rig fc nest env r exp
+             elabScript norm rig fc nest env r exp
     elabCon defs "Fail" [_, mbfc, msg]
         = do msg' <- evalClosure defs msg
              throw $ RunElabFail $ GenericMsg !(reifyFC defs mbfc) !(reify defs msg')
@@ -194,13 +194,13 @@ elabScript norm rig fc nest env script@(NDCon nfc nm t ar args) exp
              scriptRet ()
     elabCon defs "Try" [_, elab1, elab2]
         = tryUnify (do constart <- getNextEntry
-                       res <- elabScript False rig fc nest env !(evalClosure defs elab1) exp
+                       res <- elabScript norm rig fc nest env !(evalClosure defs elab1) exp
                        -- We ensure that all of the constraints introduced during the elab script
                        -- have been solved. This guarantees that we do not mistakenly succeed even
                        -- though e.g. a proof search got delayed.
                        solveConstraintsAfter constart inTerm LastChance
                        pure res)
-                   (elabScript False rig fc nest env !(evalClosure defs elab2) exp)
+                   (elabScript norm rig fc nest env !(evalClosure defs elab2) exp)
     elabCon defs "LogMsg" [topic, verb, str]
         = do topic' <- evalClosure defs topic
              verb' <- evalClosure defs verb
@@ -259,7 +259,7 @@ elabScript norm rig fc nest env script@(NDCon nfc nm t ar args) exp
              qty <- quote empty env ty
              let env' = Lam fc' c qp qty :: env
 
-             runsc <- elabScript False rig fc (weaken nest) env'
+             runsc <- elabScript norm rig fc (weaken nest) env'
                                  !(nf defs env' lamsc) Nothing -- (map weaken exp)
              nf empty env (Bind bfc x (Lam fc' c qp qty) !(quote empty env' runsc))
        where
