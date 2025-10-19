@@ -240,30 +240,31 @@ elabScript norm rig fc nest env script@(NDCon nfc nm t ar args) exp
              (checktm, _) <- runDelays (const True) $
                      check rig (initElabInfo InExpr) nest env !(reify defs ttimp')
                            (Just (glueBack defs env exp'))
-             if norm
-                then nf defs env checktm
-                else do empty <- clearDefs defs
-                        nf empty env checktm
+             empty <- clearDefs defs
+             nf empty env checktm
     elabCon defs "Quote" [exp, tm]
         = do tm' <- evalClosure defs tm
              defs <- get Ctxt
-             empty <- clearDefs defs
-             scriptRet $ map rawName !(unelabUniqueBinders env !(quote empty env tm'))
+             tmQ <- if norm
+                then quote defs env tm'
+                else do empty <- clearDefs defs
+                        quote empty env tm'
+             scriptRet $ map rawName !(unelabUniqueBinders env tmQ)
     elabCon defs "Lambda" [x, _, scope]
-        = do defs' <- if norm then pure defs else clearDefs defs
+        = do empty <- clearDefs defs
              NBind bfc x (Lam fc' c p ty) sc <- evalClosure defs scope
                    | _ => failWith defs "Not a lambda"
              n <- genVarName "x"
              sc' <- sc defs (toClosure withAll env (Ref bfc Bound n))
-             qsc <- quote defs' env sc'
+             qsc <- quote empty env sc'
              let lamsc = refToLocal n x qsc
              qp <- quotePi p
-             qty <- quote defs' env ty
+             qty <- quote empty env ty
              let env' = Lam fc' c qp qty :: env
 
              runsc <- elabScript norm rig fc (weaken nest) env'
                                  !(nf defs env' lamsc) Nothing -- (map weaken exp)
-             nf defs' env (Bind bfc x (Lam fc' c qp qty) !(quote defs' env' runsc))
+             nf empty env (Bind bfc x (Lam fc' c qp qty) !(quote empty env' runsc))
        where
          quotePi : PiInfo (Closure vars) -> Core (PiInfo (Term vars))
          quotePi Explicit = pure Explicit

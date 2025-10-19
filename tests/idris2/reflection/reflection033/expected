@@ -2,6 +2,6 @@
 LOG shdw:0: tyExpr  : (x : Nat) -> (y : X (\x => S x)) -> Nat
 LOG shdw:0: tyExpr' : (x : Nat) -> (y : X (\{x:0} => S x)) -> Nat
 LOG shdw:0: tyExpr'': (x : Nat) -> (y : X (\{x:0} => S {x:0})) -> Nat
-LOG shdw:0: quoted T  : (x : Nat) -> (y : X (\{x:0} => S {x:0})) -> Nat
-LOG shdw:0: quoted T' : (x : Nat) -> (y : X (\{x:0} => S x)) -> Nat
-LOG shdw:0: quoted T'': (x : Nat) -> (y : X (\{x:0} => S {x:0})) -> Nat
+LOG shdw:0: quoted T  : (x : Nat) -> (y : Vect 3 ()) -> Nat
+LOG shdw:0: quoted T' : (x : Nat) -> (y : Vect (S x) ()) -> Nat
+LOG shdw:0: quoted T'': (x : Nat) -> (y : Vect 3 ()) -> Nat
