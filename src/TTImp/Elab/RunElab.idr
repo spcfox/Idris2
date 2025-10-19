@@ -253,7 +253,8 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
              (checktm, _) <- runDelays (const True) $
                      check rig (initElabInfo InExpr) nest env !(reify defs ttimp')
                            (Just (glueBack defs env exp'))
-             res <- scriptRet $ map rawName !(unelabUniqueBinders env !(quote defs env !(nf defs env checktm)))
+             empty <- clearDefs defs
+             res <- scriptRet $ map rawName !(unelabUniqueBinders env !(quote defs env !(nf empty env checktm)))
              pure res
     elabCon defs "Lambda" [x, _, scope]
         = do empty <- clearDefs defs
