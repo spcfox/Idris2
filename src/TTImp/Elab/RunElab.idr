@@ -180,7 +180,8 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
         -- 4) Run elabScript on the result stripping off Elab
         = do act <- elabScript rig fc nest env
                                 !(evalClosure defs act) exp
-             act <- quote defs env act
+             empty <- clearDefs defs
+             act <- quote empty env act
              k <- evalClosure defs k
              r <- applyToStack defs withAll env k [(getLoc act, toClosure withAll env act)]
              elabScript rig fc nest env r exp
