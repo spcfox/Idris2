@@ -246,16 +246,20 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
              empty <- clearDefs defs
              scriptRet $ map rawName !(unelabUniqueBinders env !(quote empty env tm'))
     elabCon defs "NormaliseAs" [exp, ttimp]
-        = do exp' <- evalClosure defs exp
-             ttimp' <- evalClosure defs ttimp
-             tidx <- resolveName (UN $ Basic "[elaborator script]")
-             e <- newRef EST (initEState tidx env)
-             (checktm, _) <- runDelays (const True) $
-                     check rig (initElabInfo InExpr) nest env !(reify defs ttimp')
-                           (Just (glueBack defs env exp'))
+        = do tm <- do exp' <- evalClosure defs exp
+                      ttimp' <- evalClosure defs ttimp
+                      tidx <- resolveName (UN $ Basic "[elaborator script]")
+                      e <- newRef EST (initEState tidx env)
+                      (checktm, _) <- runDelays (const True) $
+                              check rig (initElabInfo InExpr) nest env !(reify defs ttimp')
+                                    (Just (glueBack defs env exp'))
+                      empty <- clearDefs defs
+                      nf empty env checktm
+             tm <- quote defs env tm
+             tm' <- evalClosure defs (toClosure withAll env tm)
+             defs <- get Ctxt
              empty <- clearDefs defs
-             res <- scriptRet $ map rawName !(unelabUniqueBinders env !(quote defs env !(nf empty env checktm)))
-             pure res
+             scriptRet $ map rawName !(unelabUniqueBinders env !(quote empty env tm'))
     elabCon defs "Lambda" [x, _, scope]
         = do empty <- clearDefs defs
              NBind bfc x (Lam fc' c p ty) sc <- evalClosure defs scope
