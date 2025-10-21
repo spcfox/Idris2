@@ -182,8 +182,12 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
              act <- elabScript rig fc nest env !(evalClosure defs act) exp
              logC "reflection" 1 $ do pure "!!! act before quote: \{show !(toFullNames act)}"
              empty <- clearDefs defs
-             let qopts = MkQuoteOpts False False (Just defs.options.elabDirectives.nfThreshold)
-             act <- catch (quoteOpts qopts empty env act) (\err => quote defs env act)
+             -- Normalise fully, but only if it's cheap enough.
+             -- We have to get the normal form eventually anyway, but
+             -- it might be too early to do it now if something is
+             -- blocking it and we're not yet ready to search.
+             act <- catch (quoteOpts (MkQuoteOpts False False (Just 10)) defs env act)
+                          (\err => quote empty env act)
              k <- evalClosure defs k
              logC "reflection" 1 $ do pure "!!! k: \{show !(toFullNames k)}"
              r <- applyToStack defs withAll env k [(getLoc act, toClosure withAll env act)]
