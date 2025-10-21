@@ -181,10 +181,10 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
         = do act <- elabScript rig fc nest env
                                 !(evalClosure defs act) exp
              empty <- clearDefs defs
-             act <- catch (quoteOpts (MkQuoteOpts False False (Just 10)) defs env act)
-                          (const $ quote empty env act)
+             actClosure <- catch (toClosure withAll env <$> quoteOpts (MkQuoteOpts False False (Just 10)) defs env act)
+                                 (const $ pure $ MkNFClosure withAll env act)
              k <- evalClosure defs k
-             r <- applyToStack defs withAll env k [(getLoc act, toClosure withAll env act)]
+             r <- applyToStack defs withAll env k [(getLoc act, actClosure)]
              elabScript rig fc nest env r exp
     elabCon defs "Fail" [_, mbfc, msg]
         = do msg' <- evalClosure defs msg
