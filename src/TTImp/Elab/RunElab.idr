@@ -181,14 +181,14 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
         = do log "reflection" 1 "!!! start bind"
              act <- elabScript rig fc nest env !(evalClosure defs act) exp
              logC "reflection" 1 $ do pure "!!! act before quote: \{show !(toFullNames act)}"
-             actD <- quote defs env act
-             logTerm "reflection" 1 "!!! act after quote with defs" actD
-             empty <- clearDefs defs
-             act <- quote empty env act
-             logTerm "reflection" 1 "!!! act after quote with empty" act
+            --  actD <- quote defs env act
+            --  logTerm "reflection" 1 "!!! act after quote with defs" actD
+            --  empty <- clearDefs defs
+            --  act <- quote empty env act
+            --  logTerm "reflection" 1 "!!! act after quote with empty" act
              k <- evalClosure defs k
              logC "reflection" 1 $ do pure "!!! k: \{show !(toFullNames k)}"
-             r <- applyToStack defs withAll env k [(getLoc act, toClosure withAll env act)]
+             r <- applyToStack defs withAll env k [(getLoc act, MkNFClosure withAll env act)]
              logC "reflection" 1 $ do pure "!!! result: \{show !(toFullNames r)}"
              elabScript rig fc nest env r exp
     elabCon defs "Fail" [_, mbfc, msg]
