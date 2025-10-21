@@ -181,7 +181,9 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
         = do act <- elabScript rig fc nest env
                                 !(evalClosure defs act) exp
              empty <- clearDefs defs
+             log "reflection" 1 "!!! act before quote: \{show act}"
              act <- quote empty env act
+             logTerm "reflection" 1 "!!! act after quote" act
              k <- evalClosure defs k
              r <- applyToStack defs withAll env k [(getLoc act, toClosure withAll env act)]
              elabScript rig fc nest env r exp
