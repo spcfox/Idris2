@@ -181,7 +181,7 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
         = do act <- elabScript rig fc nest env
                                 !(evalClosure defs act) exp
              empty <- clearDefs defs
-             actClosure <- catch (toClosure withAll env <$> quoteOpts (MkQuoteOpts False False (Just 7)) defs env act)
+             actClosure <- catch (toClosure withAll env <$> quoteOpts (MkQuoteOpts False False (Just 9)) defs env act)
                                  (const $ pure $ MkNFClosure withAll env act)
              k <- evalClosure defs k
              r <- applyToStack defs withAll env k [(getLoc act, actClosure)]
