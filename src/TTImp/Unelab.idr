@@ -279,11 +279,11 @@ mutual
              | Just tm => pure (tm, gErased fc)
            case fnty of
                 NBind _ x (Pi _ rig Explicit ty) sc
-                  => do sc' <- sc defs (toClosure defaultOpts env arg)
+                  => do sc' <- sc defs !(toClosure defaultOpts env arg)
                         pure (IApp fc fn' arg',
                                 glueBack defs env sc')
                 NBind _ x (Pi _ rig p ty) sc
-                  => do sc' <- sc defs (toClosure defaultOpts env arg)
+                  => do sc' <- sc defs !(toClosure defaultOpts env arg)
                         pure (INamedApp fc fn' x arg',
                                 glueBack defs env sc')
                 _ => pure (IApp fc fn' arg', gErased fc)

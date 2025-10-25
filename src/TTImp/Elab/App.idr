@@ -189,7 +189,7 @@ mutual
            metaty <- quote empty env aty
            metaval <- metaVar fc argRig env nm metaty
            let fntm = App fc tm metaval
-           fnty <- sc defs (toClosure defaultOpts env metaval)
+           fnty <- sc defs !(toClosure defaultOpts env metaval)
            when (bindingVars elabinfo) $ update EST $
              addBindIfUnsolved nm (getLoc (getFn tm)) argRig Implicit env metaval metaty
            checkAppWith rig elabinfo nest env fc
@@ -223,7 +223,7 @@ mutual
                    metaty <- quote empty env aty
                    metaval <- metaVar fc argRig env nm metaty
                    let fntm = App fc tm metaval
-                   fnty <- sc defs (toClosure defaultOpts env metaval)
+                   fnty <- sc defs !(toClosure defaultOpts env metaval)
                    update EST $ addBindIfUnsolved nm (getLoc (getFn tm)) argRig AutoImplicit env metaval metaty
                    checkAppWith rig elabinfo nest env fc
                                 fntm fnty (n, 1 + argpos) expargs autoargs namedargs kr expty
@@ -242,7 +242,7 @@ mutual
                    metaval <- searchVar fc argRig lim (Resolved (defining est))
                                         env nest nm metaty
                    let fntm = App fc tm metaval
-                   fnty <- sc defs (toClosure defaultOpts env metaval)
+                   fnty <- sc defs !(toClosure defaultOpts env metaval)
                    checkAppWith rig elabinfo nest env fc
                                 fntm fnty (n, 1 + argpos) expargs autoargs namedargs kr expty
     where
@@ -280,7 +280,7 @@ mutual
                    metaty <- quote empty env aty
                    metaval <- metaVar fc argRig env nm metaty
                    let fntm = App fc tm metaval
-                   fnty <- sc defs (toClosure defaultOpts env metaval)
+                   fnty <- sc defs !(toClosure defaultOpts env metaval)
                    update EST $ addBindIfUnsolved nm (getLoc (getFn tm)) argRig AutoImplicit env metaval metaty
                    checkAppWith rig elabinfo nest env fc
                                 fntm fnty (n, 1 + argpos) expargs autoargs namedargs kr expty
@@ -288,7 +288,7 @@ mutual
                    empty <- clearDefs defs
                    aval <- quote empty env arg
                    let fntm = App fc tm aval
-                   fnty <- sc defs (toClosure defaultOpts env aval)
+                   fnty <- sc defs !(toClosure defaultOpts env aval)
                    checkAppWith rig elabinfo nest env fc
                                 fntm fnty (n, 1 + argpos) expargs autoargs namedargs kr expty
     where
@@ -444,7 +444,7 @@ mutual
           arg <- dotErased aty n argpos (elabMode elabinfo) argRig arg_in
           kr <- if knownret
                    then pure True
-                   else do sc' <- sc defs (toClosure defaultOpts env (Erased fc Placeholder))
+                   else do sc' <- sc defs !(toClosure defaultOpts env (Erased fc Placeholder))
                            concrete defs env sc'
           -- In theory we can check the arguments in any order. But it turns
           -- out that it's sometimes better to do the rightmost arguments
@@ -476,7 +476,7 @@ mutual
              (idx, metaval) <- argVar (getFC arg) argRig env nm metaty
              let fntm = App fc tm metaval
              logTerm "elab" 10 "...as" metaval
-             fnty <- sc defs (toClosure defaultOpts env metaval)
+             fnty <- sc defs !(toClosure defaultOpts env metaval)
              (tm, gty) <- checkAppWith rig elabinfo nest env fc
                                        fntm fnty (n, 1 + argpos) expargs autoargs namedargs kr expty
              defs <- get Ctxt
@@ -561,7 +561,7 @@ mutual
              logGlueNF "elab" 10 "Got arg type" env argt
              defs <- get Ctxt
              let fntm = App fc tm argv
-             fnty <- sc defs (toClosure defaultOpts env argv)
+             fnty <- sc defs !(toClosure defaultOpts env argv)
              checkAppWith rig elabinfo nest env fc
                           fntm fnty (n, 1 + argpos) expargs autoargs namedargs kr expty
 

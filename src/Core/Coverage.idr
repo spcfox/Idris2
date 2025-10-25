@@ -117,7 +117,7 @@ conflict defs env nfty n
           -- put possible
           = let x' = MN (show x) i in
                 conflictNF (i + 1) t
-                       !(sc defs (toClosure defaultOpts Env.empty (Ref fc Bound x')))
+                       !(sc defs !(toClosure defaultOpts Env.empty (Ref fc Bound x')))
       conflictNF i nf (NApp _ (NRef Bound n) [])
           = pure (Just [(n, !(quote defs env nf))])
       conflictNF i (NDCon _ n t a args) (NDCon _ n' t' a' args')

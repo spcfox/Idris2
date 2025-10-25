@@ -46,7 +46,7 @@ findErasedFrom defs pos (NBind fc x (Pi _ c _ aty) scf)
     = do -- In the scope, use 'Erased fc Impossible' to mean 'argument is erased'.
          -- It's handy here, because we can use it to tell if a detaggable
          -- argument position is available
-         sc <- scf defs (toClosure defaultOpts Env.empty (Erased fc (ifThenElse (isErased c) Impossible Placeholder)))
+         sc <- scf defs !(toClosure defaultOpts Env.empty (Erased fc (ifThenElse (isErased c) Impossible Placeholder)))
          (erest, dtrest) <- findErasedFrom defs (1 + pos) sc
          let dt' = if !(detagSafe defs !(evalClosure defs aty))
                       then (insert pos dtrest) else dtrest

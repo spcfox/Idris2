@@ -82,7 +82,7 @@ mkArgs fc rigc env (NBind nfc x (Pi fc' c p ty) sc)
                                (Hole (length env) (holeInit False)) False
          setInvertible fc (Resolved idx)
          (rest, restTy) <- mkArgs fc rigc env
-                              !(sc defs (toClosure defaultOpts env arg))
+                              !(sc defs !(toClosure defaultOpts env arg))
          pure (MkArgInfo idx argRig p arg argTy :: rest, restTy)
 mkArgs fc rigc env ty = pure ([], ty)
 
@@ -258,7 +258,7 @@ usableLocal loc defaults env (NApp _ (NLocal {}) args)
 usableLocal loc defaults env (NBind fc x (Pi {}) sc)
     = do defs <- get Ctxt
          usableLocal loc defaults env
-                !(sc defs (toClosure defaultOpts env (Erased fc Placeholder)))
+                !(sc defs !(toClosure defaultOpts env (Erased fc Placeholder)))
 usableLocal loc defaults env (NErased {}) = pure False
 usableLocal loc _ _ _ = pure True
 
@@ -373,7 +373,7 @@ isPairNF : {auto c : Ref Ctxt Defs} ->
 isPairNF env (NTCon _ n _ _) defs
     = isPairType n
 isPairNF env (NBind fc b (Pi {}) sc) defs
-    = isPairNF env !(sc defs (toClosure defaultOpts env (Erased fc Placeholder))) defs
+    = isPairNF env !(sc defs !(toClosure defaultOpts env (Erased fc Placeholder))) defs
 isPairNF _ _ _ = pure False
 
 searchName : {vars : _} ->
@@ -462,7 +462,7 @@ concreteDets {vars} fc defaults env top pos dets (arg :: args)
   where
     concrete : Defs -> NF vars -> (atTop : Bool) -> Core ()
     concrete defs (NBind nfc x b sc) atTop
-        = do scnf <- sc defs (toClosure defaultOpts env (Erased nfc Placeholder))
+        = do scnf <- sc defs !(toClosure defaultOpts env (Erased nfc Placeholder))
              concrete defs scnf False
     concrete defs (NTCon nfc n a args) atTop
         = do sd <- getSearchData nfc False n

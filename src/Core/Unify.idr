@@ -1077,8 +1077,8 @@ mutual
                               = Pi fcy cy Explicit tx' :: env
                      case constraints ct of
                          [] => -- No constraints, check the scope
-                            do tscx <- scx defs (toClosure defaultOpts env (Ref loc Bound xn))
-                               tscy <- scy defs (toClosure defaultOpts env (Ref loc Bound xn))
+                            do tscx <- scx defs !(toClosure defaultOpts env (Ref loc Bound xn))
+                               tscy <- scy defs !(toClosure defaultOpts env (Ref loc Bound xn))
                                tmx <- quote empty env tscx
                                tmy <- quote empty env tscy
                                cs <- unify (lower mode) loc env'
@@ -1092,8 +1092,8 @@ mutual
                                       (Bind xfc x (Lam fcy cy Explicit txtm) (Local xfc Nothing _ First))
                                       (Bind xfc x (Pi fcy cy Explicit txtm)
                                           (weaken tytm)) cs
-                               tscx <- scx defs (toClosure defaultOpts env (Ref loc Bound xn))
-                               tscy <- scy defs (toClosure defaultOpts env (App loc c (Ref loc Bound xn)))
+                               tscx <- scx defs !(toClosure defaultOpts env (Ref loc Bound xn))
+                               tscy <- scy defs !(toClosure defaultOpts env (App loc c (Ref loc Bound xn)))
                                tmx <- quote empty env tscx
                                tmy <- quote empty env tscy
                                cs' <- unify (lower mode) loc env'
@@ -1116,8 +1116,8 @@ mutual
                      let env' : Env Term (x :: _)
                               = Lam fcx cx Explicit txtm :: env
 
-                     tscx <- scx defs (toClosure defaultOpts env (Ref loc Bound xn))
-                     tscy <- scy defs (toClosure defaultOpts env (Ref loc Bound xn))
+                     tscx <- scx defs !(toClosure defaultOpts env (Ref loc Bound xn))
+                     tscy <- scy defs !(toClosure defaultOpts env (Ref loc Bound xn))
                      tmx <- quote empty env tscx
                      tmy <- quote empty env tscy
                      cs' <- unify (lower mode) loc env' (refsToLocals (Add x xn None) tmx)
@@ -1132,14 +1132,15 @@ mutual
   dumpArg : {vars : _} ->
             {auto c : Ref Ctxt Defs} ->
             Env Term vars -> Closure vars -> Core ()
-  dumpArg env (MkClosure opts loc lenv tm)
-      = do defs <- get Ctxt
+  dumpArg env cl@(MkMClosure ref) = coreLift (readIORef ref) >>= \case
+    MkClosure opts loc lenv tm => do
+           defs <- get Ctxt
            empty <- clearDefs defs
            logTerm "unify" 20 "Term: " tm
-           nf <- evalClosure empty (MkClosure opts loc lenv tm)
+           nf <- evalClosure empty !(mkClosure opts loc lenv tm)
            logNF "unify" 20 "  " env nf
-  dumpArg env cl
-      = do defs <- get Ctxt
+    _ => do
+           defs <- get Ctxt
            empty <- clearDefs defs
            nf <- evalClosure empty cl
            logNF "unify" 20 "  " env nf

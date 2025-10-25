@@ -604,7 +604,7 @@ tryIntermediateWith fc rig opts hints env ((p, pty) :: rest) ty topty
   where
     matchable : Defs -> NF vars -> Core Bool
     matchable defs (NBind fc x (Pi {}) sc)
-        = matchable defs !(sc defs (toClosure defaultOpts env
+        = matchable defs !(sc defs !(toClosure defaultOpts env
                                               (Erased fc Placeholder)))
     matchable defs (NTCon {}) = pure True
     matchable _ _ = pure False
@@ -617,7 +617,7 @@ tryIntermediateWith fc rig opts hints env ((p, pty) :: rest) ty topty
           -- let bind the result, and try to generate a definition for
           -- the scope of the let binding
           do True <- matchable defs
-                           !(sc defs (toClosure defaultOpts env
+                           !(sc defs !(toClosure defaultOpts env
                                                 (Erased fc Placeholder)))
                  | False => noResult
              intnty <- genVarName "cty"
@@ -673,7 +673,7 @@ tryIntermediateRec fc rig opts hints env ty topty (Just rd)
   where
     isSingleCon : Defs -> ClosedNF -> Core Bool
     isSingleCon defs (NBind fc x (Pi {}) sc)
-        = isSingleCon defs !(sc defs (toClosure defaultOpts Env.empty
+        = isSingleCon defs !(sc defs !(toClosure defaultOpts Env.empty
                                               (Erased fc Placeholder)))
     isSingleCon defs (NTCon _ n _ _)
         = do Just (TCon _ _ _ _ _ (Just [con]) _) <- lookupDefExact n (gamma defs)

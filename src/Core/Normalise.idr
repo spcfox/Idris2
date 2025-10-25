@@ -154,7 +154,7 @@ etaContract tm = do
 export
 getValArity : Defs -> Env Term vars -> NF vars -> Core Nat
 getValArity defs env (NBind fc x (Pi {}) sc)
-    = pure (S !(getValArity defs env !(sc defs (toClosure defaultOpts env (Erased fc Placeholder)))))
+    = pure (S !(getValArity defs env !(sc defs !(toClosure defaultOpts env (Erased fc Placeholder)))))
 getValArity defs env val = pure 0
 
 export
@@ -264,7 +264,7 @@ replace' {vars} tmpi defs env lhs parg tm
         = do b' <- traverse (\c => repSub !(evalClosure defs c)) b
              let x' = MN "tmp" tmpi
              sc' <- replace' (tmpi + 1) defs env lhs parg
-                             !(scfn defs (toClosure defaultOpts env (Ref fc Bound x')))
+                             !(scfn defs !(toClosure defaultOpts env (Ref fc Bound x')))
              pure (Bind fc x b' (refsToLocals (Add x x' None) sc'))
     repSub (NApp fc hd [])
         = do empty <- clearDefs defs

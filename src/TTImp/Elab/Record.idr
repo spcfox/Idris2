@@ -102,7 +102,7 @@ findFieldsAndTypeArgs defs con
              nfty <- evalClosure defs ty
              let names = !(getNames defs nfty) `union` names
              let expNames = (nameRoot x, imp, getRecordType Env.empty nfty) :: expNames
-             getExpNames names expNames !(sc defs (toClosure defaultOpts Env.empty (Ref fc Bound x)))
+             getExpNames names expNames !(sc defs !(toClosure defaultOpts Env.empty (Ref fc Bound x)))
     getExpNames names expNames nfty = pure (reverse expNames, (!(getNames defs nfty) `union` names))
 
 genFieldName : {auto u : Ref UST UState} ->

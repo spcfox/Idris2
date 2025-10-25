@@ -313,7 +313,7 @@ mustBePoly fc env tm ty = update EST { polyMetavars $= ((fc, env, tm, ty) :: ) }
 export
 concrete : Defs -> Env Term vars -> NF vars -> Core Bool
 concrete defs env (NBind fc _ (Pi {}) sc)
-    = do sc' <- sc defs (toClosure defaultOpts env (Erased fc Placeholder))
+    = do sc' <- sc defs !(toClosure defaultOpts env (Erased fc Placeholder))
          concrete defs env sc'
 concrete defs env (NDCon {}) = pure True
 concrete defs env (NTCon {}) = pure True

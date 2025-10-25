@@ -179,7 +179,7 @@ mutual
   quoteGenNF q opts defs bound env (NBind fc n b sc)
       = do var <- genName "qv"
            sc' <- quoteGenNF q opts defs (Add n var bound) env
-                       !(sc defs (toClosure defaultOpts env (Ref fc Bound var)))
+                       !(sc defs !(toClosure defaultOpts env (Ref fc Bound var)))
            b' <- quoteBinder q opts defs bound env b
            pure (Bind fc n b' sc')
   quoteGenNF q opts defs bound env (NApp fc f args)
@@ -212,18 +212,24 @@ mutual
       = do argQ <- quoteGenNF q opts defs bound env arg
            pure (TDelayed fc r argQ)
   quoteGenNF q opts defs bound env (NDelay fc r ty arg)
-      = do argNF <- evalClosure defs (toHolesOnly arg)
+      = do toHolesOnly arg
+           argNF <- evalClosure defs arg
            argQ <- quoteGenNF q opts defs bound env argNF
-           tyNF <- evalClosure defs (toHolesOnly ty)
+           toHolesOnly ty
+           tyNF <- evalClosure defs ty
            tyQ <- quoteGenNF q opts defs bound env tyNF
            pure (TDelay fc r tyQ argQ)
     where
-      toHolesOnly : Closure vs -> Closure vs
-      toHolesOnly (MkClosure opts locs env tm)
-          = MkClosure ({ holesOnly := True,
-                         argHolesOnly := True } opts)
-                      locs env tm
-      toHolesOnly c = c
+      toHolesOnly : Closure vs -> Core ()
+      toHolesOnly (MkMClosure ref) = coreLift (readIORef ref) >>= \case
+        (MkClosure opts locs env tm) =>
+          coreLift $ writeIORef ref $ MkClosure ({ holesOnly := True, argHolesOnly := True } opts) locs env tm
+        _ => pure ()
+      -- toHolesOnly (MkClosure opts locs env tm)
+      --     = MkClosure ({ holesOnly := True,
+      --                    argHolesOnly := True } opts)
+      --                 locs env tm
+      -- toHolesOnly c = c
   quoteGenNF q opts defs bound env (NForce fc r arg args)
       = do args' <- quoteArgsWithFC q opts defs bound env args
            case arg of
@@ -257,7 +263,7 @@ quoteWithPiGen q opts defs bound env (NBind fc n (Pi bfc c p ty) sc)
     = do var <- genName "qv"
          empty <- clearDefs defs
          sc' <- quoteWithPiGen q opts defs (Add n var bound) env
-                     !(sc defs (toClosure defaultOpts env (Ref fc Bound var)))
+                     !(sc defs !(toClosure defaultOpts env (Ref fc Bound var)))
          ty' <- quoteGenNF q opts empty bound env !(evalClosure empty ty)
          p' <- quotePi q opts empty bound env p
          pure (Bind fc n (Pi bfc c p' ty') sc')

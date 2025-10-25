@@ -301,15 +301,15 @@ findLinear top bound rig tm
           = do defs <- get Ctxt
                let a = nameAt prf
                if idx < bound
-                 then do sc' <- sc defs (toClosure defaultOpts Env.empty (Ref fc Bound x))
+                 then do sc' <- sc defs !(toClosure defaultOpts Env.empty (Ref fc Bound x))
                          pure $ (a, rigMult c rig) ::
                                     !(findLinArg rig sc' as)
-                 else do sc' <- sc defs (toClosure defaultOpts Env.empty (Ref fc Bound x))
+                 else do sc' <- sc defs !(toClosure defaultOpts Env.empty (Ref fc Bound x))
                          findLinArg rig sc' as
       findLinArg rig (NBind fc x (Pi _ c _ _) sc) (a :: as)
           = do defs <- get Ctxt
                pure $ !(findLinear False bound (c |*| rig) a) ++
-                      !(findLinArg rig !(sc defs (toClosure defaultOpts Env.empty (Ref fc Bound x))) as)
+                      !(findLinArg rig !(sc defs !(toClosure defaultOpts Env.empty (Ref fc Bound x))) as)
       findLinArg rig ty (a :: as)
           = pure $ !(findLinear False bound rig a) ++ !(findLinArg rig ty as)
       findLinArg _ _ [] = pure []
@@ -1113,7 +1113,7 @@ processDef opts nest env fc n_in cs_in
       where
         closeEnv : Defs -> ClosedNF -> Core ClosedTerm
         closeEnv defs (NBind _ x (PVar {}) sc)
-            = closeEnv defs !(sc defs (toClosure defaultOpts Env.empty (Ref fc Bound x)))
+            = closeEnv defs !(sc defs !(toClosure defaultOpts Env.empty (Ref fc Bound x)))
         closeEnv defs nf = quote defs Env.empty nf
 
     getClause : Either RawImp Clause -> Core (Maybe Clause)

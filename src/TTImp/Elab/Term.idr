@@ -83,19 +83,19 @@ insertImpLam {vars} env tm (Just ty) = bindLam tm ty
     bindLamNF tm (NBind fc n (Pi fc' c Implicit ty) sc)
         = do defs <- get Ctxt
              n' <- genVarName (nameRoot n)
-             sctm <- sc defs (toClosure defaultOpts env (Ref fc Bound n'))
+             sctm <- sc defs !(toClosure defaultOpts env (Ref fc Bound n'))
              sc' <- bindLamNF tm sctm
              pure $ ILam fc c Implicit (Just n') (Implicit fc False) sc'
     bindLamNF tm (NBind fc n (Pi fc' c AutoImplicit ty) sc)
         = do defs <- get Ctxt
              n' <- genVarName (nameRoot n)
-             sctm <- sc defs (toClosure defaultOpts env (Ref fc Bound n'))
+             sctm <- sc defs !(toClosure defaultOpts env (Ref fc Bound n'))
              sc' <- bindLamNF tm sctm
              pure $ ILam fc c AutoImplicit (Just n') (Implicit fc False) sc'
     bindLamNF tm (NBind fc n (Pi _ c (DefImplicit _) ty) sc)
         = do defs <- get Ctxt
              n' <- genVarName (nameRoot n)
-             sctm <- sc defs (toClosure defaultOpts env (Ref fc Bound n'))
+             sctm <- sc defs !(toClosure defaultOpts env (Ref fc Bound n'))
              sc' <- bindLamNF tm sctm
              pure $ ILam fc c (DefImplicit (Implicit fc False))
                               (Just n') (Implicit fc False) sc'

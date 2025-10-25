@@ -157,25 +157,25 @@ getSpecPats fc pename fn stk fnty args sargs pats
                 Core RawImp
     mkRHSargs (NBind _ x (Pi _ _ Explicit _) sc) app (a :: as) ((_, Dynamic) :: ds)
         = do defs <- get Ctxt
-             sc' <- sc defs (toClosure defaultOpts Env.empty (Erased fc Placeholder))
+             sc' <- sc defs !(toClosure defaultOpts Env.empty (Erased fc Placeholder))
              mkRHSargs sc' (IApp fc app (IVar fc a)) as ds
     mkRHSargs (NBind _ x (Pi {}) sc) app (a :: as) ((_, Dynamic) :: ds)
         = do defs <- get Ctxt
-             sc' <- sc defs (toClosure defaultOpts Env.empty (Erased fc Placeholder))
+             sc' <- sc defs !(toClosure defaultOpts Env.empty (Erased fc Placeholder))
              mkRHSargs sc' (INamedApp fc app x (IVar fc a)) as ds
     mkRHSargs (NBind _ x (Pi _ _ Explicit _) sc) app as ((_, Static tm) :: ds)
         = do defs <- get Ctxt
-             sc' <- sc defs (toClosure defaultOpts Env.empty (Erased fc Placeholder))
+             sc' <- sc defs !(toClosure defaultOpts Env.empty (Erased fc Placeholder))
              tm' <- unelabNoSugar Env.empty tm
              mkRHSargs sc' (IApp fc app (map rawName tm')) as ds
     mkRHSargs (NBind _ x (Pi _ _ Implicit _) sc) app as ((_, Static tm) :: ds)
         = do defs <- get Ctxt
-             sc' <- sc defs (toClosure defaultOpts Env.empty (Erased fc Placeholder))
+             sc' <- sc defs !(toClosure defaultOpts Env.empty (Erased fc Placeholder))
              tm' <- unelabNoSugar Env.empty tm
              mkRHSargs sc' (INamedApp fc app x (map rawName tm')) as ds
     mkRHSargs (NBind _ _ (Pi _ _ AutoImplicit _) sc) app as ((_, Static tm) :: ds)
         = do defs <- get Ctxt
-             sc' <- sc defs (toClosure defaultOpts Env.empty (Erased fc Placeholder))
+             sc' <- sc defs !(toClosure defaultOpts Env.empty (Erased fc Placeholder))
              tm' <- unelabNoSugar Env.empty tm
              mkRHSargs sc' (IAutoApp fc app (map rawName tm')) as ds
     -- Type will depend on the value here (we assume a variadic function) but
@@ -614,7 +614,7 @@ mutual
   quoteGenNF q defs bound env (NBind fc n b sc)
       = do var <- bName "qv"
            sc' <- quoteGenNF q defs (Add n var bound) env
-                       !(sc defs (toClosure defaultOpts env (Ref fc Bound var)))
+                       !(sc defs !(toClosure defaultOpts env (Ref fc Bound var)))
            b' <- quoteBinder q defs bound env b
            pure (Bind fc n b' sc')
   -- IMPORTANT CASE HERE
@@ -666,11 +666,6 @@ mutual
            tyNF <- evalClosure defs ty
            tyQ <- quoteGenNF q defs bound env tyNF
            pure (TDelay fc r tyQ argQ)
-    where
-      toHolesOnly : Closure vs -> Closure vs
-      toHolesOnly (MkClosure _ locs env tm)
-          = MkClosure withHoles locs env tm
-      toHolesOnly c = c
   quoteGenNF q defs bound env (NForce fc r arg args)
       = do args' <- quoteArgsWithFC q defs bound env args
            case arg of

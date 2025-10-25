@@ -222,7 +222,7 @@ mutual
                {vars : _} ->
                Defs -> NF vars -> ClosedNF -> Core TypeMatch
   mightMatch defs target (NBind fc n (Pi {}) sc)
-      = mightMatchD defs target !(sc defs (toClosure defaultOpts Env.empty (Erased fc Placeholder)))
+      = mightMatchD defs target !(sc defs !(toClosure defaultOpts Env.empty (Erased fc Placeholder)))
   mightMatch defs (NBind {}) (NBind {}) = pure Poly -- lambdas might match
   mightMatch defs (NTCon _ n a args) (NTCon _ n' a' args')
       = if n == n'

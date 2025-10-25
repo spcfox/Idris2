@@ -27,7 +27,7 @@ nameIn defs tyns (NBind fc x b sc)
     = if !(nameIn defs tyns !(evalClosure defs (binderType b)))
          then pure True
          else do let nm = Ref fc Bound (MN ("NAMEIN_" ++ show x) 0)
-                 let arg = toClosure defaultOpts Env.empty nm
+                 arg <- toClosure defaultOpts Env.empty nm
                  sc' <- sc defs arg
                  nameIn defs tyns sc'
 nameIn defs tyns (NApp _ nh args)
@@ -82,7 +82,7 @@ posArg defs tyns nf@(NBind fc x (Pi _ _ e ty) sc)
        if !(nameIn defs tyns !(evalClosure defs ty))
          then pure (NotTerminating NotStrictlyPositive)
          else do let nm = Ref fc Bound (MN ("POSCHECK_" ++ show x) 1)
-                 let arg = toClosure defaultOpts Env.empty nm
+                 arg <- toClosure defaultOpts Env.empty nm
                  sc' <- sc defs arg
                  posArg defs tyns sc'
 posArg defs tyns nf@(NApp fc nh args)
@@ -105,7 +105,7 @@ checkPosArgs defs tyns (NBind fc x (Pi _ _ e ty) sc)
     = case !(posArg defs tyns !(evalClosure defs ty)) of
            IsTerminating =>
                do let nm = Ref fc Bound (MN ("POSCHECK_" ++ show x) 0)
-                  let arg = toClosure defaultOpts Env.empty nm
+                  arg <- toClosure defaultOpts Env.empty nm
                   checkPosArgs defs tyns !(sc defs arg)
            bad => pure bad
 checkPosArgs defs tyns nf

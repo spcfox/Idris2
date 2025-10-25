@@ -120,7 +120,7 @@ findInferrable defs ty = fi 0 0 [] NatSet.empty ty
     fi : Nat -> Int -> List (Name, Nat) -> NatSet -> ClosedNF -> Core NatSet
     fi pos i args acc (NBind fc x (Pi _ _ _ aty) sc)
         = do let argn = MN "inf" i
-             sc' <- sc defs (toClosure defaultOpts Env.empty (Ref fc Bound argn))
+             sc' <- sc defs !(toClosure defaultOpts Env.empty (Ref fc Bound argn))
              acc' <- findInf acc args !(evalClosure defs aty)
              rest <- fi (1 + pos) (1 + i) ((argn, pos) :: args) acc' sc'
              pure rest

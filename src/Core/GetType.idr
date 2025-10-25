@@ -41,7 +41,7 @@ mutual
                 NBind _ _ (Pi _ _ _ ty) scdone =>
                       do defs <- get Ctxt
                          aty <- chk env a
-                         sc' <- scdone defs (toClosure defaultOpts env a)
+                         sc' <- scdone defs !(toClosure defaultOpts env a)
                          pure $ glueBack defs env sc'
                 _ => do fty' <- getTerm fty
                         throw (NotFunctionType fc env fty')
@@ -73,7 +73,7 @@ mutual
   chkMeta fc env (NBind _ _ (Pi _ _ _ ty) scdone) (a :: args)
       = do defs <- get Ctxt
            aty <- chk env a
-           sc' <- scdone defs (toClosure defaultOpts env a)
+           sc' <- scdone defs !(toClosure defaultOpts env a)
            chkMeta fc env sc' args
   chkMeta fc env ty args
       = do defs <- get Ctxt

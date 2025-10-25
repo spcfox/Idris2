@@ -293,7 +293,7 @@ mutual
                      -- application without spending it
                    do let checkRig = rigf |*| rig
                       (a', gaty, aused) <- lcheck checkRig erase env a
-                      sc' <- scdone defs (toClosure defaultOpts env a')
+                      sc' <- scdone defs !(toClosure defaultOpts env a')
                       let aerased = if erase && isErased rigf then Erased fc Placeholder else a'
                       -- Possibly remove this check, or make it a compiler
                       -- flag? It is a useful double check on the result of
@@ -643,7 +643,7 @@ mutual
       = do let checkRig = rigf |*| rig
            (arg', gargTy, aused) <- lcheck checkRig erase env arg
            defs <- get Ctxt
-           sc' <- sc defs (toClosure defaultOpts env arg')
+           sc' <- sc defs !(toClosure defaultOpts env arg')
            let aerased = if erase && isErased rigf
                             then Erased fc Placeholder
                             else arg'

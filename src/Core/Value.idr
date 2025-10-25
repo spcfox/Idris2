@@ -100,13 +100,17 @@ mutual
   LocalEnv free = All (\_ => Closure free)
 
   public export
-  data Closure : Scoped where
+  data Closure' : Scoped where
        MkClosure : {vars : _} ->
                    (opts : EvalOpts) ->
                    LocalEnv free vars ->
                    Env Term free ->
-                   Term (Scope.addInner free vars) -> Closure free
-       MkNFClosure : EvalOpts -> Env Term free -> NF free -> Closure free
+                   Term (Scope.addInner free vars) -> Closure' free
+       MkNFClosure : EvalOpts -> Env Term free -> NF free -> Closure' free
+
+  public export
+  data Closure : Scoped where
+    MkMClosure : IORef (Closure' free) -> Closure free
 
   -- The head of a value: things you can apply arguments to
   public export
@@ -141,6 +145,7 @@ mutual
        NType    : FC -> Name -> NF vars
 
 %name LocalEnv lenv
+%name Closure' cl
 %name Closure cl
 %name NHead hd
 %name NF nf

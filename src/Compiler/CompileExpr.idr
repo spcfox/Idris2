@@ -459,7 +459,7 @@ nfToCFType _ (NPrimVal _ $ PrT WorldType) _ = pure CFWorld
 nfToCFType _ (NBind fc _ (Pi _ _ _ ty) sc) False
     = do defs <- get Ctxt
          sty <- nfToCFType fc !(evalClosure defs ty) False
-         sc' <- sc defs (toClosure defaultOpts Env.empty (Erased fc Placeholder))
+         sc' <- sc defs !(toClosure defaultOpts Env.empty (Erased fc Placeholder))
          tty <- nfToCFType fc sc' False
          pure (CFFun sty tty)
 nfToCFType _ (NBind fc _ _ _) True
@@ -505,7 +505,7 @@ getCFTypes : {auto c : Ref Ctxt Defs} ->
 getCFTypes args (NBind fc _ (Pi _ _ _ ty) sc)
     = do defs <- get Ctxt
          aty <- nfToCFType fc !(evalClosure defs ty) False
-         sc' <- sc defs (toClosure defaultOpts Env.empty (Erased fc Placeholder))
+         sc' <- sc defs !(toClosure defaultOpts Env.empty (Erased fc Placeholder))
          getCFTypes (aty :: args) sc'
 getCFTypes args t
     = pure (reverse args, !(nfToCFType (getLoc t) t False))
