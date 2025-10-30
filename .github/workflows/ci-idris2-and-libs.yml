@@ -628,7 +628,7 @@ jobs:
     strategy:
       fail-fast: false
     # N.B.:
-    container: ghcr.io/stefan-hoeck/idris2-pack:latest
+    container: ghcr.io/spcfox/idris2-pack:latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -671,7 +671,7 @@ jobs:
       IDRIS2_CG: chez
       PACK_DIR: /root/.pack
     # LSP is vastly easier to build using pack, so do that
-    container: ghcr.io/stefan-hoeck/idris2-pack:latest
+    container: ghcr.io/spcfox/idris2-pack:latest
     strategy:
       fail-fast: false
     steps:
