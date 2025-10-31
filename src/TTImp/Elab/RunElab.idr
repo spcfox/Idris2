@@ -75,12 +75,28 @@ deepRefersTo def = do
         clos all' defs ns'
 
 export
+data ElabRefs : Type where
+
+replaceAt : (idx : Integer) -> a -> SnocList a -> Maybe (SnocList a)
+replaceAt idx x sx with (natToInteger (length sx) - 1 - idx)
+  replaceAt _   _ [<]     | _ = Nothing
+  replaceAt _   x (sx:<_) | 0 = Just $ sx :< x
+  replaceAt idx x (sx:<s) | i = map (:<s) $ replaceAt idx x sx | i - 1
+
+getAt : (idx : Integer) -> SnocList a -> Maybe a
+getAt idx sx with (natToInteger (length sx) - 1 - idx)
+  getAt _   [<]     | _ = Nothing
+  getAt _   (_ :<x) | 0 = Just x
+  getAt idx (sx:<_) | i = getAt idx sx | i - 1
+
+export
 elabScript : {vars : _} ->
              {auto c : Ref Ctxt Defs} ->
              {auto m : Ref MD Metadata} ->
              {auto u : Ref UST UState} ->
              {auto s : Ref Syn SyntaxInfo} ->
              {auto o : Ref ROpts REPLOpts} ->
+             {auto ers : Ref ElabRefs $ SnocList $ Closure vars} ->
              RigCount -> FC -> NestedNames vars ->
              Env Term vars -> NF vars -> Maybe (Glued vars) ->
              Core (NF vars)
@@ -260,6 +276,7 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
              qty <- quote empty env ty
              let env' = Lam fc' c qp qty :: env
 
+             newErs <- newRef ElabRefs [<] -- Looooosing my reliiiiiiigion
              runsc <- elabScript rig fc (weaken nest) env'
                                  !(nf defs env' lamsc) Nothing -- (map weaken exp)
              nf empty env (Bind bfc x (Lam fc' c qp qty) !(quote empty env' runsc))
@@ -331,6 +348,29 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
              decls <- reify defs d'
              List.traverse_ (processDecl [] (MkNested []) Env.empty) decls
              scriptRet ()
+
+    elabCon defs "NewRef" [_, v]
+        = do rs <- get ElabRefs
+             put ElabRefs $ rs :< v
+             scriptRet $ natToInteger $ length rs
+    elabCon defs "WriteRef" [_, idx, v]
+        = do idx <- reify defs !(evalClosure defs idx)
+             let Just rs = replaceAt idx v !(get ElabRefs)
+               | Nothing => failWith defs "No elab reference with index \{show idx} while writing"
+             put ElabRefs rs
+             scriptRet ()
+    elabCon defs "ReadRef" [exp, idx]
+        = do idx <- reify defs !(evalClosure defs idx)
+             let Just v = getAt idx !(get ElabRefs)
+               | Nothing => failWith defs "No elab reference with index \{show idx} while reading"
+             v' <- evalClosure defs v
+             _ <- newRef EST $ initEState !(resolveName (UN $ Basic "[elaborator script]")) env
+             (checktm, _) <- runDelays (const True) $
+                     check rig (initElabInfo InExpr) nest env (map rawName !(unelabUniqueBinders env !(quote !(clearDefs defs) env v')))
+                           (Just (glueBack defs env !(evalClosure defs exp)))
+             empty <- clearDefs defs
+             nf empty env checktm
+
     elabCon defs "ReadFile" [lk, pth]
         = do pathPrefix <- lookupDir defs !(evalClosure defs lk)
              path <- reify defs !(evalClosure defs pth)
@@ -382,6 +422,7 @@ checkRunElab rig elabinfo nest env fc reqExt script exp
                              check rig elabinfo nest env script (Just (gnf env elabtt))
            solveConstraints inTerm Normal
            defs <- get Ctxt -- checking might have resolved some holes
+           _ <- newRef ElabRefs empty
            ntm <- elabScript rig fc nest env
                              !(nfOpts withAll defs env stm) (Just (gnf env expected))
            defs <- get Ctxt -- might have updated as part of the script

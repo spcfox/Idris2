@@ -1,5 +1,7 @@
 module Language.Reflection
 
+import Data.Ref
+
 import public Language.Reflection.TT
 import public Language.Reflection.TTImp
 
@@ -99,6 +101,10 @@ data Elab : Type -> Type where
      GetCurrentFn : Elab (SnocList Name)
      -- Check a group of top level declarations
      Declare : List Decl -> Elab ()
+
+     NewRef   : a -> Elab Integer
+     WriteRef : Integer -> a -> Elab ()
+     ReadRef  : Integer -> Elab a -- it will fail if the stored value is of the wrong type, or if there is no such ref
 
      -- Read the contents of a file, if it is present
      ReadFile : LookupDir -> (path : String) -> Elab $ Maybe String
@@ -206,6 +212,10 @@ interface Monad m => Elaboration m where
   ||| Make some top level declarations
   declare : List Decl -> m ()
 
+  newERef   : a -> m Integer
+  writeERef : Integer -> a -> m ()
+  readERef  : Integer -> m a -- it will fail if the stored value is of the wrong type, or if there is no such ref
+
   ||| Read the contents of a file, if it is present
   readFile : LookupDir -> (path : String) -> m $ Maybe String
 
@@ -254,6 +264,9 @@ Elaboration Elab where
   getReferredFns = GetReferredFns
   getCurrentFn   = GetCurrentFn
   declare        = Declare
+  newERef        = NewRef
+  readERef       = ReadRef
+  writeERef      = WriteRef
   readFile       = ReadFile
   writeFile      = WriteFile
   idrisDir       = IdrisDir
@@ -282,9 +295,18 @@ Elaboration m => MonadTrans t => Monad (t m) => Elaboration (t m) where
   getReferredFns      = lift . getReferredFns
   getCurrentFn        = lift getCurrentFn
   declare             = lift . declare
+  newERef             = lift . newERef
+  readERef            = lift . readERef
+  writeERef           = lift .: writeERef
   readFile            = lift .: readFile
   writeFile d         = lift .: writeFile d
   idrisDir            = lift . idrisDir
+
+public export
+Elaboration m => Ref m (const Integer) where
+  newRef   = newERef
+  readRef  = readERef
+  writeRef = writeERef
 
 ||| Catch failures and use the `Maybe` monad instead
 export
