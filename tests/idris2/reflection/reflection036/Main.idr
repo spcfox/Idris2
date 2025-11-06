@@ -10,7 +10,11 @@ import Language.Reflection
 
 action : MonadState Integer m => Elaboration m => Nat -> m Integer
 action Z = get
-action w@(S n) = logMsg "info" 0 "current: \{show !get}" >> modify (+ natToInteger w) >> action n
+action w@(S n) = do
+  v <- get
+  q <- quote v
+  logSugaredTerm "info" 0 "current: " q
+  modify (+ natToInteger w) >> action n
 
 %language ElabReflection
 
