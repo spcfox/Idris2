@@ -96,7 +96,7 @@ elabScript : {vars : _} ->
              {auto u : Ref UST UState} ->
              {auto s : Ref Syn SyntaxInfo} ->
              {auto o : Ref ROpts REPLOpts} ->
-             {auto ers : Ref ElabRefs $ SnocList $ Closure vars} ->
+             {auto ers : Ref ElabRefs $ SnocList $ NF vars} ->
              RigCount -> FC -> NestedNames vars ->
              Env Term vars -> NF vars -> Maybe (Glued vars) ->
              Core (NF vars)
@@ -351,11 +351,11 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
 
     elabCon defs "NewRef" [_, v]
         = do rs <- get ElabRefs
-             put ElabRefs $ rs :< v
+             put ElabRefs $ rs :< !(evalClosure defs v)
              scriptRet $ natToInteger $ length rs
     elabCon defs "WriteRef" [_, idx, v]
         = do idx <- reify defs !(evalClosure defs idx)
-             let Just rs = replaceAt idx v !(get ElabRefs)
+             let Just rs = replaceAt idx !(evalClosure defs v) !(get ElabRefs)
                | Nothing => failWith defs "No elab reference with index \{show idx} while writing"
              put ElabRefs rs
              scriptRet ()
@@ -363,7 +363,7 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
         = do idx <- reify defs !(evalClosure defs idx)
              let Just v = getAt idx !(get ElabRefs)
                | Nothing => failWith defs "No elab reference with index \{show idx} while reading"
-             evalClosure defs v
+             pure v
 
     elabCon defs "ReadFile" [lk, pth]
         = do pathPrefix <- lookupDir defs !(evalClosure defs lk)
