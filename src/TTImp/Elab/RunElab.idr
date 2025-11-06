@@ -363,7 +363,7 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
         = do idx <- reify defs !(evalClosure defs idx)
              let Just v = getAt idx !(get ElabRefs)
                | Nothing => failWith defs "No elab reference with index \{show idx} while reading"
-             quote defs env !(evalClosure defs v) >>= nf defs env
+             evalClosure defs v
 
     elabCon defs "ReadFile" [lk, pth]
         = do pathPrefix <- lookupDir defs !(evalClosure defs lk)
