@@ -13,6 +13,9 @@ import public Control.Monad.Trans
 --- Elaboration data structure ---
 ----------------------------------
 
+export
+data ElabRef : Type -> Type where [external]
+
 public export
 data LookupDir =
   ||| The dir of the `ipkg`-file, or the current dir if there is no one
@@ -102,9 +105,9 @@ data Elab : Type -> Type where
      -- Check a group of top level declarations
      Declare : List Decl -> Elab ()
 
-     NewRef   : a -> Elab Integer
-     WriteRef : Integer -> a -> Elab ()
-     ReadRef  : Integer -> Elab a -- it will fail if the stored value is of the wrong type, or if there is no such ref
+     NewRef   : a -> Elab (ElabRef a)
+     WriteRef : ElabRef a -> a -> Elab ()
+     ReadRef  : ElabRef a -> Elab a
 
      -- Read the contents of a file, if it is present
      ReadFile : LookupDir -> (path : String) -> Elab $ Maybe String
@@ -212,9 +215,9 @@ interface Monad m => Elaboration m where
   ||| Make some top level declarations
   declare : List Decl -> m ()
 
-  newERef   : a -> m Integer
-  writeERef : Integer -> a -> m ()
-  readERef  : Integer -> m a -- it will fail if the stored value is of the wrong type, or if there is no such ref
+  newERef   : a -> m (ElabRef a)
+  writeERef : ElabRef a -> a -> m ()
+  readERef  : ElabRef a -> m a
 
   ||| Read the contents of a file, if it is present
   readFile : LookupDir -> (path : String) -> m $ Maybe String
@@ -303,7 +306,7 @@ Elaboration m => MonadTrans t => Monad (t m) => Elaboration (t m) where
   idrisDir            = lift . idrisDir
 
 public export
-Elaboration m => Ref m (const Integer) where
+Elaboration m => Ref m ElabRef where
   newRef   = newERef
   readRef  = readERef
   writeRef = writeERef
