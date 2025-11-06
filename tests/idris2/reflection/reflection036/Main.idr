@@ -12,13 +12,13 @@ action : MonadState Integer m => Elaboration m => Nat -> m Integer
 action Z = get
 action w@(S n) = do
   v <- get
-  q <- quote v
-  logSugaredTerm "info" 0 "current: " q
-  modify (+ natToInteger w) >> action n
+  logMsg "info" 0 "current: \{show v}"
+  modify (+ natToInteger w)
+  action n
 
 %language ElabReflection
 
-x : Integer
-x = %runElab do
+%runElab do
   ref <- newRef 0
-  action @{ForRef ref} 5
+  res <- action @{ForRef ref} 5
+  logMsg "info" 0 $ "result: \{show res}"
