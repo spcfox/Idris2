@@ -345,15 +345,16 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
              scriptRet ()
 
     elabCon defs "NewRef" [_, v]
-        = do ref <- coreLift $ newIORef !(evalClosure defs v)
+        = do ref <- coreLift $ newIORef v
              reflectExternal fc ref
     elabCon defs "WriteRef" [_, ref, v]
         = do ref <- reifyExternal defs !(evalClosure defs ref)
-             coreLift $ writeIORef ref !(evalClosure defs v)
+             coreLift $ writeIORef ref v
              scriptRet ()
     elabCon defs "ReadRef" [exp, ref]
         = do ref <- reifyExternal defs !(evalClosure defs ref)
-             coreLift $ readIORef ref
+             cl <- coreLift $ readIORef ref
+             evalClosure defs cl
 
     elabCon defs "ReadFile" [lk, pth]
         = do pathPrefix <- lookupDir defs !(evalClosure defs lk)
