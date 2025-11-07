@@ -354,7 +354,8 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
     elabCon defs "ReadRef" [exp, ref]
         = do ref <- reifyExternal defs !(evalClosure defs ref)
              cl <- coreLift $ readIORef ref
-             evalClosure defs cl
+             empty <- clearDefs defs
+             continueNF empty env !(evalClosure defs cl)
 
     elabCon defs "ReadFile" [lk, pth]
         = do pathPrefix <- lookupDir defs !(evalClosure defs lk)
