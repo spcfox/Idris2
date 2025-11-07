@@ -885,6 +885,16 @@ Reflect a => Reflect (WithFC a) where
            val' <- reflect fc defs lhs env value.val
            appCon fc defs (reflectiontt "MkFCVal") [Erased fc Placeholder, loc', val']
 
+export
+reifyExternal : {auto c : Ref Ctxt Defs} ->
+                {vars : _} ->
+                Defs -> NF vars -> Core a
+reifyExternal defs val = believe_me $ reify {a=Int} defs val
+
+export
+reflectExternal : {vars : _} -> FC -> a -> Core (NF vars)
+reflectExternal fc val = pure $ NPrimVal fc $ I $ believe_me val
+
 {-
 -- Reflection of well typed terms: We don't reify terms because that involves
 -- type checking, but we can reflect them
