@@ -367,7 +367,7 @@ Applicative (Either e) where
   (Right f) <*> (Right r) = Right (f r)
   (Right _) <*> (Left l)  = Left l
 
-public export
+public export %inline
 Monad (Either e) where
   (Left n) >>= _ = Left n
   (Right r) >>= f = f r
@@ -379,7 +379,7 @@ Foldable (Either e) where
   null (Left _) = True
   null (Right _) = False
 
-public export
+public export %inline
 Traversable (Either e) where
   traverse f (Left x)  = pure (Left x)
   traverse f (Right x) = Right <$> f x
