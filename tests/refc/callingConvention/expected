@@ -394,7 +394,7 @@ Value *Main_main_0
     idris2_removeReference(var_3);
     idris2_removeReference(var_4);
     Value *closure_69 = (Value *)idris2_mkClosure((Value *(*)())Prelude_IO_map_Functor_IO, 3, 3);
-                                                             // Prelude.IO:15:1--17:38
+                                                             // Prelude.IO:15:1--17:19
     ((Value_Closure*)closure_69)->args[0] = var_2;
     ((Value_Closure*)closure_69)->args[1] = var_1;
     ((Value_Closure*)closure_69)->args[2] = var_0;

@@ -27,6 +27,17 @@ export
 io_pure : a -> IO a
 io_pure x = MkIO (MkIORes x)
 
+%inline
+export
+prim__io_map : (a -> b) -> PrimIO a -> PrimIO b
+prim__io_map f fn w
+  = let MkIORes x' w' = fn w in MkIORes (f x') w'
+
+%inline
+export
+io_map : (a -> b) -> IO a -> IO b
+io_map f (MkIO fn) = MkIO (prim__io_map f fn)
+
 export
 prim__io_bind : (1 act : PrimIO a) -> (1 k : a -> PrimIO b) -> PrimIO b
 prim__io_bind fn k w
