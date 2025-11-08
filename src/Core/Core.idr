@@ -638,11 +638,11 @@ in the next version (i.e., in this project...)! -}
 -- Functor (specialised)
 export %inline
 map : (a -> b) -> Core a -> Core b
-map f (MkCore a) = MkCore (map (map f) a)
+map f (MkCore a) = MkCore (map @{Compose} f a)
 
 export %inline
 (<$>) : (a -> b) -> Core a -> Core b
-(<$>) f (MkCore a) = MkCore (map (map f) a)
+(<$>) f (MkCore a) = MkCore (map @{Compose} f a)
 
 export %inline
 (<$) : b -> Core a -> Core b
@@ -661,11 +661,7 @@ coreLift_ op = ignore (coreLift op)
 -- Monad (specialised)
 export %inline
 (>>=) : Core a -> (a -> Core b) -> Core b
-(>>=) (MkCore act) f
-    = MkCore (act >>=
-                   \case
-                     Left err => pure $ Left err
-                     Right val => runCore $ f val)
+(>>=) (MkCore act) f = MkCore $ (act >>= runCore . f) @{Compose}
 
 export %inline
 (>>) : Core () -> Core a -> Core a
