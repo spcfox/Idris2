@@ -116,7 +116,7 @@ ignore = map (const ())
 
 namespace Functor
   ||| Composition of functors is a functor.
-  public export
+  public export %inline
   [Compose] (l : Functor f) => (r : Functor g) => Functor (f . g) where
     map = map . map
 
@@ -189,7 +189,7 @@ a *> b = map (const id) a <*> b
 
 namespace Applicative
   ||| Composition of applicative functors is an applicative functor.
-  public export
+  public export %inline
   [Compose] (l : Applicative f) => (r : Applicative g) => Applicative (f . g)
     using Functor.Compose where
       pure = pure . pure
@@ -592,7 +592,7 @@ namespace Bitraversable
 
 namespace Monad
   ||| Composition of a traversable monad and a monad is a monad.
-  public export %tcinline
+  public export %tcinline %inline
   [Compose] (l : Monad m) => (r : Monad t) => (tr : Traversable t) => Monad (m . t)
     using Applicative.Compose where
       a >>= f = a >>= map join . traverse f
