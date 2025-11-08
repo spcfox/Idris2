@@ -7,10 +7,10 @@ Value *Main_dupargs
     Value * var_0
 )
 {
-    Value *primVar_72 = idris2_add_Integer(var_0, idris2_newReference(var_0));
+    Value *primVar_71 = idris2_add_Integer(var_0, idris2_newReference(var_0));
     idris2_removeReference(var_0);
     idris2_removeReference(var_0);
-    return primVar_72;
+    return primVar_71;
 }
 Value *Main_last
 (
@@ -23,9 +23,9 @@ Value *Main_last
 ,   Value * var_1
 )
 {
-    Value * tmp_70 = NULL;                                   // Main:8:8--8:14
+    Value * tmp_69 = NULL;                                   // Main:8:8--8:14
     if (NULL == var_0 /* _builtin.NIL [nil] */) {
-        tmp_70 = var_1;
+        tmp_69 = var_1;
     } else if (NULL != var_0 /* _builtin.CONS [cons] */) {
         Value *var_2 = ((Value_Constructor*)var_0)->args[0];
         Value *var_3 = ((Value_Constructor*)var_0)->args[1];
@@ -33,13 +33,13 @@ Value *Main_last
         idris2_newReference(var_3);
         idris2_removeReference(var_0);
         idris2_removeReference(var_1);
-        Value *closure_71 = (Value *)idris2_mkClosure((Value *(*)())Main_last, 2, 2);
+        Value *closure_70 = (Value *)idris2_mkClosure((Value *(*)())Main_last, 2, 2);
                                                              // Main:10:20--10:24
-        ((Value_Closure*)closure_71)->args[0] = var_3;
-        ((Value_Closure*)closure_71)->args[1] = var_2;
-        tmp_70 = closure_71;
+        ((Value_Closure*)closure_70)->args[0] = var_3;
+        ((Value_Closure*)closure_70)->args[1] = var_2;
+        tmp_69 = closure_70;
     }
-    return tmp_70;
+    return tmp_69;
 }
 Value *Main_main_0
 (
@@ -157,8 +157,8 @@ Value *Main_main
     Value * var_13 = idris2_trampoline(Prelude_Basics_flip(var_10, var_11, var_12));
                                                              // Main:14:3--14:7
     Value * var_1 = idris2_apply_closure(var_13, idris2_newReference(var_0));
-                                                             // Prelude.IO:31:13--31:20
-    idris2_removeReference(var_1);                           // Prelude.IO:31:13--31:20
+                                                             // Prelude.IO:32:13--32:20
+    idris2_removeReference(var_1);                           // Prelude.IO:32:13--32:20
     Value * var_14 = idris2_mkIntegerLiteral("9999");        // Main:16:13--16:20
     Value * var_15 = idris2_trampoline(Main_dupargs(var_14));
                                                              // Prelude.Show:110:1--112:50
@@ -167,9 +167,9 @@ Value *Main_main
     Value *primVar_47 = strAppend(var_16, var_17);
     idris2_removeReference(var_16);
     idris2_removeReference(var_17);
-    Value * var_18 = primVar_47;                             // Prelude.IO:98:22--98:34
+    Value * var_18 = primVar_47;                             // Prelude.IO:99:22--99:34
     Value *closure_48 = (Value *)idris2_mkClosure((Value *(*)())Prelude_IO_prim__putStr, 2, 2);
-                                                             // Prelude.IO:98:22--98:34
+                                                             // Prelude.IO:99:22--99:34
     ((Value_Closure*)closure_48)->args[0] = var_18;
     ((Value_Closure*)closure_48)->args[1] = var_0;
     return closure_48;
@@ -202,9 +202,9 @@ Value *Main_main_10
     Value *primVar_50 = strAppend(var_4, var_5);
     idris2_removeReference(var_4);
     idris2_removeReference(var_5);
-    Value * var_6 = primVar_50;                              // Prelude.IO:98:22--98:34
+    Value * var_6 = primVar_50;                              // Prelude.IO:99:22--99:34
     Value *closure_51 = (Value *)idris2_mkClosure((Value *(*)())Prelude_IO_prim__putStr, 2, 2);
-                                                             // Prelude.IO:98:22--98:34
+                                                             // Prelude.IO:99:22--99:34
     ((Value_Closure*)closure_51)->args[0] = var_6;
     ((Value_Closure*)closure_51)->args[1] = var_0;
     return closure_51;
@@ -216,14 +216,14 @@ Value *Main_main_9
 )
 {
     Value *closure_52 = (Value *)idris2_mkClosure((Value *(*)())Main_main_0, 5, 0);
-    Value * var_2 = closure_52;                              // Prelude.IO:19:1--26:30
+    Value * var_2 = closure_52;                              // Prelude.IO:20:1--27:30
     Value *closure_53 = (Value *)idris2_mkClosure((Value *(*)())Main_main_1, 3, 0);
-    Value * var_3 = closure_53;                              // Prelude.IO:19:1--26:30
+    Value * var_3 = closure_53;                              // Prelude.IO:20:1--27:30
     Value *closure_54 = (Value *)idris2_mkClosure((Value *(*)())Main_main_2, 5, 0);
-    Value * var_4 = closure_54;                              // Prelude.IO:19:1--26:30
-     // constructor Prelude.Interfaces.MkApplicative         // Prelude.IO:19:1--26:30
+    Value * var_4 = closure_54;                              // Prelude.IO:20:1--27:30
+     // constructor Prelude.Interfaces.MkApplicative         // Prelude.IO:20:1--27:30
     Value_Constructor* constructor_55 = idris2_newConstructor(3, 0);
-                                                             // Prelude.IO:19:1--26:30
+                                                             // Prelude.IO:20:1--27:30
     constructor_55->args[0] = var_2;
     constructor_55->args[1] = var_3;
     constructor_55->args[2] = var_4;
@@ -367,8 +367,8 @@ Value *Main_main_2
     idris2_removeReference(var_3);
     idris2_removeReference(var_4);
     Value * var_5 = idris2_apply_closure(var_2, idris2_newReference(var_0));
-                                                             // Prelude.IO:24:9--24:16
-    Value * var_6 = idris2_apply_closure(var_1, var_0);      // Prelude.IO:25:11--25:18
+                                                             // Prelude.IO:25:9--25:16
+    Value * var_6 = idris2_apply_closure(var_1, var_0);      // Prelude.IO:26:11--26:18
     return idris2_tailcall_apply_closure(var_5, var_6);
 }
 Value *Main_main_1
@@ -393,10 +393,6 @@ Value *Main_main_0
 {
     idris2_removeReference(var_3);
     idris2_removeReference(var_4);
-    Value *closure_69 = (Value *)idris2_mkClosure((Value *(*)())Prelude_IO_map_Functor_IO, 3, 3);
-                                                             // Prelude.IO:15:1--17:38
-    ((Value_Closure*)closure_69)->args[0] = var_2;
-    ((Value_Closure*)closure_69)->args[1] = var_1;
-    ((Value_Closure*)closure_69)->args[2] = var_0;
-    return closure_69;
+    Value * var_5 = idris2_apply_closure(var_1, var_0);      // Prelude.IO:18:14--18:21
+    return idris2_tailcall_apply_closure(var_2, var_5);
 }

@@ -12,6 +12,7 @@ import Prelude.Show
 -- IO --
 --------
 
+%inline
 public export
 Functor IO where
   map f io = io_bind io $ io_pure . f
