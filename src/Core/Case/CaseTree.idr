@@ -2,6 +2,7 @@ module Core.Case.CaseTree
 
 import Core.TT
 
+import Data.DPair
 import Data.List
 import Data.SnocList
 import Data.So
@@ -249,6 +250,27 @@ mutual
 export
 Weaken CaseTree where
   weakenNs ns t = insertCaseNames zero ns t
+
+export
+shrinkCaseTree : Shrinkable CaseTree
+
+shrinkCaseAlt : Shrinkable CaseAlt
+shrinkCaseAlt (ConCase n t args sc) prf
+    = pure $ ConCase n t args !(shrinkCaseTree sc $ keeps args prf)
+shrinkCaseAlt (DelayCase tyn valn sc) prf
+    = pure $ DelayCase tyn valn !(shrinkCaseTree sc $ Keep $ Keep prf)
+shrinkCaseAlt (ConstCase c sc) prf = pure $ ConstCase c !(shrinkCaseTree sc prf)
+shrinkCaseAlt (DefaultCase sc) prf = pure $ DefaultCase !(shrinkCaseTree sc prf)
+
+shrinkCaseAlts : Shrinkable (List . CaseAlt)
+shrinkCaseAlts alts prf = for alts $ flip shrinkCaseAlt prf
+
+shrinkCaseTree (Case idx loc scTy alts) prf
+    = do Element _ loc' <- shrinkIsVar' loc prf
+         pure $ Case _ loc' !(shrink scTy prf) !(shrinkCaseAlts alts prf)
+shrinkCaseTree (STerm i x) prf = pure $ STerm i !(shrink x prf)
+shrinkCaseTree (Unmatched msg) prf = pure $ Unmatched msg
+shrinkCaseTree Impossible prf = pure Impossible
 
 total
 getNames : (forall vs . NameMap Bool -> Term vs -> NameMap Bool) ->

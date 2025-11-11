@@ -31,6 +31,11 @@ keeps [] th = th
 keeps (x :: xs) th = Keep (keeps xs th)
 
 export
+drops : (args : List a) -> Thin xs ys -> Thin xs (args ++ ys)
+drops [] th = th
+drops (x :: xs) th = Drop (drops xs th)
+
+export
 fromNatSet : NatSet -> (xs : List a) -> (xs' ** Thin xs' xs)
 fromNatSet ns xs =
   if isEmpty ns then (_ ** Refl) else go 0 xs

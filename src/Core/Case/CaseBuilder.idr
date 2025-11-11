@@ -923,8 +923,18 @@ mutual
                List01 True (Group todo vars) -> IMaybe ne (CaseTree vars) ->
                Core (CaseTree vars)
   caseGroups fc fn phase el ty gs errorCase
-      = Case idx el (resolveNames vars ty) <$> altGroups gs
+      = do groups <- altGroups gs
+           let Nothing = collapse groups
+             | Just tree => pure tree
+           pure $ Case idx el (resolveNames vars ty) groups
     where
+      collapse : List (CaseAlt vars) -> Maybe (CaseTree vars)
+      collapse [ConCase n t args tree] = shrinkCaseTree tree $ drops args Refl
+      collapse [DelayCase ty val tree] = shrinkCaseTree tree $ drops [ty, val] Refl
+      collapse [ConstCase c tree] = Just tree
+      collapse [DefaultCase tree] = Just tree
+      collapse _ = Nothing
+
       altGroups : forall ne. List01 ne (Group todo vars) -> Core (List (CaseAlt vars))
       altGroups [] = pure $ toList $ DefaultCase <$> errorCase
       altGroups (ConGroup {newargs} cn tag rest :: cs)

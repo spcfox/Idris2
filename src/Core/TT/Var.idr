@@ -389,6 +389,15 @@ thinIsVar First (Keep th) = first
 thinIsVar (Later p) (Keep th) = later (thinIsVar p th)
 
 export
+shrinkIsVar' : {idx : Nat} -> (0 p : IsVar name idx xs) ->
+  Thin ys xs -> Maybe (Subset Nat $ \idx' => IsVar name idx' ys)
+shrinkIsVar' prf Refl = Just (Element _ prf)
+shrinkIsVar' First (Drop p) = Nothing
+shrinkIsVar' (Later x) (Drop p) = shrinkIsVar' x p
+shrinkIsVar' First (Keep p) = Just (Element _ First)
+shrinkIsVar' (Later x) (Keep p) = bimap _ Later <$> shrinkIsVar' x p
+
+export
 shrinkIsVar : {idx : Nat} -> (0 p : IsVar name idx xs) ->
   Thin ys xs -> Maybe (Var ys)
 shrinkIsVar prf Refl = Just (MkVar prf)
