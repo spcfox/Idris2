@@ -173,6 +173,8 @@ expandAmbigName mode nest env orig args (INamedApp fc f n a) exp
 expandAmbigName mode nest env orig args (IAutoApp fc f a) exp
     = expandAmbigName mode nest env orig
                       ((fc, Just Nothing, a) :: args) f exp
+expandAmbigName mode nest env orig args (IMustUnify _ UserDotted tm) exp
+    = expandAmbigName mode nest env orig args tm exp
 expandAmbigName elabmode nest env orig args tm exp
     = do log "elab.ambiguous" 50 $ "No ambiguity " ++ show orig
          pure orig

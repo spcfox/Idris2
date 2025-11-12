@@ -1,0 +1,11 @@
+1/1: Building Issue3677 (Issue3677.idr)
+Error: While processing left hand side of foo. Can't match on ?n [no locals in scope] (Non linear pattern variable).
+
+Issue3677:5:12--5:13
+ 1 | import Data.Vect
+ 2 | 
+ 3 | foo : (n : Nat) -> Vect n a -> ()
+ 4 | foo Z [] = ()
+ 5 | foo n@(.(S n)) (_ :: xs) = foo _ xs
+                ^
+
