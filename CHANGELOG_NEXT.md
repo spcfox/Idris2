@@ -7,6 +7,10 @@ should target this file (`CHANGELOG_NEXT`).
 
 ## [Next version]
 
+### Compiler changes
+
+* Fixed missing handling of dotted patterns
+
 ### Building/Packaging changes
 
 * Fix parsing of capitalised package names containing hyphens.
