@@ -475,7 +475,7 @@ elabImplementation {vars} ifc vis opts_in pass env nest is cons iname ps named i
         = do let opts = if isJust $ findTotality opts_in
                           then opts_in
                           else maybe opts_in (\t => Totality t :: opts_in) treq
-             IClaim $ MkFCVal vfc $ MkIClaimData c vis opts $ Mk [EmptyFC, NoFC n] mty
+             IClaim $ MkFCVal vfc $ MkIClaimData c vis (Inline :: opts) $ Mk [EmptyFC, NoFC n] mty
 
     -- Given the method type (result of topMethType) return the mapping from
     -- top level method name to current implementation's method name
