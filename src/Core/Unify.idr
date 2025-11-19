@@ -436,6 +436,9 @@ tryInstantiate : {auto c : Ref Ctxt Defs} ->
               Core Bool -- postpone if the type is yet unknown
 tryInstantiate {newvars} loc mode env mname mref num mdef locs otm tm
     = do logTerm "unify.instantiate" 5 ("Instantiating in " ++ show newvars) tm
+         when (isUserName mname) $
+           -- Never should happeng
+           throw $ SolvedNamedHole loc env mname otm
 --          let Hole _ _ = definition mdef
 --              | def => ufail {a=()} loc (show mname ++ " already resolved as " ++ show def)
          case fullname mdef of
@@ -846,7 +849,9 @@ mutual
               (soln : NF vars) ->
               Core UnifyResult
   unifyHole swap mode loc env fc mname mref margs margs' tmnf
-      = do defs <- get Ctxt
+      = do let False = isUserName mname
+             | True => pure success -- don't resolve user holes
+           defs <- get Ctxt
            empty <- clearDefs defs
            let args = if isNil margs' then margs else margs ++ margs'
            logC "unify.hole" 10

@@ -1,0 +1,6 @@
+1/1: Building Issue3367 (Issue3367.idr)
+Main> 1 hole: Main.fun_rhs : Nat
+Main> Main.fun : Nat -> Nat
+fun k = ?fun_rhs [locals in scope: k]
+Main> 
+Bye for now!
