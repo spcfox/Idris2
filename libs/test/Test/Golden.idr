@@ -618,7 +618,7 @@ poolRunner opts pool
 
        -- and then run all the tests
 
-       for_ (replicate opts.threads 0) $ \_ =>
+       for_ (replicate opts.threads 0) $ \_ : Nat =>
          fork (testThread opts testChan resChan)
        -- start sending tests
        senderTID <- fork $ testSender testChan opts.threads tests

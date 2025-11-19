@@ -44,6 +44,7 @@ import Libraries.Data.WithDefault
 import Libraries.Text.PrettyPrint.Prettyprinter
 import Libraries.Data.List.SizeOf
 import Libraries.Data.SnocList.SizeOf
+import Libraries.Data.IntMap
 
 %default covering
 
@@ -988,6 +989,8 @@ processDef opts nest env fc n_in cs_in
                        else linear
          nidx <- resolveName n
 
+         oldHoles <- getHoles
+
          -- Dynamically rebind default totality requirement to this function's totality requirement
          -- and use this requirement when processing `with` blocks
          log "declare.def" 5 $ "Traversing clauses of " ++ show n ++ " with mult " ++ show mult
@@ -995,6 +998,12 @@ processDef opts nest env fc n_in cs_in
          cs <- withTotality treq $
                traverse (checkClause mult (collapseDefault $ visibility gdef) treq
                                      hashit nidx opts nest env) cs_in
+
+         holes <- getHoles
+         let newHoles = mapMaybe (`lookup` holes) $ keys holes \\ keys oldHoles
+         let (newUserHoles, generatedHoles) = partition (isUserName . snd) newHoles
+         when (null newUserHoles && not (null generatedHoles)) $
+           throw $ UnsolvedHoles generatedHoles
 
          let pats = map toPats (rights cs)
 
