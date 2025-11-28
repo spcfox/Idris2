@@ -1,0 +1,100 @@
+1/1: Building Issue3357-PrimInt (Issue3357-PrimInt.idr)
+Error: boom is not covering.
+
+Issue3357-PrimInt:4:1--4:12
+ 1 | 0 oops : (0 x : Int) -> if x == 0 then Unit else Void
+ 2 | oops 0 = ()
+ 3 | 
+ 4 | boom : Void
+     ^^^^^^^^^^^
+
+Calls non covering function Main.oops
+Error: oops is not covering.
+
+Issue3357-PrimInt:1:1--1:54
+ 1 | 0 oops : (0 x : Int) -> if x == 0 then Unit else Void
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Missing cases:
+    oops _
+
+1/1: Building Issue3357-PrimString (Issue3357-PrimString.idr)
+Error: boom is not covering.
+
+Issue3357-PrimString:4:1--4:12
+ 1 | 0 oops : (0 x : String) -> if x == "" then Unit else Void
+ 2 | oops "" = ()
+ 3 | 
+ 4 | boom : Void
+     ^^^^^^^^^^^
+
+Calls non covering function Main.oops
+Error: oops is not covering.
+
+Issue3357-PrimString:1:1--1:58
+ 1 | 0 oops : (0 x : String) -> if x == "" then Unit else Void
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Missing cases:
+    oops _
+
+1/1: Building Issue3357-PrimTy (Issue3357-PrimTy.idr)
+Error: boom is not covering.
+
+Issue3357-PrimTy:4:1--4:12
+ 1 | 0 oops : (0 a : Type) -> a
+ 2 | oops Int = 0
+ 3 | 
+ 4 | boom : Void
+     ^^^^^^^^^^^
+
+Calls non covering function Main.oops
+Error: oops is not covering.
+
+Issue3357-PrimTy:1:1--1:27
+ 1 | 0 oops : (0 a : Type) -> a
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Missing cases:
+    oops _
+
+1/1: Building Issue3357-TyCon (Issue3357-TyCon.idr)
+Error: boom is not covering.
+
+Issue3357-TyCon:4:1--4:12
+ 1 | 0 oops : (0 a : Type) -> a
+ 2 | oops Nat = Z
+ 3 | 
+ 4 | boom : Void
+     ^^^^^^^^^^^
+
+Calls non covering function Main.oops
+Error: oops is not covering.
+
+Issue3357-TyCon:1:1--1:27
+ 1 | 0 oops : (0 a : Type) -> a
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Missing cases:
+    oops _
+
+1/1: Building Issue3357-Type (Issue3357-Type.idr)
+Error: boom is not covering.
+
+Issue3357-Type:4:1--4:12
+ 1 | 0 oops : (0 a : Type) -> a
+ 2 | oops Type = Type
+ 3 | 
+ 4 | boom : Void
+     ^^^^^^^^^^^
+
+Calls non covering function Main.oops
+Error: oops is not covering.
+
+Issue3357-Type:1:1--1:27
+ 1 | 0 oops : (0 a : Type) -> a
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Missing cases:
+    oops _
+

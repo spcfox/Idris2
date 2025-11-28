@@ -1,0 +1,8 @@
+. ../../../testutils.sh
+
+# expect a coverage error
+check Issue3357-PrimInt.idr
+check Issue3357-PrimString.idr
+check Issue3357-PrimTy.idr
+check Issue3357-TyCon.idr
+check Issue3357-Type.idr
