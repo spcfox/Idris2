@@ -24,9 +24,9 @@ data Usage = One | Any
 
 public export
 0 Has : List (a -> Type) -> a -> Type
-Has [] es = ()
+Has ([] {a = .(_)}) es = ()
 Has [e] es = e es
-Has (e :: es') es = (e es, Has es' es)
+Has ((e :: es') {a = .(_)}) es = (e es, Has {a} es' es)
 
 data OneOf : List Type -> Path -> Type where
      First : e -> OneOf (e :: es) MayThrow

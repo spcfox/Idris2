@@ -383,7 +383,7 @@ namespace ValidClosed
 
   public export
   0 getContext : ValidClosed a -> Context
-  getContext (Element (Closure {g} t env) _) = g
+  getContext (Element {type = .(_)} (Closure {g} t env) _) = g
 
   public export
   getEnv : (c : ValidClosed a) -> ValidEnv (getContext c)

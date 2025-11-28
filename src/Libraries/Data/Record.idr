@@ -77,14 +77,14 @@ tail : All p (x :: xs) -> All p xs
 tail (_ :: xs) = xs
 
 ||| A procedue to find the type at the given index
-public export 0
+public export
 FindIndex : Nat -> List KeyVal -> Maybe Type
 FindIndex Z (x :: xs) = Just x.type
 FindIndex (S n) (x :: xs) = FindIndex n xs
 FindIndex _ _ = Nothing
 
 ||| A procedure to find the index and type of a given label
-public export 0
+public export
 NameInRange : (key : String) -> List KeyVal -> Maybe (Nat, Type)
 NameInRange key [] = Nothing
 NameInRange key (x :: xs) = if (key == x.label)
@@ -92,8 +92,7 @@ NameInRange key (x :: xs) = if (key == x.label)
                                else map (mapFst S) (NameInRange key xs)
 
 -- Convert a `NameInRange` proof to a `FindIndex` proof
-0
-IndexInRange : {fields : List KeyVal} ->
+IndexInRange : {key : _} -> {fields : List KeyVal} ->
                NameInRange key fields === Just (ix, ty) ->
                FindIndex ix fields === Just ty
 IndexInRange {fields = []} prf = absurd prf

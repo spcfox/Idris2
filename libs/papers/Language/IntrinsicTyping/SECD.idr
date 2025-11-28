@@ -290,7 +290,7 @@ namespace FunDump
   public export
   0 Meaning : FunDump -> Type
   Meaning [] = ()
-  Meaning ((a, b) :: f) = (Closure a b, Meaning f)
+  Meaning (((a, b) :: f) {a = .(_)}) = (Closure a b, Meaning f)
 
   public export
   tail : {0 f : FunDump} -> Meaning (ab :: f) -> Meaning f

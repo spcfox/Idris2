@@ -257,7 +257,7 @@ HasNames (PatClause todo vars) where
   resolved gam (MkPatClause ns nps i rhs)
      = [| MkPatClause (traverse (resolved gam) ns) (resolved gam nps) (pure i) (resolved gam rhs) |]
 
-0 IsConClause : PatClause (a :: todo) vars -> Type
+IsConClause : PatClause (a :: todo) vars -> Type
 IsConClause (MkPatClause _ (MkInfo pat _ _ :: _) _ _) = IsConPat pat
 
 substInClause : {a, vars, todo : _} ->
