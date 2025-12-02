@@ -57,7 +57,7 @@ expandClause : {auto c : Ref Ctxt Defs} ->
                Core (Search (List ImpClause))
 expandClause loc opts n c
     = do c <- uniqueRHS c
-         Right clause <- checkClause linear Private PartialOK False n [] (MkNested []) Env.empty c
+         Right clause <- checkClause linear Private Nothing PartialOK False n [] (MkNested []) Env.empty c
             | Left err => noResult -- TODO: impossible clause, do something
                                    -- appropriate
 

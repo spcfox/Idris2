@@ -27,6 +27,7 @@ import TTImp.Impossible
 import TTImp.PartialEval
 import TTImp.TTImp
 import TTImp.TTImp.Functor
+import TTImp.ProcessDef.Dot
 import TTImp.ProcessType
 import TTImp.Unelab
 import TTImp.WithClause
@@ -285,15 +286,15 @@ checkLHS : {vars : _} ->
            {auto u : Ref UST UState} ->
            {auto s : Ref Syn SyntaxInfo} ->
            {auto o : Ref ROpts REPLOpts} ->
-           Bool -> -- in transform
-           (mult : RigCount) ->
+           (trans : Bool) -> -- in transform
+           (mult : RigCount) -> Maybe ClosedTerm ->
            Int -> List ElabOpt -> NestedNames vars -> Env Term vars ->
            FC -> RawImp ->
            Core (RawImp, -- checked LHS with implicits added
                  (vars' ** (Thin vars vars',
                            Env Term vars', NestedNames vars',
                            Term vars', Term vars')))
-checkLHS {vars} trans mult n opts nest env fc lhs_in
+checkLHS {vars} trans mult mty n opts nest env fc lhs_in
     = do defs <- get Ctxt
          logRaw "declare.def.lhs" 30 "Raw LHS: " lhs_in
          lhs_raw <- if trans
@@ -311,7 +312,8 @@ checkLHS {vars} trans mult n opts nest env fc lhs_in
                    then pure lhs_bound
                    else implicitsAs n defs vars lhs_bound
 
-         logC "declare.def.lhs" 5 $ do pure $ "Checking LHS of " ++ show !(getFullName (Resolved n))
+         fullname <- getFullName (Resolved n)
+         log "declare.def.lhs" 5 $ "Checking LHS of " ++ show fullname
 -- todo: add Pretty RawImp instance
 --         logC "declare.def.lhs" 5 $ do pure $ show $ indent {ann = ()} 2 $ pretty lhs
          log "declare.def.lhs" 10 $ show lhs
@@ -320,7 +322,7 @@ checkLHS {vars} trans mult n opts nest env fc lhs_in
                           then InTransform
                           else InLHS mult
          (lhstm, lhstyg) <-
-             wrapErrorC opts (InLHS fc !(getFullName (Resolved n))) $
+             wrapErrorC opts (InLHS fc fullname) $
                      elabTerm n lhsMode opts nest env
                                 (IBindHere fc PATTERN lhs) Nothing
          logTerm "declare.def.lhs" 5 "Checked LHS term" lhstm
@@ -336,6 +338,7 @@ checkLHS {vars} trans mult n opts nest env fc lhs_in
          lhsty <- normaliseHoles defs env lhsty
          linvars_in <- findLinear True 0 linear lhstm
          logTerm "declare.def.lhs" 10 "Checked LHS term after normalise" lhstm
+
          log "declare.def.lhs" 5 $ "Linearity of names in " ++ show n ++ ": " ++
                  show linvars_in
 
@@ -347,8 +350,17 @@ checkLHS {vars} trans mult n opts nest env fc lhs_in
          logTerm "declare.def.lhs" 5 "LHS type" lhsty_lin
          setHoleLHS (bindEnv fc env lhstm_lin)
 
-         ext <- extendEnv env Refl nest lhstm_lin lhsty_lin
-         pure (lhs, ext)
+         (vars'  ** (sub', env', nest', lhstm', lhsty')) <-
+           extendEnv env Refl nest lhstm_lin lhsty_lin
+         logTerm "declare.def.lhs" 3 "LHS term after extension" lhstm'
+
+         lhstm' <- if trans || not (isErased mult)
+                      then pure lhstm'
+                      else wrapErrorC opts (InLHS fc fullname) $
+                             dotInferred (thinNestedNames nest sub') lhs lhstm'
+         logTerm "declare.def.lhs" 3 "LHS term after dotting" lhstm'
+
+         pure (lhs, (vars'  ** (sub', env', nest', lhstm', lhsty')))
 
 -- Return whether any of the pattern variables are in a trivially empty
 -- type, where trivally empty means one of:
@@ -383,11 +395,11 @@ checkClause : {vars : _} ->
               {auto u : Ref UST UState} ->
               {auto s : Ref Syn SyntaxInfo} ->
               {auto o : Ref ROpts REPLOpts} ->
-              (mult : RigCount) -> (vis : Visibility) ->
+              (mult : RigCount) -> (vis : Visibility) -> Maybe ClosedTerm ->
               (totreq : TotalReq) -> (hashit : Bool) ->
               Int -> List ElabOpt -> NestedNames vars -> Env Term vars ->
               ImpClause -> Core (Either RawImp Clause)
-checkClause mult vis totreq hashit n opts nest env (ImpossibleClause fc lhs)
+checkClause mult vis mty totreq hashit n opts nest env (ImpossibleClause fc lhs)
     = do lhs_raw <- lhsInCurrentNS nest lhs
          handleUnify
            (do autoimp <- isUnboundImplicits
@@ -412,9 +424,9 @@ checkClause mult vis totreq hashit n opts nest env (ImpossibleClause fc lhs)
                            if !(impossibleErrOK defs err)
                               then pure (Left lhs_raw)
                               else throw (ValidCase fc env (Right err)))
-checkClause {vars} mult vis totreq hashit n opts nest env (PatClause fc lhs_in rhs)
+checkClause {vars} mult vis mty totreq hashit n opts nest env (PatClause fc lhs_in rhs)
     = do (_, (vars'  ** (sub', env', nest', lhstm', lhsty'))) <-
-             checkLHS False mult n opts nest env fc lhs_in
+             checkLHS False mult mty n opts nest env fc lhs_in
          let rhsMode = if isErased mult then InType else InExpr
          log "declare.def.clause" 5 $ "Checking RHS " ++ show rhs
          logEnv "declare.def.clause" 5 "In env" env'
@@ -439,10 +451,10 @@ checkClause {vars} mult vis totreq hashit n opts nest env (PatClause fc lhs_in r
 
          pure (Right (MkClause env' lhstm' rhstm))
 -- TODO: (to decide) With is complicated. Move this into its own module?
-checkClause {vars} mult vis totreq hashit n opts nest env
+checkClause {vars} mult vis mty totreq hashit n opts nest env
     (WithClause ifc lhs_in rig wval_raw mprf flags cs)
     = do (lhs, (vars'  ** (sub', env', nest', lhspat, reqty))) <-
-             checkLHS False mult n opts nest env ifc lhs_in
+             checkLHS False mult mty n opts nest env ifc lhs_in
          let wmode
                = if isErased mult || isErased rig then InType else InExpr
 
@@ -910,8 +922,9 @@ processDef opts nest env fc n_in cs_in
          log "declare.def" 5 $ "Traversing clauses of " ++ show n ++ " with mult " ++ show mult
          let treq = fromMaybe !getDefaultTotalityOption (findSetTotal (flags gdef))
          cs <- withTotality treq $
-               traverse (checkClause mult (collapseDefault $ visibility gdef) treq
+               traverse (checkClause mult (collapseDefault $ visibility gdef) (Just ty) treq
                                      hashit nidx opts nest env) cs_in
+         logC "declare.def" 5 $ do pure ("Checked LHSs: " ++ show !(traverse toFullNames $ rights cs))
 
          let pats = map toPats (rights cs)
 
