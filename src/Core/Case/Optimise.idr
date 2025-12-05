@@ -27,45 +27,47 @@ Weaken MatchResult where
   weakenNs s (ConstPat c) = ConstPat c
 
 export
-optimiseTree : {vars : _} -> List (Var vars, MatchResult vars) -> CaseTree vars -> CaseTree vars
+optimiseTree : {vars : _} -> List (Var vars, MatchResult vars) -> CaseTree vars -> Maybe (CaseTree vars)
 
-optimiseAlt : {vars : _} -> List (Var vars, MatchResult vars) -> Var vars -> CaseAlt vars -> CaseAlt vars
+optimiseAlt : {vars : _} -> List (Var vars, MatchResult vars) -> Var vars -> CaseAlt vars -> Maybe (CaseAlt vars)
 optimiseAlt ps v (ConCase n tag args sc)
     = do let sz = mkSizeOf args
          let v' = weakenNs sz v
          let ps' = map (bimap (weakenNs sz) (weakenNs sz)) ps
          let args' = allVarsPrefix sz
-         ConCase n tag args (optimiseTree ((v', ConPat n tag args') :: ps') sc)
+         ConCase n tag args <$> optimiseTree ((v', ConPat n tag args') :: ps') sc
 optimiseAlt ps v (DelayCase ty arg sc)
     = do let sz = mkSizeOf [ty, arg]
          let v' = weakenNs sz v
          let ps' = map (bimap (weakenNs sz) (weakenNs sz)) ps
-         DelayCase ty arg (optimiseTree ((v', DelayPat first (later first)) :: ps') sc)
+         DelayCase ty arg <$> optimiseTree ((v', DelayPat first (later first)) :: ps') sc
 optimiseAlt ps v (ConstCase c sc)
-    = ConstCase c (optimiseTree ((v, ConstPat c) :: ps) sc)
-optimiseAlt ps _ (DefaultCase sc) = DefaultCase (optimiseTree ps sc)
+    = ConstCase c <$> optimiseTree ((v, ConstPat c) :: ps) sc
+optimiseAlt ps _ (DefaultCase sc) = DefaultCase <$> optimiseTree ps sc
 
 pickAlt : {vars : _} -> List (Var vars, MatchResult vars) ->
           MatchResult vars -> List (CaseAlt vars) -> Maybe (CaseTree vars)
 pickAlt _ _ [] = Nothing
 pickAlt ps p@(ConPat n t args) (ConCase n' t' args' sc :: alts)
     = if t == t' && n == n'
-         then checkLengthMatch args args' <&> \match => -- lengths should always match
-                optimiseTree ps $ substCaseTree zero (mkSizeOf _) (mkSubst args match) sc
+         then do match <- checkLengthMatch args args' -- lengths should always match
+                 optimiseTree ps $ substCaseTree zero (mkSizeOf _) (mkSubst args match) sc
          else pickAlt ps p alts
 pickAlt ps (DelayPat ty arg) (DelayCase ty' arg' sc :: _)
     = do let subst : Subst Var [ty', arg'] vars = mkSubst [ty, arg] %search
-         Just (optimiseTree ps $ substCaseTree zero (mkSizeOf _) subst sc)
+         optimiseTree ps $ substCaseTree zero (mkSizeOf _) subst sc
 pickAlt ps p@(ConstPat c) (ConstCase c' sc :: alts)
     = if c == c'
-         then Just (optimiseTree ps sc)
+         then optimiseTree ps sc
          else pickAlt ps p alts
-pickAlt ps _ (DefaultCase sc :: _) = Just (optimiseTree ps sc)
+pickAlt ps _ (DefaultCase sc :: _) = optimiseTree ps sc
 pickAlt ps p (_ :: alts) = pickAlt ps p alts
 
 optimiseTree ps (Case idx el ty alts)
     = do let var = MkVar el
-         fromMaybe (Case idx el ty (map (optimiseAlt ps var) alts)) $ do
-           p <- lookup var ps
-           pickAlt ps p alts
-optimiseTree _ tm = tm
+         case lookup var ps of
+           Just p => pickAlt ps p alts
+           Nothing => case mapMaybe (optimiseAlt ps var) alts of
+                           [] => Nothing
+                           alts => Just (Case idx el ty alts)
+optimiseTree _ tm = Just tm

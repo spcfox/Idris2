@@ -1263,7 +1263,8 @@ getPMDef fc phase fn ty clauses@(_ :: _)
            "Reached clauses: " ++ (show reached)
          extraDefaults <- findExtraDefaults fc defs t
          let unreachable = getUnreachable 0 (reached \\ extraDefaults) clauses
-         let t = optimiseTree [] t
+         -- Should always return Just for a well-formed tree. TODO: prove it
+         let t = fromMaybe (Unmatched "Empty case tree for \{show fn}") (optimiseTree [] t)
          log "compile.casetree.getpmdef" 20 $ "Optimised to: " ++ show !(toFullNames t)
          pure (_ ** (t, unreachable))
   where
