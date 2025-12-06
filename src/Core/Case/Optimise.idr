@@ -30,26 +30,27 @@ export
 optimiseTree : {vars : _} -> List (Var vars, MatchResult vars) -> CaseTree vars -> Maybe (CaseTree vars)
 
 optimiseAlts : {vars : _} -> List (Var vars, MatchResult vars) ->
-               Var vars -> List (CaseAlt vars) -> List (Maybe (CaseAlt vars))
-optimiseAlts ps v [] = []
+               Var vars -> List (CaseAlt vars) ->
+               (List (Maybe (CaseAlt vars)), Maybe (CaseTree vars))
+optimiseAlts ps v [] = ([], Nothing)
 optimiseAlts ps v (ConCase n tag args sc :: alts)
     = do let sz = mkSizeOf args
          let v' = weakenNs sz v
          let ps' = map (bimap (weakenNs sz) (weakenNs sz)) ps
          let args' = allVarsPrefix sz
          let alt = ConCase n tag args <$> optimiseTree ((v', ConPat n tag args') :: ps') sc
-         alt :: optimiseAlts ps v alts
+         mapFst (alt ::) (optimiseAlts ps v alts)
 optimiseAlts ps v (DelayCase ty arg sc :: alts)
     = do let sz = mkSizeOf [ty, arg]
          let v' = weakenNs sz v
          let ps' = map (bimap (weakenNs sz) (weakenNs sz)) ps
          let alt = DelayCase ty arg <$> optimiseTree ((v', DelayPat first (later first)) :: ps') sc
-         alt :: optimiseAlts ps v alts
+         mapFst (alt ::) (optimiseAlts ps v alts)
 optimiseAlts ps v (ConstCase c sc :: alts)
     = do let alt = ConstCase c <$> optimiseTree ((v, ConstPat c) :: ps) sc
-         alt :: optimiseAlts ps v alts
+         mapFst (alt ::) (optimiseAlts ps v alts)
 optimiseAlts ps _ (DefaultCase sc :: _)
-    = [DefaultCase <$> optimiseTree ps sc]
+    = ([], optimiseTree ps sc)
 
 pickAlt : {vars : _} -> List (Var vars, MatchResult vars) ->
           MatchResult vars -> List (CaseAlt vars) -> Maybe (CaseTree vars)
@@ -73,7 +74,9 @@ optimiseTree ps (Case idx el ty alts)
     = do let var = MkVar el
          case lookup var ps of
            Just p => pickAlt ps p alts
-           Nothing => case catMaybes $ optimiseAlts ps var alts of
-                           [] => Nothing
-                           alts => Just (Case idx el ty alts)
+           Nothing => case mapFst catMaybes $ optimiseAlts ps var alts of
+                           ([], def) => def
+                           (alts, Nothing) => Just $ Case idx el ty alts
+                           (alts, Just def) =>
+                               Just $ Case idx el ty $ alts ++ [DefaultCase def]
 optimiseTree _ tm = Just tm
