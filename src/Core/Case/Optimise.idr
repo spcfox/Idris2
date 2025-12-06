@@ -29,21 +29,27 @@ Weaken MatchResult where
 export
 optimiseTree : {vars : _} -> List (Var vars, MatchResult vars) -> CaseTree vars -> Maybe (CaseTree vars)
 
-optimiseAlt : {vars : _} -> List (Var vars, MatchResult vars) -> Var vars -> CaseAlt vars -> Maybe (CaseAlt vars)
-optimiseAlt ps v (ConCase n tag args sc)
+optimiseAlts : {vars : _} -> List (Var vars, MatchResult vars) ->
+               Var vars -> List (CaseAlt vars) -> List (Maybe (CaseAlt vars))
+optimiseAlts ps v [] = []
+optimiseAlts ps v (ConCase n tag args sc :: alts)
     = do let sz = mkSizeOf args
          let v' = weakenNs sz v
          let ps' = map (bimap (weakenNs sz) (weakenNs sz)) ps
          let args' = allVarsPrefix sz
-         ConCase n tag args <$> optimiseTree ((v', ConPat n tag args') :: ps') sc
-optimiseAlt ps v (DelayCase ty arg sc)
+         let alt = ConCase n tag args <$> optimiseTree ((v', ConPat n tag args') :: ps') sc
+         alt :: optimiseAlts ps v alts
+optimiseAlts ps v (DelayCase ty arg sc :: alts)
     = do let sz = mkSizeOf [ty, arg]
          let v' = weakenNs sz v
          let ps' = map (bimap (weakenNs sz) (weakenNs sz)) ps
-         DelayCase ty arg <$> optimiseTree ((v', DelayPat first (later first)) :: ps') sc
-optimiseAlt ps v (ConstCase c sc)
-    = ConstCase c <$> optimiseTree ((v, ConstPat c) :: ps) sc
-optimiseAlt ps _ (DefaultCase sc) = DefaultCase <$> optimiseTree ps sc
+         let alt = DelayCase ty arg <$> optimiseTree ((v', DelayPat first (later first)) :: ps') sc
+         alt :: optimiseAlts ps v alts
+optimiseAlts ps v (ConstCase c sc :: alts)
+    = do let alt = ConstCase c <$> optimiseTree ((v, ConstPat c) :: ps) sc
+         alt :: optimiseAlts ps v alts
+optimiseAlts ps _ (DefaultCase sc :: _)
+    = [DefaultCase <$> optimiseTree ps sc]
 
 pickAlt : {vars : _} -> List (Var vars, MatchResult vars) ->
           MatchResult vars -> List (CaseAlt vars) -> Maybe (CaseTree vars)
@@ -67,7 +73,7 @@ optimiseTree ps (Case idx el ty alts)
     = do let var = MkVar el
          case lookup var ps of
            Just p => pickAlt ps p alts
-           Nothing => case mapMaybe (optimiseAlt ps var) alts of
+           Nothing => case catMaybes $ optimiseAlts ps var alts of
                            [] => Nothing
                            alts => Just (Case idx el ty alts)
 optimiseTree _ tm = Just tm
