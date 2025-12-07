@@ -8,35 +8,20 @@ Compile time tree: case {arg:2} of
   _ => case {arg:1} of
     True => case {arg:2} of
       Just {e:2} {e:3} => ()
-      _ => case {arg:2} of
-        Just {e:4} {e:5} => case {e:5} of
-          False => ()
     _ => case {arg:2} of
       Just {e:4} {e:5} => case {e:5} of
         False => ()
         _ => case {arg:1} of
           False => case {e:5} of
             True => ()
-      _ => case {arg:1} of
-        False => case {arg:2} of
-          Just {e:6} {e:7} => case {e:7} of
-            True => ()
 Compiled: \ {arg:1}, {arg:2} => case {arg:2} of
   { _builtin.NOTHING {tag = 0} [nothing] => ___
   ; _ => case {arg:1} of
            { 1 => case {arg:2} of
                     { _builtin.JUST {tag = 1} [just] {e:3} => ___
-                    ; _ => case {arg:2} of
-                             { _builtin.JUST {tag = 1} [just] {e:5} => case {e:5} of  { 0 => ___}
-                             }
                     }
            ; _ => case {arg:2} of
                     { _builtin.JUST {tag = 1} [just] {e:5} => case {e:5} of  { 0 => ___; _ => case {arg:1} of  { 0 => case {e:5} of  { 1 => ___}}}
-                    ; _ => case {arg:1} of
-                             { 0 => case {arg:2} of
-                                      { _builtin.JUST {tag = 1} [just] {e:7} => case {e:7} of  { 1 => ___}
-                                      }
-                             }
                     }
            }
   }

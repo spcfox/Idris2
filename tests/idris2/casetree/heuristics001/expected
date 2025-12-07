@@ -6,9 +6,6 @@ Compile time tree: case {arg:4} of
   _ => case {arg:2} of
     Nil {e:1} => case {arg:4} of
       S {e:2} => {arg:3}
-      _ => case {arg:3} of
-        Nil {e:3} => case {arg:4} of
-          S {e:4} => {arg:2}
     _ => case {arg:3} of
       Nil {e:3} => case {arg:4} of
         S {e:4} => {arg:2}
@@ -21,7 +18,7 @@ Inferrable args: [0]
 Compiled: \ {arg:2}, {arg:3}, {arg:4} => case {arg:4} of
   { 0 => {arg:2}
   ; _ => case {arg:2} of
-           { _builtin.NIL {tag = 0} [nil] => case {arg:4} of  { 0 => case {arg:3} of  { _builtin.NIL {tag = 0} [nil] => case {arg:4} of  { 0 => crash "Nat case not covered"; _ => {arg:2}}}; _ => {arg:3}}
+           { _builtin.NIL {tag = 0} [nil] => case {arg:4} of  { 0 => crash "Nat case not covered"; _ => {arg:3}}
            ; _ => case {arg:3} of
                     { _builtin.NIL {tag = 0} [nil] => case {arg:4} of  { 0 => crash "Nat case not covered"; _ => {arg:2}}
                     ; _ => case {arg:2} of
@@ -57,9 +54,6 @@ Compile time tree: case {arg:4} of
   _ => case {arg:2} of
     Nil {e:1} => case {arg:4} of
       S {e:2} => {arg:3}
-      _ => case {arg:3} of
-        Nil {e:3} => case {arg:4} of
-          S {e:4} => {arg:2}
     _ => case {arg:3} of
       Nil {e:3} => case {arg:4} of
         S {e:4} => {arg:2}

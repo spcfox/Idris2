@@ -23,13 +23,6 @@ Compile time tree: case {arg:1} of
       _ => case {arg:3} of
         (::) {e:7} {e:8} {e:9} => case {arg:5} of
           Later {e:10} {e:11} {e:12} {e:13} {e:14} {e:15} => 6
-    _ => case {arg:2} of
-      Z => case {arg:3} of
-        (::) {e:1} {e:2} {e:3} => case {arg:5} of
-          First {e:4} {e:5} {e:6} => 5
-      S {e:0} => case {arg:3} of
-        (::) {e:7} {e:8} {e:9} => case {arg:5} of
-          Later {e:10} {e:11} {e:12} {e:13} {e:14} {e:15} => 6
   _ => case {arg:2} of
     Z => case {arg:3} of
       (::) {e:1} {e:2} {e:3} => case {arg:5} of

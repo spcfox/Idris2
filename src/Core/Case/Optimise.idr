@@ -16,54 +16,91 @@ mkSubst : {vars : _} -> (args : List (Var vars)) ->
 mkSubst [] NilMatch = []
 mkSubst (x :: xs) (ConsMatch m) = x :: mkSubst xs m
 
+data MatchedPattern : Scoped where
+    ConMatched     : Name -> (tag : Int) -> List (Var vars) -> MatchedPattern vars
+    DelayMatched   : (ty, arg : Var vars) -> MatchedPattern vars
+    ConstMatched   : Constant -> MatchedPattern vars
+
+data UnmatchedPattern : Type where
+    ConUnmatched   : List (Name, Int) -> UnmatchedPattern
+    ConstUnmatched : List Constant -> UnmatchedPattern
+
 data MatchResult : Scoped where
-    ConPat   : Name -> (tag : Int) -> List (Var vars) -> MatchResult vars
-    DelayPat : (ty, arg : Var vars) -> MatchResult vars
-    ConstPat : Constant -> MatchResult vars
+    Matched : MatchedPattern vars -> MatchResult vars
+    Unmatched : UnmatchedPattern -> MatchResult vars
+
+Weaken MatchedPattern where
+  weakenNs s (ConMatched n tag args) = ConMatched n tag (weakenNs s <$> args)
+  weakenNs s (DelayMatched ty arg) = DelayMatched (weakenNs s ty) (weakenNs s arg)
+  weakenNs s (ConstMatched c) = ConstMatched c
 
 Weaken MatchResult where
-  weakenNs s (ConPat n tag args) = ConPat n tag (weakenNs s <$> args)
-  weakenNs s (DelayPat ty arg) = DelayPat (weakenNs s ty) (weakenNs s arg)
-  weakenNs s (ConstPat c) = ConstPat c
+  weakenNs s (Matched p) = Matched (weakenNs s p)
+  weakenNs _ (Unmatched p) = Unmatched p
+
+destructMatchResult : Maybe (MatchResult vars) ->
+                      Either (MatchedPattern vars) (Maybe UnmatchedPattern)
+destructMatchResult (Just (Matched p)) = Left p
+destructMatchResult (Just (Unmatched p)) = Right (Just p)
+destructMatchResult Nothing = Right Nothing
+
+addUnmatchedCon : (Name, Int) -> Maybe UnmatchedPattern -> Maybe UnmatchedPattern
+addUnmatchedCon con Nothing = Just $ ConUnmatched [con]
+addUnmatchedCon con (Just (ConUnmatched cs))
+    = toMaybe (not $ con `elem` cs) $ ConUnmatched (con :: cs)
+addUnmatchedCon _ (Just (ConstUnmatched _)) = Nothing -- shouldn't happen
+
+addUnmatchedConst : Constant -> Maybe UnmatchedPattern -> Maybe UnmatchedPattern
+addUnmatchedConst c Nothing = Just $ ConstUnmatched [c]
+addUnmatchedConst c (Just (ConstUnmatched cs))
+    = toMaybe (not $ c `elem` cs) $ ConstUnmatched (c :: cs)
+addUnmatchedConst _ (Just (ConUnmatched _)) = Nothing -- shouldn't happen
 
 export
 optimiseTree : {vars : _} -> List (Var vars, MatchResult vars) -> CaseTree vars -> Maybe (CaseTree vars)
 
 optimiseAlts : {vars : _} -> List (Var vars, MatchResult vars) ->
-               Var vars -> List (CaseAlt vars) ->
+               Var vars -> Maybe UnmatchedPattern -> List (CaseAlt vars) ->
                (List (Maybe (CaseAlt vars)), Maybe (CaseTree vars))
-optimiseAlts ps v [] = ([], Nothing)
-optimiseAlts ps v (ConCase n tag args sc :: alts)
-    = do let sz = mkSizeOf args
+optimiseAlts ps v _ [] = ([], Nothing)
+optimiseAlts ps v p (ConCase n tag args sc :: alts)
+    = do let Just p' = addUnmatchedCon (n, tag) p
+           | _ => optimiseAlts ps v p alts -- unreachable case
+         let sz = mkSizeOf args
          let v' = weakenNs sz v
-         let ps' = map (bimap (weakenNs sz) (weakenNs sz)) ps
          let args' = allVarsPrefix sz
-         let alt = ConCase n tag args <$> optimiseTree ((v', ConPat n tag args') :: ps') sc
-         mapFst (alt ::) (optimiseAlts ps v alts)
-optimiseAlts ps v (DelayCase ty arg sc :: alts)
+         let ps' = map (bimap (weakenNs sz) (weakenNs sz)) ps
+         let ps'' = (v', Matched $ ConMatched n tag args') :: ps'
+         let alt = ConCase n tag args <$> optimiseTree ps'' sc
+         mapFst (alt ::) (optimiseAlts ps v (Just p') alts)
+optimiseAlts ps v p (DelayCase ty arg sc :: alts)
     = do let sz = mkSizeOf [ty, arg]
          let v' = weakenNs sz v
          let ps' = map (bimap (weakenNs sz) (weakenNs sz)) ps
-         let alt = DelayCase ty arg <$> optimiseTree ((v', DelayPat first (later first)) :: ps') sc
-         mapFst (alt ::) (optimiseAlts ps v alts)
-optimiseAlts ps v (ConstCase c sc :: alts)
-    = do let alt = ConstCase c <$> optimiseTree ((v, ConstPat c) :: ps) sc
-         mapFst (alt ::) (optimiseAlts ps v alts)
-optimiseAlts ps _ (DefaultCase sc :: _)
-    = ([], optimiseTree ps sc)
+         let ps'' = (v', Matched $ DelayMatched first (later first)) :: ps'
+         let alt = DelayCase ty arg <$> optimiseTree ps'' sc
+         mapFst (alt ::) (optimiseAlts ps v p alts)
+optimiseAlts ps v p (ConstCase c sc :: alts)
+    = do let Just p' = addUnmatchedConst c p
+           | _ => optimiseAlts ps v p alts -- unreachable case
+         let ps' = (v, Matched $ ConstMatched c) :: ps
+         let alt = ConstCase c <$> optimiseTree ps' sc
+         mapFst (alt ::) (optimiseAlts ps v (Just p') alts)
+optimiseAlts ps v p (DefaultCase sc :: _)
+    = ([], optimiseTree (maybe ps (\p => (v, Unmatched p) :: ps) p) sc)
 
 pickAlt : {vars : _} -> List (Var vars, MatchResult vars) ->
-          MatchResult vars -> List (CaseAlt vars) -> Maybe (CaseTree vars)
+          MatchedPattern vars -> List (CaseAlt vars) -> Maybe (CaseTree vars)
 pickAlt _ _ [] = Nothing
-pickAlt ps p@(ConPat n t args) (ConCase n' t' args' sc :: alts)
+pickAlt ps p@(ConMatched n t args) (ConCase n' t' args' sc :: alts)
     = if t == t' && n == n'
          then do match <- checkLengthMatch args args' -- lengths should always match
                  optimiseTree ps $ substCaseTree zero (mkSizeOf _) (mkSubst args match) sc
          else pickAlt ps p alts
-pickAlt ps (DelayPat ty arg) (DelayCase ty' arg' sc :: _)
+pickAlt ps (DelayMatched ty arg) (DelayCase ty' arg' sc :: _)
     = do let subst : Subst Var [ty', arg'] vars = mkSubst [ty, arg] %search
          optimiseTree ps $ substCaseTree zero (mkSizeOf _) subst sc
-pickAlt ps p@(ConstPat c) (ConstCase c' sc :: alts)
+pickAlt ps p@(ConstMatched c) (ConstCase c' sc :: alts)
     = if c == c'
          then optimiseTree ps sc
          else pickAlt ps p alts
@@ -72,9 +109,9 @@ pickAlt ps p (_ :: alts) = pickAlt ps p alts
 
 optimiseTree ps (Case idx el ty alts)
     = do let var = MkVar el
-         case lookup var ps of
-           Just p => pickAlt ps p alts
-           Nothing => case mapFst catMaybes $ optimiseAlts ps var alts of
+         case destructMatchResult $ lookup var ps of
+           Left p => pickAlt ps p alts
+           Right p => case mapFst catMaybes $ optimiseAlts ps var p alts of
                            ([], def) => def
                            (alts, Nothing) => Just $ Case idx el ty alts
                            (alts, Just def) =>
