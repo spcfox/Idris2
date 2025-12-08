@@ -8,6 +8,7 @@ import public Core.Case.CaseTree
 
 import Data.Maybe
 import Data.List
+import Libraries.Data.List.Extra
 import Libraries.Data.List.LengthMatch
 import Libraries.Data.List.SizeOf
 
@@ -61,7 +62,7 @@ optimiseTree : {vars : _} -> List (Var vars, MatchResult vars) -> CaseTree vars 
 
 optimiseAlts : {vars : _} -> List (Var vars, MatchResult vars) ->
                Var vars -> Maybe UnmatchedPattern -> List (CaseAlt vars) ->
-               (List (Maybe (CaseAlt vars)), Maybe (CaseTree vars))
+               (List (CaseAlt vars), Maybe (CaseTree vars))
 optimiseAlts ps v _ [] = ([], Nothing)
 optimiseAlts ps v p (ConCase n tag args sc :: alts)
     = do let Just p' = addUnmatchedCon (n, tag) p
@@ -72,22 +73,22 @@ optimiseAlts ps v p (ConCase n tag args sc :: alts)
          let ps' = map (bimap (weakenNs sz) (weakenNs sz)) ps
          let ps'' = (v', Matched $ ConMatched n tag args') :: ps'
          let alt = ConCase n tag args <$> optimiseTree ps'' sc
-         mapFst (alt ::) (optimiseAlts ps v (Just p') alts)
+         mapFst (mcons alt) (optimiseAlts ps v (Just p') alts)
 optimiseAlts ps v p (DelayCase ty arg sc :: alts)
     = do let sz = mkSizeOf [ty, arg]
          let v' = weakenNs sz v
          let ps' = map (bimap (weakenNs sz) (weakenNs sz)) ps
          let ps'' = (v', Matched $ DelayMatched first (later first)) :: ps'
          let alt = DelayCase ty arg <$> optimiseTree ps'' sc
-         mapFst (alt ::) (optimiseAlts ps v p alts)
+         mapFst (mcons alt) (optimiseAlts ps v p alts)
 optimiseAlts ps v p (ConstCase c sc :: alts)
     = do let Just p' = addUnmatchedConst c p
            | _ => optimiseAlts ps v p alts -- unreachable case
          let ps' = (v, Matched $ ConstMatched c) :: ps
          let alt = ConstCase c <$> optimiseTree ps' sc
-         mapFst (alt ::) (optimiseAlts ps v (Just p') alts)
+         mapFst (mcons alt) (optimiseAlts ps v (Just p') alts)
 optimiseAlts ps v p (DefaultCase sc :: _)
-    = ([], optimiseTree (maybe ps (\p => (v, Unmatched p) :: ps) p) sc)
+    = ([], optimiseTree ((v,) . Unmatched <$> p `mcons` ps) sc)
 
 pickAlt : {vars : _} -> List (Var vars, MatchResult vars) ->
           MatchedPattern vars -> List (CaseAlt vars) -> Maybe (CaseTree vars)
@@ -111,7 +112,7 @@ optimiseTree ps (Case idx el ty alts)
     = do let var = MkVar el
          case destructMatchResult $ lookup var ps of
            Left p => pickAlt ps p alts
-           Right p => case mapFst catMaybes $ optimiseAlts ps var p alts of
+           Right p => case optimiseAlts ps var p alts of
                            ([], def) => def
                            (alts, Nothing) => Just $ Case idx el ty alts
                            (alts, Just def@(Case idx' _ _ alts')) =>
