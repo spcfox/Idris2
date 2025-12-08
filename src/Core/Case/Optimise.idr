@@ -114,6 +114,9 @@ optimiseTree ps (Case idx el ty alts)
            Right p => case mapFst catMaybes $ optimiseAlts ps var p alts of
                            ([], def) => def
                            (alts, Nothing) => Just $ Case idx el ty alts
+                           (alts, Just def@(Case idx' _ _ alts')) =>
+                               Just $ Case idx el ty $ alts ++
+                                 if idx == idx' then alts' else [DefaultCase def]
                            (alts, Just def) =>
                                Just $ Case idx el ty $ alts ++ [DefaultCase def]
 optimiseTree _ tm = Just tm
