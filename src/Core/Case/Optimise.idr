@@ -18,12 +18,12 @@ mkSubst [] NilMatch = []
 mkSubst (x :: xs) (ConsMatch m) = x :: mkSubst xs m
 
 data MatchedPattern : Scoped where
-    ConMatched     : Name -> (tag : Int) -> List (Var vars) -> MatchedPattern vars
+    ConMatched     : ConTag -> List (Var vars) -> MatchedPattern vars
     DelayMatched   : (ty, arg : Var vars) -> MatchedPattern vars
     ConstMatched   : Constant -> MatchedPattern vars
 
 data UnmatchedPattern : Type where
-    ConUnmatched   : List (Name, Int) -> UnmatchedPattern
+    ConUnmatched   : List ConTag -> UnmatchedPattern
     ConstUnmatched : List Constant -> UnmatchedPattern
 
 data MatchResult : Scoped where
@@ -31,7 +31,7 @@ data MatchResult : Scoped where
     Unmatched : UnmatchedPattern -> MatchResult vars
 
 Weaken MatchedPattern where
-  weakenNs s (ConMatched n tag args) = ConMatched n tag (weakenNs s <$> args)
+  weakenNs s (ConMatched tag args) = ConMatched tag (weakenNs s <$> args)
   weakenNs s (DelayMatched ty arg) = DelayMatched (weakenNs s ty) (weakenNs s arg)
   weakenNs s (ConstMatched c) = ConstMatched c
 
@@ -45,10 +45,10 @@ destructMatchResult (Just (Matched p)) = Left p
 destructMatchResult (Just (Unmatched p)) = Right (Just p)
 destructMatchResult Nothing = Right Nothing
 
-addUnmatchedCon : (Name, Int) -> Maybe UnmatchedPattern -> Maybe UnmatchedPattern
-addUnmatchedCon con Nothing = Just $ ConUnmatched [con]
-addUnmatchedCon con (Just (ConUnmatched cs))
-    = toMaybe (not $ con `elem` cs) $ ConUnmatched (con :: cs)
+addUnmatchedCon : ConTag -> Maybe UnmatchedPattern -> Maybe UnmatchedPattern
+addUnmatchedCon tag Nothing = Just $ ConUnmatched [tag]
+addUnmatchedCon tag (Just (ConUnmatched cs))
+    = toMaybe (not $ tag `elem` cs) $ ConUnmatched (tag :: cs)
 addUnmatchedCon _ (Just (ConstUnmatched _)) = Nothing -- shouldn't happen
 
 addUnmatchedConst : Constant -> Maybe UnmatchedPattern -> Maybe UnmatchedPattern
@@ -64,15 +64,15 @@ optimiseAlts : {vars : _} -> List (Var vars, MatchResult vars) ->
                Var vars -> Maybe UnmatchedPattern -> List (CaseAlt vars) ->
                (List (CaseAlt vars), Maybe (CaseTree vars))
 optimiseAlts ps v _ [] = ([], Nothing)
-optimiseAlts ps v p (ConCase n tag args sc :: alts)
-    = do let Just p' = addUnmatchedCon (n, tag) p
+optimiseAlts ps v p (ConCase tag args sc :: alts)
+    = do let Just p' = addUnmatchedCon tag p
            | _ => optimiseAlts ps v p alts -- unreachable case
          let sz = mkSizeOf args
          let v' = weakenNs sz v
          let args' = allVarsPrefix sz
          let ps' = map (bimap (weakenNs sz) (weakenNs sz)) ps
-         let ps'' = (v', Matched $ ConMatched n tag args') :: ps'
-         let alt = ConCase n tag args <$> optimiseTree ps'' sc
+         let ps'' = (v', Matched $ ConMatched tag args') :: ps'
+         let alt = ConCase tag args <$> optimiseTree ps'' sc
          mapFst (mcons alt) (optimiseAlts ps v (Just p') alts)
 optimiseAlts ps v p (DelayCase ty arg sc :: alts)
     = do let sz = mkSizeOf [ty, arg]
@@ -93,8 +93,8 @@ optimiseAlts ps v p (DefaultCase sc :: _)
 pickAlt : {vars : _} -> List (Var vars, MatchResult vars) ->
           MatchedPattern vars -> List (CaseAlt vars) -> Maybe (CaseTree vars)
 pickAlt _ _ [] = Nothing
-pickAlt ps p@(ConMatched n t args) (ConCase n' t' args' sc :: alts)
-    = if t == t' && n == n'
+pickAlt ps p@(ConMatched t args) (ConCase t' args' sc :: alts)
+    = if t == t'
          then do match <- checkLengthMatch args args' -- lengths should always match
                  optimiseTree ps $ substCaseTree zero (mkSizeOf _) (mkSubst args match) sc
          else pickAlt ps p alts

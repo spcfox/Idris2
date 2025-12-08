@@ -11,7 +11,39 @@ import Libraries.Data.NameMap
 import Libraries.Text.PrettyPrint.Prettyprinter
 import Libraries.Data.List.SizeOf
 
+import Decidable.Equality
+
 %default covering
+
+public export
+data ConTag = DConTag Name Int
+            | TConTag Name
+
+export
+conName : ConTag -> Name
+conName (DConTag n _) = n
+conName (TConTag n) = n
+
+export
+tagOrder : ConTag -> Maybe Int
+tagOrder (DConTag _ i) = Just i
+tagOrder (TConTag {}) = Nothing
+
+export
+conTagEq : (x, y : ConTag) -> Maybe (x = y)
+conTagEq (DConTag n i) (DConTag n' i')
+    = do Refl <- nameEq n n'
+         case decEq i i' of
+              Yes Refl => Just Refl
+              No contra => Nothing
+conTagEq (TConTag n) (TConTag n') = (\xy => cong TConTag xy) <$> nameEq n n'
+conTagEq _ _ = Nothing
+
+export
+Eq ConTag where
+  DConTag _ i == DConTag _ i' = i == i'
+  TConTag n == TConTag n' = n == n'
+  _ == _ = False
 
 mutual
   ||| Case trees in A-normal forms
@@ -37,7 +69,7 @@ mutual
   public export
   data CaseAlt : Scoped where
        ||| Constructor for a data type; bind the arguments and subterms.
-       ConCase : Name -> (tag : Int) -> (args : List Name) ->
+       ConCase : ConTag -> (args : List Name) ->
                  CaseTree (Scope.addInner vars args) -> CaseAlt vars
        ||| Lazy match for the Delay type use for codata types
        DelayCase : (ty : Name) -> (arg : Name) ->
@@ -60,7 +92,7 @@ mutual
   measure Impossible = 0
 
   measureAlts : CaseAlt vars -> Nat
-  measureAlts (ConCase x tag args y) = 1 + (measure y)
+  measureAlts (ConCase tag args y) = 1 + (measure y)
   measureAlts (DelayCase ty arg x) = 1 + (measure x)
   measureAlts (ConstCase x y) = 1 + (measure y)
   measureAlts (DefaultCase x) = 1 + (measure x)
@@ -85,12 +117,12 @@ mutual
 
   export
   StripNamespace (CaseAlt vars) where
-    trimNS ns (ConCase x tag args t) = ConCase x tag args (trimNS ns t)
+    trimNS ns (ConCase tag args t) = ConCase tag args (trimNS ns t)
     trimNS ns (DelayCase ty arg t) = DelayCase ty arg (trimNS ns t)
     trimNS ns (ConstCase x t) = ConstCase x (trimNS ns t)
     trimNS ns (DefaultCase t) = DefaultCase (trimNS ns t)
 
-    restoreNS ns (ConCase x tag args t) = ConCase x tag args (restoreNS ns t)
+    restoreNS ns (ConCase tag args t) = ConCase tag args (restoreNS ns t)
     restoreNS ns (DelayCase ty arg t) = DelayCase ty arg (restoreNS ns t)
     restoreNS ns (ConstCase x t) = ConstCase x (restoreNS ns t)
     restoreNS ns (DefaultCase t) = DefaultCase (restoreNS ns t)
@@ -141,8 +173,8 @@ showCT indent (STerm i tm) = "[" ++ show i ++ "] " ++ show tm
 showCT indent (Unmatched msg) = "Error: " ++ show msg
 showCT indent Impossible = "Impossible"
 
-showCA indent (ConCase n tag args sc)
-        = showSep " " (map show (n :: args)) ++ " => " ++
+showCA indent (ConCase tag args sc)
+        = showSep " " (map show (conName tag :: args)) ++ " => " ++
           showCT indent sc
 showCA indent (DelayCase _ arg sc)
         = "Delay " ++ show arg ++ " => " ++ showCT indent sc
@@ -174,8 +206,8 @@ mutual
   eqTree _ _ = False
 
   eqAlt : CaseAlt vs -> CaseAlt vs' -> Bool
-  eqAlt (ConCase n t args tree) (ConCase n' t' args' tree')
-      = n == n' && eqTree tree tree' -- assume arities match, since name does
+  eqAlt (ConCase t args tree) (ConCase t' args' tree')
+      = t == t' && eqTree tree tree' -- assume arities match, since name does
   eqAlt (DelayCase _ _ tree) (DelayCase _ _ tree')
       = eqTree tree tree'
   eqAlt (ConstCase c tree) (ConstCase c' tree')
@@ -227,8 +259,8 @@ mutual
                        SizeOf ns ->
                        CaseAlt (outer ++ inner) ->
                        CaseAlt (outer ++ (ns ++ inner))
-  insertCaseAltNames p q (ConCase x tag args ct)
-      = ConCase x tag args
+  insertCaseAltNames p q (ConCase tag args ct)
+      = ConCase tag args
            (rewrite appendAssociative args outer (ns ++ inner) in
                     insertCaseNames (mkSizeOf args + p) q {inner}
                         (rewrite sym (appendAssociative args outer inner) in
@@ -270,8 +302,8 @@ export
 substCaseTree : Substitutable Var CaseTree
 
 substCaseAlt : Substitutable Var CaseAlt
-substCaseAlt sOuter sDropped env (ConCase n t args sc)
-    = ConCase n t args $
+substCaseAlt sOuter sDropped env (ConCase t args sc)
+    = ConCase t args $
         rewrite appendAssociative args outer vars in
           substCaseTree (mkSizeOf args + sOuter) sDropped env $
             rewrite sym $ appendAssociative args outer (dropped ++ vars) in sc
@@ -301,7 +333,7 @@ getNames add ns sc = getSet ns sc
   where
     mutual
       getAltSet : NameMap Bool -> CaseAlt vs -> NameMap Bool
-      getAltSet ns (ConCase n t args sc) = getSet ns sc
+      getAltSet ns (ConCase t args sc) = getSet ns sc
       getAltSet ns (DelayCase t a sc) = getSet ns sc
       getAltSet ns (ConstCase i sc) = getSet ns sc
       getAltSet ns (DefaultCase sc) = getSet ns sc
