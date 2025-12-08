@@ -26,8 +26,9 @@ namespace Raw
   prettyTree (Unmatched msg) = "Error:" <++> pretty0 msg
   prettyTree Impossible = "Impossible"
 
-  prettyAlt (ConCase n tag args sc)
-      = hsep (annotate (DCon (Just n)) (pretty0 n) ::  map pretty0 args)
+  prettyAlt (ConCase tag args sc)
+      = let n = conName tag in
+        hsep (annotate (DCon (Just n)) (pretty0 n) ::  map pretty0 args)
         <++> fatArrow
         <+> let sc = prettyTree sc in
             Union (spaces 1 <+> sc) (nest 2 (hardline <+> sc))
@@ -78,7 +79,8 @@ namespace Resugared
   prettyTree env (Unmatched msg) = pure ("Error:" <++> pretty0 msg)
   prettyTree env Impossible = pure "Impossible"
 
-  prettyAlt env (ConCase n tag args sc) = do
+  prettyAlt env (ConCase tag args sc) = do
+    let n = conName tag
     con <- prettyName n
     sc <- prettyTree (mkEnvOnto emptyFC args env) sc
     pure $ hsep (annotate (DCon (Just n)) con ::  map pretty0 args)

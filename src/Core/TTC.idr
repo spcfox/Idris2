@@ -465,6 +465,21 @@ TTC Pat where
                      pure (PUnmatchable fc x)
              _ => corrupt "Pat"
 
+export
+TTC ConTag where
+  toBuf (DConTag n i)
+      = do tag 0; toBuf n; toBuf i
+  toBuf (TConTag n)
+      = do tag 1; toBuf n
+
+  fromBuf
+      = case !getTag of
+             0 => do n <- fromBuf; i <- fromBuf
+                     pure (DConTag n i)
+             1 => do n <- fromBuf
+                     pure (TConTag n)
+             _ => corrupt "ConTag"
+
 mutual
   export
   {vars : _} -> TTC (CaseTree vars) where
@@ -492,8 +507,8 @@ mutual
 
   export
   {vars : _} -> TTC (CaseAlt vars) where
-    toBuf (ConCase x t args y)
-        = do tag 0; toBuf x; toBuf t; toBuf args; toBuf y
+    toBuf (ConCase t args y)
+        = do tag 0; toBuf t; toBuf args; toBuf y
     toBuf (DelayCase ty arg y)
         = do tag 1; toBuf ty; toBuf arg; toBuf y
     toBuf (ConstCase x y)
@@ -503,9 +518,8 @@ mutual
 
     fromBuf
         = case !getTag of
-               0 => do x <- fromBuf; t <- fromBuf
-                       args <- fromBuf; y <- fromBuf
-                       pure (ConCase x t args y)
+               0 => do t <- fromBuf; args <- fromBuf; y <- fromBuf
+                       pure (ConCase t args y)
                1 => do ty <- fromBuf; arg <- fromBuf; y <- fromBuf
                        pure (DelayCase ty arg y)
                2 => do x <- fromBuf; y <- fromBuf
