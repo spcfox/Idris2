@@ -8,8 +8,9 @@ import Data.String
 import Idris.Pretty.Annotations
 
 import Libraries.Data.NameMap
-import Libraries.Text.PrettyPrint.Prettyprinter
 import Libraries.Data.List.SizeOf
+import Libraries.Decidable.Equality
+import Libraries.Text.PrettyPrint.Prettyprinter
 
 import Decidable.Equality
 
@@ -33,10 +34,9 @@ export
 conTagEq : (x, y : ConTag) -> Maybe (x = y)
 conTagEq (DConTag n i) (DConTag n' i')
     = do Refl <- nameEq n n'
-         case decEq i i' of
-              Yes Refl => Just Refl
-              No contra => Nothing
-conTagEq (TConTag n) (TConTag n') = (\xy => cong TConTag xy) <$> nameEq n n'
+         Refl <- maybeEq i i'
+         pure Refl
+conTagEq (TConTag n) (TConTag n') = (\eq => cong TConTag eq) <$> nameEq n n'
 conTagEq _ _ = Nothing
 
 export

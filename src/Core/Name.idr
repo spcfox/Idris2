@@ -2,7 +2,7 @@ module Core.Name
 
 import Data.Maybe
 import Data.String
-import Decidable.Equality
+import Libraries.Decidable.Equality
 import Libraries.Text.PrettyPrint.Prettyprinter
 import Libraries.Text.PrettyPrint.Prettyprinter.Util
 import Libraries.Utils.String
@@ -394,57 +394,45 @@ Ord Name where
 
 export
 userNameEq : (x, y : UserName) -> Maybe (x = y)
-userNameEq (Basic x) (Basic y) with (decEq x y)
-  userNameEq (Basic x) (Basic y) | Yes prf = Just (cong Basic prf)
-  userNameEq (Basic x) (Basic y) | No nprf = Nothing
-userNameEq (Field x) (Field y) with (decEq x y)
-  userNameEq (Field x) (Field y) | Yes prf = Just (cong Field prf)
-  userNameEq (Field x) (Field y) | No nprf = Nothing
+userNameEq (Basic x) (Basic y) = (\eq => cong Basic eq) <$> maybeEq x y
+userNameEq (Field x) (Field y) = (\eq => cong Field eq) <$> maybeEq x y
 userNameEq Underscore Underscore = Just Refl
 userNameEq _ _ = Nothing
 
 
 export
 nameEq : (x : Name) -> (y : Name) -> Maybe (x = y)
-nameEq (NS xs x) (NS ys y) with (decEq xs ys)
-  nameEq (NS ys x) (NS ys y) | (Yes Refl) with (nameEq x y)
-    nameEq (NS ys x) (NS ys y) | (Yes Refl) | Nothing = Nothing
-    nameEq (NS ys y) (NS ys y) | (Yes Refl) | (Just Refl) = Just Refl
-  nameEq (NS xs x) (NS ys y) | (No contra) = Nothing
-nameEq (UN x) (UN y) = map (\xy => cong UN xy) (userNameEq x y)
-nameEq (MN x t) (MN x' t') with (decEq x x')
-  nameEq (MN x t) (MN x t') | (Yes Refl) with (decEq t t')
-    nameEq (MN x t) (MN x t) | (Yes Refl) | (Yes Refl) = Just Refl
-    nameEq (MN x t) (MN x t') | (Yes Refl) | (No contra) = Nothing
-  nameEq (MN x t) (MN x' t') | (No contra) = Nothing
-nameEq (PV x t) (PV y t') with (nameEq x y)
-  nameEq (PV y t) (PV y t') | (Just Refl) with (decEq t t')
-    nameEq (PV y t) (PV y t) | (Just Refl) | (Yes Refl) = Just Refl
-    nameEq (PV y t) (PV y t') | (Just Refl) | (No p) = Nothing
-  nameEq (PV x t) (PV y t') | Nothing = Nothing
-nameEq (DN x t) (DN y t') with (decEq x y)
-  nameEq (DN y t) (DN y t') | (Yes Refl) with (nameEq t t')
-    nameEq (DN y t) (DN y t) | (Yes Refl) | (Just Refl) = Just Refl
-    nameEq (DN y t) (DN y t') | (Yes Refl) | Nothing = Nothing
-  nameEq (DN x t) (DN y t') | (No p) = Nothing
-nameEq (Nested x y) (Nested x' y') with (decEq x x')
-  nameEq (Nested x y) (Nested x' y') | (No p) = Nothing
-  nameEq (Nested x y) (Nested x y') | (Yes Refl) with (nameEq y y')
-    nameEq (Nested x y) (Nested x y') | (Yes Refl) | Nothing = Nothing
-    nameEq (Nested x y) (Nested x y) | (Yes Refl) | (Just Refl) = Just Refl
-nameEq (CaseBlock x y) (CaseBlock x' y') with (decEq x x')
-  nameEq (CaseBlock x y) (CaseBlock x' y') | (No p) = Nothing
-  nameEq (CaseBlock x y) (CaseBlock x y') | (Yes Refl) with (decEq y y')
-    nameEq (CaseBlock x y) (CaseBlock x y') | (Yes Refl) | (No p) = Nothing
-    nameEq (CaseBlock x y) (CaseBlock x y) | (Yes Refl) | (Yes Refl) = Just Refl
-nameEq (WithBlock x y) (WithBlock x' y') with (decEq x x')
-  nameEq (WithBlock x y) (WithBlock x' y') | (No p) = Nothing
-  nameEq (WithBlock x y) (WithBlock x y') | (Yes Refl) with (decEq y y')
-    nameEq (WithBlock x y) (WithBlock x y') | (Yes Refl) | (No p) = Nothing
-    nameEq (WithBlock x y) (WithBlock x y) | (Yes Refl) | (Yes Refl) = Just Refl
-nameEq (Resolved x) (Resolved y) with (decEq x y)
-  nameEq (Resolved y) (Resolved y) | (Yes Refl) = Just Refl
-  nameEq (Resolved x) (Resolved y) | (No contra) = Nothing
+nameEq (NS xs x) (NS ys y)
+    = do Refl <- maybeEq xs ys
+         Refl <- nameEq x y
+         pure Refl
+nameEq (UN x) (UN y) = (\eq => cong UN eq) <$> userNameEq x y
+nameEq (MN x t) (MN x' t')
+    = do Refl <- maybeEq x x'
+         Refl <- maybeEq t t'
+         pure Refl
+nameEq (PV x t) (PV y t')
+    = do Refl <- nameEq x y
+         Refl <- maybeEq t t'
+         pure Refl
+nameEq (DN x t) (DN y t')
+    = do Refl <- maybeEq x y
+         Refl <- nameEq t t'
+         pure Refl
+nameEq (Nested x y) (Nested x' y')
+    = do Refl <- maybeEq x x'
+         Refl <- nameEq y y'
+         pure Refl
+nameEq (CaseBlock x y) (CaseBlock x' y')
+    = do Refl <- maybeEq x x'
+         Refl <- maybeEq y y'
+         pure Refl
+nameEq (WithBlock x y) (WithBlock x' y')
+    = do Refl <- maybeEq x x'
+         Refl <- maybeEq y y'
+         pure Refl
+nameEq (Resolved x) (Resolved y)
+    = (\eq => cong Resolved eq) <$> maybeEq x y
 nameEq _ _ = Nothing
 
 export
