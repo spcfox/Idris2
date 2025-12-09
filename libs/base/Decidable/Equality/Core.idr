@@ -1,6 +1,7 @@
 module Decidable.Equality.Core
 
 import Control.Function
+import Data.Maybe
 
 %default total
 
@@ -13,6 +14,11 @@ public export
 interface DecEq t where
   ||| Decide whether two elements of `t` are propositionally equal
   decEq : (x1 : t) -> (x2 : t) -> Dec (x1 = x2)
+
+%inline
+public export
+maybeEq : DecEq a => (x, y : a) -> Maybe (x = y)
+maybeEq x y = decToMaybe (decEq x y)
 
 --------------------------------------------------------------------------------
 -- Utility lemmas

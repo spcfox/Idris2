@@ -51,6 +51,11 @@ toMaybe : Bool -> Lazy a -> Maybe a
 toMaybe True  j = Just j
 toMaybe False _ = Nothing
 
+public export
+decToMaybe : Dec a -> Maybe a
+decToMaybe (Yes a) = Just a
+decToMaybe (No _)  = Nothing
+
 export
 Injective Just where
   injective Refl = Refl
