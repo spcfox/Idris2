@@ -449,10 +449,8 @@ HasNames (Term vars) where
       = pure (TDelay fc x !(full gam t) !(full gam y))
   full gam (TForce fc r y)
       = pure (TForce fc r !(full gam y))
-  full gam (TType fc (Resolved i))
-      = do Just gdef <- lookupCtxtExact (Resolved i) gam
-                | Nothing => pure (TType fc (Resolved i))
-           pure (TType fc (fullname gdef))
+  full gam (TType fc n)
+      = pure (TType fc !(full gam n))
   full gam (Erased fc (Dotted t))
       = pure (Erased fc (Dotted !(full gam t)))
   full gam tm = pure tm
@@ -479,9 +477,7 @@ HasNames (Term vars) where
   resolved gam (TForce fc r y)
       = pure (TForce fc r !(resolved gam y))
   resolved gam (TType fc n)
-      = do let Just i = getNameID n gam
-                | Nothing => pure (TType fc n)
-           pure (TType fc (Resolved i))
+      = pure (TType fc !(resolved gam n))
   resolved gam (Erased fc (Dotted t))
       = pure (Erased fc (Dotted !(resolved gam t)))
   resolved gam tm = pure tm

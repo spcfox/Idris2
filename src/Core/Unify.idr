@@ -1293,9 +1293,10 @@ mutual
           = do defs <- get Ctxt
                empty <- clearDefs defs
                if x == y
-                  then do log "unify.equal" 10 $
-                                 "Skipped unification (equal already): "
-                                 ++ show x ++ " and " ++ show y
+                  then do logC "unify.equal" 10 $ do
+                                 pure $ "Skipped unification (equal already): "
+                                        ++ show !(toFullNames x) ++ " and "
+                                        ++ show !(toFullNames y)
                           pure success
                   else do xnf <- nf defs env x
                           ynf <- nf defs env y
@@ -1304,9 +1305,10 @@ mutual
           = do defs <- get Ctxt
                empty <- clearDefs defs
                if x == y
-                  then do log "unify.equal" 10 $
-                                 "Skipped unification (equal already): "
-                                 ++ show x ++ " and " ++ show y
+                  then do logC "unify.equal" 10 $ do
+                                 pure $ "Skipped unification (equal already): "
+                                        ++ show !(toFullNames x) ++ " and "
+                                        ++ show !(toFullNames y)
                           pure success
                   else do xnf <- nf defs env x
                           ynf <- nf defs env y

@@ -551,7 +551,7 @@ covering
       showApp (PrimVal _ c) [] = show c
       showApp (Erased _ (Dotted t)) [] = ".(" ++ show t ++ ")"
       showApp (Erased {}) [] = "[__]"
-      showApp (TType _ u) [] = "Type"
+      showApp (TType _ u) [] = "Type " ++ show u
       showApp _ [] = "???"
       showApp f args = "(" ++ assert_total (show f) ++ " " ++
                         assert_total (showSep " " (map show args))
