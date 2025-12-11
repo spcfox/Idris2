@@ -28,7 +28,7 @@ getDecl AsType d@(MkWithData fc $ PRecord doc vis mbtot (MkPRecord n ps _ _ _))
     = Just (MkWithData fc $ PData doc vis mbtot (MkPLater d.fc n (mkRecType ps)))
   where
     mkRecType : List PBinder -> PTerm
-    mkRecType [] = PType d.fc
+    mkRecType [] = PType d.fc Nothing
     mkRecType (MkPBinder p (MkBasicMultiBinder c (n ::: []) t) :: ts)
       = PPi d.fc c p (Just n.val) t (mkRecType ts)
     mkRecType (MkPBinder p (MkBasicMultiBinder c (n ::: x :: xs) t) :: ts)

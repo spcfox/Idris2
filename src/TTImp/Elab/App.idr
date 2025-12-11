@@ -327,7 +327,7 @@ mutual
   needsDelayLHS (IAs _ _ _ _ t) = needsDelayLHS t
   needsDelayLHS (ISearch {}) = pure True
   needsDelayLHS (IPrimVal {}) = pure True
-  needsDelayLHS (IType _) = pure True
+  needsDelayLHS (IType {}) = pure True
   needsDelayLHS (IWithUnambigNames _ _ t) = needsDelayLHS t
   needsDelayLHS _ = pure False
 

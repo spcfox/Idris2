@@ -205,7 +205,8 @@ checkTerm rig elabinfo nest env (IRunElab fc re tm) exp
 checkTerm {vars} rig elabinfo nest env (IPrimVal fc c) exp
     = do let (cval, cty) = checkPrim {vars} fc c
          checkExp rig elabinfo env fc cval (gnf env cty) exp
-checkTerm rig elabinfo nest env (IType fc) exp
+-- Ignore universe in IType, because it's used only for pretty printing for now
+checkTerm rig elabinfo nest env (IType fc _) exp
     = do u <- uniVar fc
          checkExp rig elabinfo env fc (TType fc u) (gType fc u) exp
 checkTerm rig elabinfo nest env (IHole fc str) exp

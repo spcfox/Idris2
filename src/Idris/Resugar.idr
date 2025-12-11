@@ -122,9 +122,11 @@ showImplicits : {auto c : Ref Ctxt Defs} ->
                 Core Bool
 showImplicits = showImplicits <$> getPPrint
 
-showFullEnv : {auto c : Ref Ctxt Defs} ->
-              Core Bool
+showFullEnv : {auto c : Ref Ctxt Defs} -> Core Bool
 showFullEnv = showFullEnv <$> getPPrint
+
+showUniverses : {auto c : Ref Ctxt Defs} -> Core Bool
+showUniverses = showUniverses <$> getPPrint
 
 unbracket : PTerm' nm -> PTerm' nm
 unbracket (PBracketed _ tm) = tm
@@ -362,7 +364,11 @@ mutual
   toPTerm p (ICoerced fc tm) = toPTerm p tm
   toPTerm p (IPrimVal fc c) = pure (PPrimVal fc c)
   toPTerm p (IHole fc str) = pure (PHole fc False str)
-  toPTerm p (IType fc) = pure (PType fc)
+  toPTerm p (IType fc u)
+    = do universes <- showUniverses
+         if universes
+            then pure (PType fc u)
+            else pure (PType fc Nothing)
   toPTerm p (IBindVar fc nm)
     = pure (PRef fc (MkKindedName (Just Bound) nm nm))
   toPTerm p (IBindHere fc _ tm) = toPTerm p tm

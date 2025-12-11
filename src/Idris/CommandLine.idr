@@ -108,6 +108,8 @@ data CLOpt
   ShowMachineNames |
    ||| Show namespaces when pretty printing
   ShowNamespaces |
+   ||| Show universe levels when pretty printing
+  ShowUniverses |
    ||| Run Idris 2 in verbose mode (cancels quiet if it's the default)
   Verbose |
    ||| Set the console width for REPL output
@@ -343,6 +345,8 @@ options = [MkOpt ["--check", "-c"] [] [CheckOnly]
               (Just "Show machine names when pretty printing"),
            MkOpt ["--show-namespaces"] [] [ShowNamespaces]
               (Just "Show namespaces when pretty printing"),
+           MkOpt ["--show-universes"] [] [ShowUniverses]
+              (Just "Show universe levels when pretty printing"),
            MkOpt ["--color", "--colour"] [] ([Color True])
               (Just "Forces colored console output (enabled by default)"),
            MkOpt ["--no-color", "--no-colour"] [] ([Color False])

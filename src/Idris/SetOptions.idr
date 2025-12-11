@@ -494,6 +494,9 @@ preOptions (ShowMachineNames :: opts)
 preOptions (ShowNamespaces :: opts)
     = do updatePPrint { fullNamespace := True }
          preOptions opts
+preOptions (ShowUniverses :: opts)
+    = do updatePPrint { showUniverses := True }
+         preOptions opts
 preOptions (Color b :: opts)
     = do setColor b
          preOptions opts

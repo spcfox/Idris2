@@ -72,7 +72,7 @@ getSig _ = Nothing
 -- TODO: Deal with default superclass implementations
 
 mkDataTy : FC -> List (Name, (RigCount, RawImp)) -> RawImp
-mkDataTy fc [] = IType fc
+mkDataTy fc [] = IType fc Nothing
 mkDataTy fc ((n, (_, ty)) :: ps)
     = IPi fc top Explicit (Just n) ty (mkDataTy fc ps)
 

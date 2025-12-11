@@ -44,7 +44,7 @@ atom fname
   <|> do start <- location
          exactIdent "Type"
          end <- location
-         pure (IType (MkFC fname start end))
+         pure (IType (MkFC fname start end) Nothing)
   <|> do start <- location
          symbol "_"
          end <- location

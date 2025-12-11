@@ -67,8 +67,8 @@ mutual
       = IRunElab fc re (map f t)
     map f (IPrimVal fc c)
       = IPrimVal fc c
-    map f (IType fc)
-      = IType fc
+    map f (IType fc u)
+      = IType fc u
     map f (IHole fc str)
       = IHole fc str
     map f (IUnifyLog fc lvl t)

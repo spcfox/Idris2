@@ -348,7 +348,8 @@ mutual
     prettyPrec d (PRunElab _ tm) = parenthesise (d > startPrec) $ pragma "%runElab" <++> pretty tm
     prettyPrec d (PPrimVal _ c) = pretty c
     prettyPrec d (PHole _ _ n) = hole (pretty0 (strCons '?' n))
-    prettyPrec d (PType _) = annotate (TCon Nothing) "Type"
+    prettyPrec d (PType _ Nothing) = annotate (TCon Nothing) "Type"
+    prettyPrec d (PType _ (Just u)) = parenthesise (d > startPrec) $ annotate (TCon Nothing) "Type" <++> pretty0 u
     prettyPrec d (PAs _ _ n p) = pretty0 n <+> "@" <+> prettyPrec d p
     prettyPrec d (PDotted _ p) = dot <+> prettyPrec d p
     prettyPrec d (PImplicit _) = "_"

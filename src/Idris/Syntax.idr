@@ -117,7 +117,7 @@ mutual
        PUnquote : FC -> PTerm' nm -> PTerm' nm
        PRunElab : FC -> PTerm' nm -> PTerm' nm
        PHole : FC -> (bracket : Bool) -> (holename : String) -> PTerm' nm
-       PType : FC -> PTerm' nm
+       PType : FC -> Maybe Name -> PTerm' nm
        PAs : FC -> (nameFC : FC) -> Name -> (pattern : PTerm' nm) -> PTerm' nm
        PDotted : FC -> PTerm' nm -> PTerm' nm
        PImplicit : FC -> PTerm' nm
@@ -190,7 +190,7 @@ mutual
   getPTermLoc (PUnquote fc _) = fc
   getPTermLoc (PRunElab fc _) = fc
   getPTermLoc (PHole fc _ _) = fc
-  getPTermLoc (PType fc) = fc
+  getPTermLoc (PType fc _) = fc
   getPTermLoc (PAs fc _ _ _) = fc
   getPTermLoc (PDotted fc _) = fc
   getPTermLoc (PImplicit fc) = fc
@@ -912,7 +912,7 @@ parameters {0 nm : Type} (toName : nm -> Name)
   showPTermPrec d (PRunElab _ tm) = "%runElab " ++ showPTermPrec d tm
   showPTermPrec d (PPrimVal _ c) = showPrec d c
   showPTermPrec _ (PHole _ _ n) = "?" ++ n
-  showPTermPrec _ (PType _) = "Type"
+  showPTermPrec _ (PType _ _) = "Type"
   showPTermPrec d (PAs _ _ n p) = showPrec d n ++ "@" ++ showPTermPrec d p
   showPTermPrec d (PDotted _ p) = "." ++ showPTermPrec d p
   showPTermPrec _ (PImplicit _) = "_"

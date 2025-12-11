@@ -63,7 +63,7 @@ fuzzySearch expr = do
   parseNameOrConst : PTerm -> Maybe NameOrConst
   parseNameOrConst (PRef _ n)               = Just (AName n)
   parseNameOrConst (PPrimVal _ $ PrT t)     = Just (APrimType t)
-  parseNameOrConst (PType _)                = Just AType
+  parseNameOrConst (PType {})               = Just AType
   parseNameOrConst _                        = Nothing
 
   parseExpr' : PTerm -> Maybe (List NameOrConst)

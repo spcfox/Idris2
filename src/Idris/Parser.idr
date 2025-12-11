@@ -122,7 +122,7 @@ plhs = MkParseOpts {eqOK = False, withOK = False}
 atom : OriginDesc -> Rule PTerm
 atom fname
     = do x <- bounds $ decorate fname Typ $ exactIdent "Type"
-         pure (PType (boundToFC fname x))
+         pure (PType (boundToFC fname x) Nothing)
   <|> do x <- bounds $ name
          pure (PRef (boundToFC fname x) x.val)
   <|> do x <- bounds $ dependentDecorate fname constant $ \c =>
@@ -1309,10 +1309,10 @@ mutual
                pure (boundToFC fname tm, tm.val)
 
 mkTyConType : OriginDesc -> FC -> List (WithBounds Name) -> PTerm
-mkTyConType fname fc [] = PType (virtualiseFC fc)
+mkTyConType fname fc [] = PType (virtualiseFC fc) Nothing
 mkTyConType fname fc (x :: xs)
    = let bfc = boundToFC fname x in
-     PPi bfc top Explicit Nothing (PType (virtualiseFC fc))
+     PPi bfc top Explicit Nothing (PType (virtualiseFC fc) Nothing)
      $ mkTyConType fname fc xs
 
 mkDataConType : PTerm -> List (WithFC ArgType) -> Maybe PTerm

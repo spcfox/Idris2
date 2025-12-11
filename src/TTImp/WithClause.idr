@@ -101,7 +101,7 @@ mutual
            mergeMatches lhs ((nm, p') :: ms)
   getMatch lhs (IAs _ _ _ _ p) p' = getMatch lhs p p'
   getMatch lhs p (IAs _ _ _ _ p') = getMatch lhs p p'
-  getMatch lhs (IType _) (IType _) = pure []
+  getMatch lhs (IType {}) (IType {}) = pure []
   getMatch lhs (IPrimVal fc c) (IPrimVal fc' c') =
     if c == c'
     then pure []

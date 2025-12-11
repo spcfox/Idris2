@@ -120,7 +120,7 @@ elabRecord {vars} eopts fc env nest newns def_vis mbtot tn_in params0 opts conNa
     paramNames params = map (.name.val) params
 
     mkDataTy : FC -> List ImpParameter -> RawImp
-    mkDataTy fc [] = IType fc
+    mkDataTy fc [] = IType fc Nothing
     mkDataTy fc (binder :: ps) = IPi fc binder.rig binder.val.info (Just binder.name.val) binder.val.boundType (mkDataTy fc ps)
 
     nestDrop : Core (List (Name, Nat))
@@ -183,7 +183,7 @@ elabRecord {vars} eopts fc env nest newns def_vis mbtot tn_in params0 opts conNa
         getParameters acc (IPi fc rig pinfo mnm argTy retTy)
           = let clean = mapTTImp killHole . map fullName in
             getParameters (acc :< (Mk [rig, map NoFC mnm] (MkPiBindData (map clean pinfo) (clean argTy)))) retTy
-        getParameters acc (IType _) = pure acc
+        getParameters acc (IType {}) = pure acc
         getParameters acc ty = throw (InternalError "Malformed record type \{show ty}")
 
         addMissingNames :

@@ -1,0 +1,3 @@
+. ../../testutils.sh
+
+idris2 --show-universes Main.idr < input

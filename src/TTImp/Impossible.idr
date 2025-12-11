@@ -207,7 +207,7 @@ mutual
                       (Nothing, NType {}) => pure True
                       (Just t1, NPrimVal _ (PrT t2)) => pure (t1 == t2)
                       _ => pure False
-      go (IType fc) _ _ _
+      go (IType fc _) _ _ _
           = do defs <- get Ctxt
                Just (NType {}) <- traverseOpt (evalClosure defs) mty
                  | _ => throw $ GenericMsg fc "Type does not match expected type"

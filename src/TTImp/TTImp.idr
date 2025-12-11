@@ -118,7 +118,7 @@ mutual
        IRunElab : FC -> (requireExtension : Bool) -> RawImp' nm -> RawImp' nm
 
        IPrimVal : FC -> (c : Constant) -> RawImp' nm
-       IType : FC -> RawImp' nm
+       IType : FC -> Maybe Name -> RawImp' nm
        IHole : FC -> String -> RawImp' nm
 
        IUnifyLog : FC -> LogLevel -> RawImp' nm -> RawImp' nm
@@ -207,7 +207,7 @@ mutual
       show (IPrimVal fc c) = show c
       show (IHole _ x) = "?" ++ x
       show (IUnifyLog _ lvl x) = "(%logging " ++ show lvl ++ " " ++ show x ++ ")"
-      show (IType fc) = "%type"
+      show (IType fc u) = maybe "%type" (\u => "(%type " ++ show u ++ ")") u
       show (Implicit fc True) = "_"
       show (Implicit fc False) = "?"
       show (IWithUnambigNames fc ns rhs) = "(%with " ++ show ns ++ " " ++ show rhs ++ ")"
@@ -882,7 +882,7 @@ getFC (ICoerced x _) = x
 getFC (IPrimVal x _) = x
 getFC (IHole x _) = x
 getFC (IUnifyLog x _ _) = x
-getFC (IType x) = x
+getFC (IType x _) = x
 getFC (IBindVar x _) = x
 getFC (IBindHere x _ _) = x
 getFC (IMustUnify x _ _) = x

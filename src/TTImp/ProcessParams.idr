@@ -56,7 +56,7 @@ processParams {vars} {c} {m} {u} nest env fc ps ds
          traverse_ (processDecl [] nestBlock env') ds
   where
     mkParamTy : List ImpParameter -> RawImp
-    mkParamTy [] = IType fc
+    mkParamTy [] = IType fc Nothing
     mkParamTy (binder :: ps)
        = IPi fc binder.rig binder.val.info (Just binder.name.val) binder.val.boundType (mkParamTy ps)
 

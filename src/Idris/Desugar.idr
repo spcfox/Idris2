@@ -477,7 +477,7 @@ mutual
   desugarB side ps (PHole fc br holename)
       = do when br $ update Syn { bracketholes $= ((UN (Basic holename)) ::) }
            pure $ IHole fc holename
-  desugarB side ps (PType fc) = pure $ IType fc
+  desugarB side ps (PType fc u) = pure $ IType fc u
   desugarB side ps (PAs fc nameFC vname pattern)
       = pure $ IAs fc nameFC UseRight vname !(desugarB side ps pattern)
   desugarB side ps (PDotted fc x)
@@ -1246,7 +1246,7 @@ mutual
       = desugarDecl ps (MkWithData fc $ PData doc vis mbtot (MkPLater rec.fc tn (mkRecType params)))
     where
       mkRecType : List PBinder -> PTerm
-      mkRecType [] = PType rec.fc
+      mkRecType [] = PType rec.fc Nothing
       mkRecType (MkPBinder p (MkBasicMultiBinder c (n ::: []) t) :: ts)
         = PPi rec.fc c p (Just n.val) t (mkRecType ts)
       mkRecType (MkPBinder p (MkBasicMultiBinder c (n ::: x :: xs) t) :: ts)

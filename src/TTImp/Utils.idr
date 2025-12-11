@@ -169,7 +169,7 @@ findBindableNamesQuot env used (ISearch fc depth) = []
 findBindableNamesQuot env used (IAlternative fc x xs) = []
 findBindableNamesQuot env used (IBindVar fc x) = []
 findBindableNamesQuot env used (IPrimVal fc c) = []
-findBindableNamesQuot env used (IType fc) = []
+findBindableNamesQuot env used (IType fc u) = []
 findBindableNamesQuot env used (IHole fc x) = []
 findBindableNamesQuot env used (Implicit fc bindIfUnsolved) = []
 -- These are the ones I'm not sure about

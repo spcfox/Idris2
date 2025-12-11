@@ -183,6 +183,7 @@ record PPrinter where
   showMachineNames : Bool
   showFullEnv : Bool
   fullNamespace : Bool
+  showUniverses : Bool
 
 public export
 record Options where
@@ -226,6 +227,7 @@ defaultPPrint = MkPPOpts
     , showMachineNames = False
     , showFullEnv = True
     , fullNamespace = False
+    , showUniverses = False
     }
 
 export
@@ -235,6 +237,7 @@ docsPPrint = MkPPOpts
     , showMachineNames = True
     , showFullEnv = False
     , fullNamespace = False
+    , showUniverses = False
     }
 
 export

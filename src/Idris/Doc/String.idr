@@ -510,7 +510,7 @@ getDocsForImplementation t = do
       -- TODO: check the Args have the same shape before unArgging?
       let ((PRef fc hd, _), (PRef _ chd, _)) = ( getFnArgs id (unArg arg), getFnArgs defaultKindedName (unArg carg))
         | ((PPrimVal _ c, _), (PPrimVal _ c', _)) => pure (c == c')
-        | ((PType _, _), (PType _, _)) => pure True
+        | ((PType {}, _), (PType {}, _)) => pure True
         | _ => pure False
       -- if the names match on the nose we can readily say True
       let False = dropNS hd == dropNS (fullName chd)
@@ -546,7 +546,7 @@ getDocsForPTerm : {auto o : Ref ROpts REPLOpts} ->
                   PTerm -> Core (Doc IdrisDocAnn)
 getDocsForPTerm (PRef fc name) = getDocsForName fc name MkConfig
 getDocsForPTerm (PPrimVal _ c) = getDocsForPrimitive c
-getDocsForPTerm (PType _) = pure $ vcat
+getDocsForPTerm (PType {}) = pure $ vcat
   [ "Type : Type"
   , indent 2 "The type of all types is Type. The type of Type is Type."
   ]

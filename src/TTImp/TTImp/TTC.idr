@@ -80,7 +80,7 @@ mutual
 
     toBuf (IPrimVal fc y)
         = do tag 26; toBuf fc; toBuf y
-    toBuf (IType fc)
+    toBuf (IType fc _)
         = do tag 27; toBuf fc
     toBuf (IHole fc y)
         = do tag 28; toBuf fc; toBuf y
@@ -173,7 +173,7 @@ mutual
                26 => do fc <- fromBuf; y <- fromBuf
                         pure (IPrimVal fc y)
                27 => do fc <- fromBuf
-                        pure (IType fc)
+                        pure (IType fc Nothing)
                28 => do fc <- fromBuf; y <- fromBuf
                         pure (IHole fc y)
                29 => do fc <- fromBuf
