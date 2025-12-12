@@ -195,7 +195,8 @@ knownTopics = [
     ("unify.postpone", Nothing),
     ("unify.retry", Nothing),
     ("unify.search", Nothing),
-    ("unify.unsolved", Nothing)
+    ("unify.unsolved", Nothing),
+    ("universe", Just "Checking universe constraints")
 ]
 
 export

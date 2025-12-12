@@ -56,6 +56,7 @@ modules =
     Core.Case.Util,
     Core.CompileExpr,
     Core.CompileExpr.Pretty,
+    Core.Constraints,
     Core.Context,
     Core.Context.Context,
     Core.Context.Data,

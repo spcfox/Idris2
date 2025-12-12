@@ -12,6 +12,7 @@ import Compiler.Inline
 import Compiler.Interpreter.VMCode
 
 import Core.Binary
+import Core.Constraints
 import Core.Directory
 import Core.Env
 import Core.Hash
@@ -387,9 +388,11 @@ processMod sourceFileName ttcFileName msg sourcecode origin
                 setNS (miAsNamespace ns)
                 errs <- logTime 2 "Processing decls" $
                             processDecls (decls mod)
-                totErrs <- logTime 3 ("Totality check overall")
+                totErrs <- logTime 3 "Totality check overall" $
                             getTotalityErrors
-                let errs = errs ++ totErrs
+                uErrs <- logTime 3 "Universe constraints check" $
+                            checkUniverseConstraints
+                let errs = errs ++ totErrs ++ uErrs
 --                 coreLift $ gc
 
                 when (isNil errs) $

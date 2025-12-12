@@ -380,6 +380,11 @@ data UConstraint : Type where
      ULT : Name -> Name -> UConstraint
 
 export
+Show UConstraint where
+  show (ULE x y) = show x ++ " <= " ++ show y
+  show (ULT x y) = show x ++ " < " ++ show y
+
+export
 Eq UConstraint where
   ULE x y == ULE x' y' = x == x' && y == y'
   ULT x y == ULT x' y' = x == x' && y == y'
