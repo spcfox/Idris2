@@ -1,68 +1,23 @@
 1/1: Building Term (Term.idr)
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:1} and Type Term.{u:2}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:3} and Type Term.{u:4}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:5} and Type Term.{u:6}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:5} and Type Term.{u:6}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:7} and Type Term.{u:8}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:9} and Type Term.{u:10}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:11} and Type Term.{u:12}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:11} and Type Term.{u:12}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:13} and Type Term.{u:14}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:15} and Type Term.{u:16}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:17} and Type Term.{u:18}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:17} and Type Term.{u:18}
 LOG declare.type:1: Processing Term.Typ
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:19} and Type Term.{u:20}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:21} and Type Term.{u:22}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:23} and Type Term.{u:24}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:23} and Type Term.{u:24}
 LOG declare.data:1: Processing Term.Bdr
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:25} and Type Term.{u:26}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:27} and Type Term.{u:28}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:29} and Type Term.{u:30}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:29} and Type Term.{u:30}
 LOG unify.meta:5: Adding new meta ({P:cut:1}, (Term:1, Rig0))
 LOG unify.meta:5: Adding new meta ({P:vars:1}, (Term:2, Rig0))
-LOG unify.equal:10: Skipped unification (equal already): Type {top:1} and Type Term.{u:31}
 LOG unify.meta:5: Adding new meta ({P:cut:2}, (Term:3, Rig0))
 LOG unify.meta:5: Adding new meta ({P:vars:2}, (Term:4, Rig0))
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:32} and Type Term.{u:33}
-LOG unify.equal:10: Skipped unification (equal already): Type {top:1} and Type Term.{u:33}
 LOG declare.data:1: Processing Term.Chk
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:34} and Type Term.{u:35}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:36} and Type Term.{u:37}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:38} and Type Term.{u:39}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:38} and Type Term.{u:39}
 LOG unify.meta:5: Adding new meta ({P:cut:3}, (Term:5, Rig0))
 LOG unify.meta:5: Adding new meta ({P:vars:3}, (Term:6, Rig0))
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:40} and Type Term.{u:41}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:42} and Type Term.{u:43}
-LOG unify.equal:10: Skipped unification (equal already): Type {top:1} and Type Term.{u:43}
 LOG unify.meta:5: Adding new meta ({P:cut:4}, (Term:7, Rig0))
 LOG unify.meta:5: Adding new meta ({P:vars:4}, (Term:8, Rig0))
 LOG unify.meta:5: Adding new meta ({P:n:1}, (Term:9, Rig0))
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:44} and Type Term.{u:45}
-LOG unify.equal:10: Skipped unification (equal already): Type {top:1} and Type Term.{u:45}
 LOG declare.data:1: Processing Term.Syn
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:46} and Type Term.{u:47}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:48} and Type Term.{u:49}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:50} and Type Term.{u:51}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:50} and Type Term.{u:51}
 LOG unify.meta:5: Adding new meta ({P:vars:5}, (Term:10, Rig0))
 LOG unify.meta:5: Adding new meta ({P:cut:5}, (Term:11, Rig0))
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:52} and Type Term.{u:53}
-LOG unify.equal:10: Skipped unification (equal already): Type {top:1} and Type Term.{u:53}
 LOG unify.meta:5: Adding new meta ({P:cut:6}, (Term:12, Rig0))
 LOG unify.meta:5: Adding new meta ({P:vars:6}, (Term:13, Rig0))
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:54} and Type Term.{u:55}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:56} and Type Term.{u:57}
-LOG unify.equal:10: Skipped unification (equal already): Type {top:1} and Type Term.{u:57}
 LOG unify.meta:5: Adding new meta ({P:vars:7}, (Term:14, Rig0))
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:58} and Type Term.{u:59}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:60} and Type Term.{u:61}
-LOG unify.equal:10: Skipped unification (equal already): Type {top:1} and Type Term.{u:61}
 LOG declare.def.lhs:3: LHS term: Term.Typ
-LOG unify.equal:10: Skipped unification (equal already): (vars : Prelude.Types.Nat) -> Type Term.{u:34} and (vars : Prelude.Types.Nat) -> Type Term.{u:19}
 LOG declare.def.clause:3: RHS term: Term.Chk
 LOG declare.def:2: Case tree for Term.Typ: [0] Term.Chk
 LOG declare.def:3: Working from [0] Term.Chk
@@ -70,11 +25,7 @@ LOG declare.def:3: Catch all case in Term.Typ
 LOG declare.def:3: Initially missing in Term.Typ:
 
 LOG declare.type:1: Processing Term.Term
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:62} and Type Term.{u:63}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:64} and Type Term.{u:65}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:64} and Type Term.{u:65}
 LOG declare.def.lhs:3: LHS term: Term.Term
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:34} and Type Term.{u:62}
 LOG declare.def.clause:3: RHS term: (Term.Chk Prelude.Basics.True)
 LOG declare.def:2: Case tree for Term.Term: [0] (Term.Chk Prelude.Basics.True)
 LOG declare.def:3: Working from [0] (Term.Chk Prelude.Basics.True)
@@ -82,11 +33,7 @@ LOG declare.def:3: Catch all case in Term.Term
 LOG declare.def:3: Initially missing in Term.Term:
 
 LOG declare.type:1: Processing Term.NF
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:66} and Type Term.{u:67}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:68} and Type Term.{u:69}
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:68} and Type Term.{u:69}
 LOG declare.def.lhs:3: LHS term: Term.NF
-LOG unify.equal:10: Skipped unification (equal already): Type Term.{u:34} and Type Term.{u:66}
 LOG declare.def.clause:3: RHS term: (Term.Chk Prelude.Basics.False)
 LOG declare.def:2: Case tree for Term.NF: [0] (Term.Chk Prelude.Basics.False)
 LOG declare.def:3: Working from [0] (Term.Chk Prelude.Basics.False)

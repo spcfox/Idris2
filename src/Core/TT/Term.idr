@@ -461,7 +461,7 @@ eqTerm (TDelay _ _ t x) (TDelay _ _ t' x') = eqTerm t t' && eqTerm x x'
 eqTerm (TForce _ _ t) (TForce _ _ t') = eqTerm t t'
 eqTerm (PrimVal _ c) (PrimVal _ c') = c == c'
 eqTerm (Erased _ i) (Erased _ i') = assert_total (eqWhyErasedBy eqTerm i i')
-eqTerm (TType {}) (TType {}) = True
+eqTerm (TType _ u) (TType _ u') = u == u'
 eqTerm _ _ = False
 
 export

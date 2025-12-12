@@ -2643,6 +2643,25 @@ setIncData : {auto c : Ref Ctxt Defs} ->
              CG -> (String, List String) -> Core ()
 setIncData cg res = update Ctxt { incData $= ((cg, res) :: )}
 
+export
+addUConstraint : {auto c : Ref Ctxt Defs} ->
+                 UConstraint -> Core ()
+addUConstraint uc = update Ctxt { gamma->uconstraints $= (uc ::) }
+
+export
+addULT : {auto c : Ref Ctxt Defs} ->
+         Name -> Name -> Core ()
+addULT = addUConstraint .: ULT
+
+export
+addULE : {auto c : Ref Ctxt Defs} ->
+         Name -> Name -> Core ()
+addULE = addUConstraint .: ULE
+
+export
+getUConstraints : {auto c : Ref Ctxt Defs} -> Core (List UConstraint)
+getUConstraints = (.gamma.uconstraints) <$> get Ctxt
+
 -- Set a name as Private that was previously visible (and, if 'everywhere' is
 -- set, hide in any modules imported by this one)
 export

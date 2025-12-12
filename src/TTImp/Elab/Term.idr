@@ -207,8 +207,10 @@ checkTerm {vars} rig elabinfo nest env (IPrimVal fc c) exp
          checkExp rig elabinfo env fc cval (gnf env cty) exp
 -- Ignore universe in IType, because it's used only for pretty printing for now
 checkTerm rig elabinfo nest env (IType fc _) exp
-    = do u <- uniVar fc
-         checkExp rig elabinfo env fc (TType fc u) (gType fc u) exp
+    = do tmu <- uniVar fc
+         tyu <- uniVar fc
+         addULT tmu tyu
+         checkExp rig elabinfo env fc (TType fc tmu) (gType fc tyu) exp
 checkTerm rig elabinfo nest env (IHole fc str) exp
     = checkHole rig elabinfo nest env fc (Basic str) exp
 checkTerm rig elabinfo nest env (IUnifyLog fc lvl tm) exp
