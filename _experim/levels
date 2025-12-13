@@ -1,0 +1,23 @@
+id : (a : Type {u:2}) -> a -> a
+const : (a : Type {u:12}) -> (b : Type {u:16}) -> a -> b -> a
+List : Type {u:32} -> Type {u:35}
+All : (a : Type {u:40}) -> (a -> Type {u:47}) -> List a -> Type {u:54}
+remember : (a : Type {u:32}) -> (xs : List a) -> All a (const (Type {u:65}) a a) xs
+
+HList : List (Type {u:73}) -> Type {u:76}
+HList = All (Type {u:47}) (id (Type {u:47}))
+
+cycle:
+[{u:32}, {u:40}]
+[{u:65}]
+[{u:47}]
+[{u:73}]
+[{u:74}]
+
+32 <= 65 <= 47 <= 73 < 43 <= 32
+
+{u:32} <= {u:65} [x]
+{u:65} <= {u:47} []
+{u:47} <= {u:73} []
+{u:73} <  {u:74} [x]
+{u:74} <= {u:32} []
