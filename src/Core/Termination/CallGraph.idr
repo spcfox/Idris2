@@ -146,7 +146,7 @@ mutual
         conIfGuarded tm = pure tm
 
   knownOr : Core SizeChange -> Core SizeChange -> Core SizeChange
-  knownOr x y = case !x of Unknown => y; _ => x
+  knownOr x y = case !x of Unknown => y; sc => pure sc
 
   plusLazy : Core SizeChange -> Core SizeChange -> Core SizeChange
   plusLazy x y = case !x of Smaller => pure Smaller; x => pure $ x |+| !y
