@@ -14,6 +14,13 @@ import Data.String
 
 %default covering
 
+-- Label for the cache of compared terms
+data Compared : Type where
+
+-- TODO: use SortedMap
+Cache : Scoped
+Cache vars = List ((Term vars, Term vars), SizeChange)
+
 data Guardedness = Toplevel | Unguarded | Guarded | InDelay
 
 Show Guardedness where
@@ -71,14 +78,17 @@ delazy defs tm = tm
 mutual
   findSC : {vars : _} ->
            {auto c : Ref Ctxt Defs} ->
+           {auto r : Ref Compared (Cache vars)} ->
            Env Term vars -> Guardedness ->
            List (Term vars) -> -- LHS args
            Term vars -> -- RHS
            Core (List SCCall)
   findSC {vars} env g pats (Bind fc n b sc)
-       = pure $
-            !(findSCbinder b) ++
-            !(findSC (b :: env) g (map weaken pats) sc)
+       = do -- TODO: use old cache as default value for new
+            _ <- newRef Compared empty
+            pure $
+              !(findSCbinder b) ++
+              !(findSC (b :: env) g (map weaken pats) sc)
     where
       findSCbinder : Binder (Term vars) -> Core (List SCCall)
       findSCbinder (Let _ c val ty) = findSC env g pats val
@@ -154,17 +164,18 @@ mutual
   -- Return whether first argument is structurally smaller than the second.
   sizeCompare : {vars : _} ->
                 {auto c : Ref Ctxt Defs} ->
+                {auto r : Ref Compared (Cache vars)} ->
                 Nat -> -- backtracking fuel
                 Term vars -> -- RHS: term we're checking
                 Term vars -> -- LHS: argument it might be smaller than
                 Core SizeChange
 
-  sizeCompareCon : {vars : _} -> {auto c : Ref Ctxt Defs} -> Nat -> Term vars -> Term vars -> Core Bool
-  sizeCompareTyCon : {vars : _} -> {auto c : Ref Ctxt Defs} -> Nat -> Term vars -> Term vars -> Core Bool
-  sizeCompareConArgs : {vars : _} -> {auto c : Ref Ctxt Defs} -> Nat -> Term vars -> List (Term vars) -> Core Bool
-  sizeCompareApp : {vars : _} -> {auto c : Ref Ctxt Defs} -> Nat -> Term vars -> Term vars -> Core SizeChange
+  sizeCompareCon : {vars : _} -> {auto c : Ref Ctxt Defs} -> {auto r : Ref Compared (Cache vars)} -> Nat -> Term vars -> Term vars -> Core Bool
+  sizeCompareTyCon : {vars : _} -> {auto c : Ref Ctxt Defs} -> {auto r : Ref Compared (Cache vars)} -> Nat -> Term vars -> Term vars -> Core Bool
+  sizeCompareConArgs : {vars : _} -> {auto c : Ref Ctxt Defs} -> {auto r : Ref Compared (Cache vars)} -> Nat -> Term vars -> List (Term vars) -> Core Bool
+  sizeCompareApp : {vars : _} -> {auto c : Ref Ctxt Defs} -> {auto r : Ref Compared (Cache vars)} -> Nat -> Term vars -> Term vars -> Core SizeChange
 
-  sizeCompare' : {vars : _} -> {auto c : Ref Ctxt Defs} -> Nat -> Term vars -> Term vars -> Core SizeChange
+  sizeCompare' : {vars : _} -> {auto c : Ref Ctxt Defs} -> {auto r : Ref Compared (Cache vars)} -> Nat -> Term vars -> Term vars -> Core SizeChange
   sizeCompare' fuel s (Erased _ (Dotted t)) = sizeCompare fuel s t
   sizeCompare' fuel _ (Erased {}) = pure Unknown -- incomparable!
   -- for an as pattern, it's smaller if it's smaller than either part
@@ -202,9 +213,15 @@ mutual
   sizeCompare fuel s t
       = do logC "totality" 50 $ do
              pure $ "Comparing " ++ show !(toFullNames s) ++ " with " ++ show !(toFullNames t)
-           sizeCompare' fuel s t
+           cache <- get Compared
+           case lookup (s, t) cache of
+               Just res => do log "totality" 50 $ "Cache hit: " ++ show res
+                              pure res
+               Nothing => do res <- sizeCompare' fuel s t
+                             update Compared (((s, t), res) ::)
+                             pure res
 
-  sizeCompareProdConArgs : {vars : _} -> {auto c : Ref Ctxt Defs} -> Nat -> List (Term vars) -> List (Term vars) -> Core SizeChange
+  sizeCompareProdConArgs : {vars : _} -> {auto c : Ref Ctxt Defs} -> {auto r : Ref Compared (Cache vars)} -> Nat -> List (Term vars) -> List (Term vars) -> Core SizeChange
   sizeCompareProdConArgs _ [] [] = pure Same
   sizeCompareProdConArgs fuel (x :: xs) (y :: ys) =
     case !(sizeCompare fuel x y) of
@@ -249,7 +266,7 @@ mutual
   sizeCompareApp fuel (App _ f _) t = sizeCompare fuel f t
   sizeCompareApp _ _ t = pure Unknown
 
-  sizeCompareAsserted : {vars : _} -> {auto c : Ref Ctxt Defs} -> Nat -> Maybe (Term vars) -> Term vars -> Core SizeChange
+  sizeCompareAsserted : {vars : _} -> {auto c : Ref Ctxt Defs} -> {auto r : Ref Compared (Cache vars)} -> Nat -> Maybe (Term vars) -> Term vars -> Core SizeChange
   sizeCompareAsserted fuel (Just s) t
       = pure $ case !(sizeCompare fuel s t) of
           Unknown => Unknown
@@ -270,6 +287,7 @@ mutual
   -- relative size of the given argument to each entry in 'pats'.
   mkChange : {vars : _} ->
              {auto c : Ref Ctxt Defs} ->
+             {auto r : Ref Compared (Cache vars)} ->
              Defs -> Name ->
              (pats : List (Term vars)) ->
              (arg : Term vars) ->
@@ -364,6 +382,7 @@ mutual
 
   findSCcall : {vars : _} ->
                {auto c : Ref Ctxt Defs} ->
+               {auto r : Ref Compared (Cache vars)} ->
                Env Term vars -> Guardedness ->
                List (Term vars) ->
                FC -> Name -> List (Term vars) ->
@@ -397,6 +416,7 @@ mutual
                       pure ("Looking in case args " ++ show ps)
           logTermNF "totality" 10 "        =" env tm
           rhs <- normaliseOpts tcOnly defs env tm
+          _ <- newRef Compared empty
           findSC env g pats (delazy defs rhs)
 
 findCalls : {auto c : Ref Ctxt Defs} ->
@@ -405,6 +425,7 @@ findCalls : {auto c : Ref Ctxt Defs} ->
 findCalls defs (_ ** (env, lhs, rhs_in))
    = do let pargs = getArgs (delazy defs lhs)
         rhs <- normaliseOpts tcOnly defs env rhs_in
+        _ <- newRef Compared empty
         findSC env Toplevel pargs (delazy defs rhs)
 
 getSC : {auto c : Ref Ctxt Defs} ->
