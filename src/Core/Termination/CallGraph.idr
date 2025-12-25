@@ -71,26 +71,26 @@ delazy defs tm = tm
 mutual
   findSC : {vars : _} ->
            {auto c : Ref Ctxt Defs} ->
-           Defs -> Env Term vars -> Guardedness ->
+           Env Term vars -> Guardedness ->
            List (Term vars) -> -- LHS args
            Term vars -> -- RHS
            Core (List SCCall)
-  findSC {vars} defs env g pats (Bind fc n b sc)
+  findSC {vars} env g pats (Bind fc n b sc)
        = pure $
             !(findSCbinder b) ++
-            !(findSC defs (b :: env) g (map weaken pats) sc)
+            !(findSC (b :: env) g (map weaken pats) sc)
     where
       findSCbinder : Binder (Term vars) -> Core (List SCCall)
-      findSCbinder (Let _ c val ty) = findSC defs env g pats val
+      findSCbinder (Let _ c val ty) = findSC env g pats val
       findSCbinder b = pure [] -- only types, no need to look
   -- If we're Guarded and find a Delay, continue with the argument as InDelay
-  findSC defs env Guarded pats (TDelay _ _ _ tm)
-      = findSC defs env InDelay pats tm
-  findSC defs env g pats (TDelay _ _ _ tm)
-      = findSC defs env g pats tm
-  findSC defs env g pats (TForce _ _ tm)
-      = findSC defs env Unguarded pats tm
-  findSC defs env g pats tm
+  findSC env Guarded pats (TDelay _ _ _ tm)
+      = findSC env InDelay pats tm
+  findSC env g pats (TDelay _ _ _ tm)
+      = findSC env g pats tm
+  findSC env g pats (TForce _ _ tm)
+      = findSC env Unguarded pats tm
+  findSC env g pats tm
       = do let (fn, args) = getFnArgs tm
            False <- isAssertTotal fn
                | True => pure []
@@ -103,30 +103,30 @@ mutual
     -- If we're InDelay and find a constructor (or a function call which is
     -- guaranteed to return a constructor; AllGuarded set), continue as InDelay
              (InDelay, Ref fc (DataCon {}) cn, args) =>
-                 do scs <- traverse (findSC defs env InDelay pats) args
+                 do scs <- traverse (findSC env InDelay pats) args
                     pure (concat scs)
              -- If we're InDelay otherwise, just check the arguments, the
              -- function call is okay
              (InDelay, _, args) =>
-                 do scs <- traverse (findSC defs env Unguarded pats) args
+                 do scs <- traverse (findSC env Unguarded pats) args
                     pure (concat scs)
              (Guarded, Ref fc (DataCon {}) cn, args) =>
-                    findSCcall defs env Guarded pats fc cn args
+                    findSCcall env Guarded pats fc cn args
              (Toplevel, Ref fc (DataCon {}) cn, args) =>
-                    findSCcall defs env Guarded pats fc cn args
+                    findSCcall env Guarded pats fc cn args
              (_, Ref fc Func fn, args) =>
                  do logC "totality" 50 $
                        pure $ "Looking up type of " ++ show !(toFullNames fn)
-                    findSCcall defs env Unguarded pats fc fn args
+                    findSCcall env Unguarded pats fc fn args
              (_, f, args) =>
-                 do scs <- traverse (findSC defs env Unguarded pats) args
+                 do scs <- traverse (findSC env Unguarded pats) args
                     pure (concat scs)
       where
         handleCase : Term vars -> List (Term vars) -> Core (Maybe (List SCCall))
         handleCase (Ref fc nt n) args
             = do n' <- toFullNames n
                  if caseFn n'
-                    then Just <$> findSCcall defs env g pats fc n args
+                    then Just <$> findSCcall env g pats fc n args
                     else pure Nothing
         handleCase _ _ = pure Nothing
 
@@ -152,32 +152,35 @@ mutual
   plusLazy x y = case !x of Smaller => pure Smaller; x => pure $ x |+| !y
 
   -- Return whether first argument is structurally smaller than the second.
-  sizeCompare : {auto defs : Defs} ->
+  sizeCompare : {vars : _} ->
+                {auto c : Ref Ctxt Defs} ->
                 Nat -> -- backtracking fuel
                 Term vars -> -- RHS: term we're checking
                 Term vars -> -- LHS: argument it might be smaller than
                 Core SizeChange
 
-  sizeCompareCon : {auto defs : Defs} -> Nat -> Term vars -> Term vars -> Core Bool
-  sizeCompareTyCon : {auto defs : Defs} -> Nat -> Term vars -> Term vars -> Core Bool
-  sizeCompareConArgs : {auto defs : Defs} -> Nat -> Term vars -> List (Term vars) -> Core Bool
-  sizeCompareApp : {auto defs : Defs} -> Nat -> Term vars -> Term vars -> Core SizeChange
+  sizeCompareCon : {vars : _} -> {auto c : Ref Ctxt Defs} -> Nat -> Term vars -> Term vars -> Core Bool
+  sizeCompareTyCon : {vars : _} -> {auto c : Ref Ctxt Defs} -> Nat -> Term vars -> Term vars -> Core Bool
+  sizeCompareConArgs : {vars : _} -> {auto c : Ref Ctxt Defs} -> Nat -> Term vars -> List (Term vars) -> Core Bool
+  sizeCompareApp : {vars : _} -> {auto c : Ref Ctxt Defs} -> Nat -> Term vars -> Term vars -> Core SizeChange
 
-  sizeCompare fuel s (Erased _ (Dotted t)) = sizeCompare fuel s t
-  sizeCompare fuel _ (Erased {}) = pure Unknown -- incomparable!
+  sizeCompare' : {vars : _} -> {auto c : Ref Ctxt Defs} -> Nat -> Term vars -> Term vars -> Core SizeChange
+  sizeCompare' fuel s (Erased _ (Dotted t)) = sizeCompare fuel s t
+  sizeCompare' fuel _ (Erased {}) = pure Unknown -- incomparable!
   -- for an as pattern, it's smaller if it's smaller than either part
-  sizeCompare fuel s (As _ _ p t)
+  sizeCompare' fuel s (As _ _ p t)
       = knownOr (sizeCompare fuel s p) (sizeCompare fuel s t)
-  sizeCompare fuel (As _ _ p s) t
+  sizeCompare' fuel (As _ _ p s) t
       = knownOr (sizeCompare fuel p t) (sizeCompare fuel s t)
   -- if they're both metas, let sizeEq check if they're the same
-  sizeCompare fuel s@(Meta {}) t@(Meta {}) = pure (if sizeEq s t then Same else Unknown)
+  sizeCompare' fuel s@(Meta {}) t@(Meta {}) = pure (if sizeEq s t then Same else Unknown)
   -- otherwise try to expand RHS meta
-  sizeCompare fuel s@(Meta n _ i args) t = do
+  sizeCompare' fuel s@(Meta n _ i args) t = do
+    defs <- get Ctxt
     Just gdef <- lookupCtxtExact (Resolved i) (gamma defs) | _ => pure Unknown
     let (PMDef _ [] (STerm _ tm) _ _) = definition gdef | _ => pure Unknown
     tm <- substMeta (embed tm) args zero Subst.empty
-    sizeCompare fuel tm t
+    sizeCompare' fuel tm t
     where
       substMeta : {0 drop, vs : _} ->
                   Term (drop ++ vs) -> List (Term vs) ->
@@ -190,13 +193,18 @@ mutual
       substMeta rhs [] drop env = pure (substs drop env rhs)
       substMeta rhs _ _ _ = throw (InternalError ("Badly formed metavar solution \{show n}"))
 
-  sizeCompare fuel s t
+  sizeCompare' fuel s t
      = if !(sizeCompareTyCon fuel s t) then pure Same
        else if !(sizeCompareCon fuel s t)
           then pure Smaller
           else knownOr (sizeCompareApp fuel s t) (pure $ if sizeEq s t then Same else Unknown)
 
-  sizeCompareProdConArgs : {auto defs : Defs} -> Nat -> List (Term vars) -> List (Term vars) -> Core SizeChange
+  sizeCompare fuel s t
+      = do logC "totality" 50 $ do
+             pure $ "Comparing " ++ show !(toFullNames s) ++ " with " ++ show !(toFullNames t)
+           sizeCompare' fuel s t
+
+  sizeCompareProdConArgs : {vars : _} -> {auto c : Ref Ctxt Defs} -> Nat -> List (Term vars) -> List (Term vars) -> Core SizeChange
   sizeCompareProdConArgs _ [] [] = pure Same
   sizeCompareProdConArgs fuel (x :: xs) (y :: ys) =
     case !(sizeCompare fuel x y) of
@@ -241,7 +249,7 @@ mutual
   sizeCompareApp fuel (App _ f _) t = sizeCompare fuel f t
   sizeCompareApp _ _ t = pure Unknown
 
-  sizeCompareAsserted : {auto defs : Defs} -> Nat -> Maybe (Term vars) -> Term vars -> Core SizeChange
+  sizeCompareAsserted : {vars : _} -> {auto c : Ref Ctxt Defs} -> Nat -> Maybe (Term vars) -> Term vars -> Core SizeChange
   sizeCompareAsserted fuel (Just s) t
       = pure $ case !(sizeCompare fuel s t) of
           Unknown => Unknown
@@ -260,7 +268,9 @@ mutual
 
   -- Calculate the size change for the given argument.  i.e., return the
   -- relative size of the given argument to each entry in 'pats'.
-  mkChange : Defs -> Name ->
+  mkChange : {vars : _} ->
+             {auto c : Ref Ctxt Defs} ->
+             Defs -> Name ->
              (pats : List (Term vars)) ->
              (arg : Term vars) ->
              Core (List SizeChange)
@@ -354,22 +364,23 @@ mutual
 
   findSCcall : {vars : _} ->
                {auto c : Ref Ctxt Defs} ->
-               Defs -> Env Term vars -> Guardedness ->
+               Env Term vars -> Guardedness ->
                List (Term vars) ->
                FC -> Name -> List (Term vars) ->
                Core (List SCCall)
-  findSCcall defs env g pats fc fn_in args
+  findSCcall env g pats fc fn_in args
         -- Under 'assert_total' we assume that all calls are fine, so leave
         -- the size change list empty
       = do fn <- getFullName fn_in
            logC "totality.termination.sizechange" 10 $ do pure $ "Looking under " ++ show !(toFullNames fn)
+           defs <- get Ctxt
            aSmaller <- resolved (gamma defs) (NS builtinNS (UN $ Basic "assert_smaller"))
            if caseFn fn
-              then do scs1 <- traverse (findSC defs env g pats) args
+              then do scs1 <- traverse (findSC env g pats) args
                       mps  <- getCasePats defs fn pats args
                       scs2 <- traverse (findInCase defs g) $ fromMaybe [] mps
                       pure (concat (scs1 ++ scs2))
-              else do scs <- traverse (findSC defs env g pats) args
+              else do scs <- traverse (findSC env g pats) args
                       pure $ [MkSCCall fn
                                (fromListList
                                     !(traverse (mkChange defs aSmaller pats) args))
@@ -386,7 +397,7 @@ mutual
                       pure ("Looking in case args " ++ show ps)
           logTermNF "totality" 10 "        =" env tm
           rhs <- normaliseOpts tcOnly defs env tm
-          findSC defs env g pats (delazy defs rhs)
+          findSC env g pats (delazy defs rhs)
 
 findCalls : {auto c : Ref Ctxt Defs} ->
             Defs -> (vars ** (Env Term vars, Term vars, Term vars)) ->
@@ -394,7 +405,7 @@ findCalls : {auto c : Ref Ctxt Defs} ->
 findCalls defs (_ ** (env, lhs, rhs_in))
    = do let pargs = getArgs (delazy defs lhs)
         rhs <- normaliseOpts tcOnly defs env rhs_in
-        findSC defs env Toplevel pargs (delazy defs rhs)
+        findSC env Toplevel pargs (delazy defs rhs)
 
 getSC : {auto c : Ref Ctxt Defs} ->
         Defs -> Def -> Core (List SCCall)
