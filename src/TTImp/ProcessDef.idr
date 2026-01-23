@@ -357,7 +357,7 @@ checkLHS {vars} trans mult mty n opts nest env fc lhs_in
          lhstm' <- if trans || not (isErased mult)
                       then pure lhstm'
                       else wrapErrorC opts (InLHS fc fullname) $
-                             dotInferred (thinNestedNames nest sub') lhs lhstm'
+                             dotInferred True (thinNestedNames nest sub') lhs lhstm'
          logTerm "declare.def.lhs" 3 "LHS term after dotting" lhstm'
 
          pure (lhs, (vars'  ** (sub', env', nest', lhstm', lhsty')))
