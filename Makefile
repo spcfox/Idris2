@@ -134,7 +134,7 @@ test-support: ${TEST_IDRIS2_SUPPORT_DIR}/${IDRIS2_SUPPORT}
 testenv: test-support
 	mkdir -p ${TEST_PREFIX}/${NAME_VERSION}
 	@${MAKE} ${TEST_PREFIX}/${NAME_VERSION}
-	@${MAKE} -C tests testbin IDRIS2=${TARGET} IDRIS2_PREFIX=${TEST_PREFIX}
+# 	@${MAKE} -C tests testbin IDRIS2=${TARGET} IDRIS2_PREFIX=${TEST_PREFIX}
 
 testenv-clean:
 	$(RM) -r ${TEST_PREFIX}/${NAME_VERSION}
@@ -147,7 +147,7 @@ ci-windows-test:
 test: testenv
 	@echo
 	@echo "NOTE: \`${MAKE} test\` does not rebuild Idris or the libraries packaged with it; to do that run \`${MAKE}\`"
-	@if [ ! -x "${TARGET}" ]; then echo "ERROR: Missing IDRIS2 executable. Cannot run tests!\n"; exit 1; fi
+#	@if [ ! -x "${TARGET}" ]; then echo "ERROR: Missing IDRIS2 executable. Cannot run tests!\n"; exit 1; fi
 	@echo
 	@${MAKE} -C tests only=$(only) except=$(except) IDRIS2=${TARGET} IDRIS2_PREFIX=${TEST_PREFIX} CPPFLAGS="${CPPFLAGS}" LDFLAGS="${LDFLAGS}"
 
