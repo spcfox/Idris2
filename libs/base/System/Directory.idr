@@ -112,9 +112,9 @@ removeDir dirName = primIO (prim__removeDir dirName)
 export
 nextDirEntry : HasIO io => Directory -> io (Either FileError (Maybe String))
 nextDirEntry (MkDir d)
-    = do res <- primIO (prim__dirEntry d)
+    = do (res, errno) <- primIO (prim__atomically (prim__dirEntry d) prim__getErrno)
          if prim__nullPtr res /= 0
-            then if !(getErrno) /= 0
+            then if errno /= 0
                     then returnError
                     else pure $ Right Nothing
             else do let n = prim__getString res

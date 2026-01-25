@@ -5,6 +5,7 @@ module System.Errno
 
 %foreign "C:idris2_getErrno, libidris2_support, idris_support.h"
          "node:support:getErrno,support_system"
+export
 prim__getErrno : PrimIO Int
 
 %foreign "C:idris2_strerror, libidris2_support, idris_support.h"

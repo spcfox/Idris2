@@ -94,6 +94,10 @@ export %inline
 prim__nullPtr : Ptr t -> Int -- can't pass 'type' to a foreign function
 prim__nullPtr p = prim__nullAnyPtr (prim__forgetPtr p)
 
+%foreign "scheme:blodwen-atomically"
+export
+prim__atomically : (1 f : PrimIO a) -> (1 g : PrimIO b) -> PrimIO (a, b)
+
 unsafeCreateWorld : (1 f : (1 x : %World) -> a) -> a
 unsafeCreateWorld f = f %MkWorld
 
