@@ -681,5 +681,5 @@
 (define (blodwen-id x) x)
 
 (define (blodwen-atomically a b f g)
-  (let ([r (f 'erased)])
+  (let ([r (with-interrupts-disabled (f 'erased))])
     (cons r (g 'erased))))
