@@ -430,6 +430,10 @@ checkClause mult vis totreq hashit n opts nest env (ImpossibleClause fc lhs)
                           (vars' ** (sub', env', _, lhstm', _)) <- extendEnv env Refl nest lhstm lhsty
                           logTerm "declare.def.clause.impossible" 3 "LHS term" lhstm'
 
+                          lhstm' <- wrapErrorC opts (InLHS fc !(toFullNames (Resolved n))) $
+                                      dotInferred defs (thinNestedNames nest sub') env' True lhs lhstm'
+                          logTerm "declare.def.clause.impossible" 3 "LHS term after dotting" lhstm'
+
                           pure (Left $ Right $ MkClause env' lhstm' (Erased fc Impossible))
                   else do log "declare.def.clause.impossible" 5 "No empty pat"
                           throw (ValidCase fc env (Left lhstm)))
