@@ -1,0 +1,11 @@
+{
+  "Exclude" : [
+    ".*\\.js",
+    "tests/.+/.+",
+    "benchmark/benchmarks"
+  ],
+  "Disable": {
+    "IndentSize": true,
+    "Indentation": true
+  }
+}
