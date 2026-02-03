@@ -6,14 +6,21 @@ on:
       - '*'
     tags:
       - '*'
-    paths-ignore:
+    paths-ignore: &ignore
       - 'docs/**'
       - 'icons/**'
+      - 'lint/**'
+      - 'benchmarks/**'
       - 'Release/**'
       - '**.md'
+      - '.editorconfig'
+      - '.gitattributes'
+      - '.gitignore'
+      - '.readthedocs.yaml'
+      - 'CITATION.cff'
       - 'CONTRIBUTORS'
       - 'LICENSE'
-      - 'CHANGELOG.md'
+      - '.github/linters/**'
       - '.github/workflows/ci-bootstrap.yml'
       - '.github/workflows/ci-lint.yml'
       - '.github/workflows/ci-sphinx.yml'
@@ -21,17 +28,7 @@ on:
   pull_request:
     branches:
       - main
-    paths-ignore:
-      - 'docs/**'
-      - 'icons/**'
-      - 'Release/**'
-      - '**.md'
-      - 'CONTRIBUTORS'
-      - 'LICENSE'
-      - '.github/workflows/ci-bootstrap.yml'
-      - '.github/workflows/ci-lint.yml'
-      - '.github/workflows/ci-sphinx.yml'
-      - '.github/workflows/ci-super-linter.yml'
+    paths-ignore: *ignore
 
 concurrency:
   group: ${{ github.ref }}
@@ -721,7 +718,7 @@ jobs:
       - name: Initialise DEPLOY variable
         run: |
           if [[ '${{ github.ref }}' == 'refs/heads/main' ]]; then
-             echo "IDRIS2_DEPLOY=true" >> "$GITHUB_ENV"
+            echo "IDRIS2_DEPLOY=true" >> "$GITHUB_ENV"
           fi
 
       - name: Download Idris2 Artifact
