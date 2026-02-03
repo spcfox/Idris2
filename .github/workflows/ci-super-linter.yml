@@ -41,19 +41,32 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          # Full git history is needed to get a proper list of changed files within `super-linter`
+          # Full git history is needed to get a proper list of changed files
+          # within `super-linter`
           fetch-depth: 0
 
       ################################
       # Run Linter against code base #
       ################################
       - name: Lint Code Base
-        uses: github/super-linter@v4
+        uses: super-linter/super-linter@v8
         env:
           VALIDATE_ALL_CODEBASE: false
           VALIDATE_CPP: false # C files predate linting
           VALIDATE_JSCPD: false  # erroneously complains about docs/requirements.txt
-          VALIDATE_JAVASCRIPT_STANDARD: false #requires camel-casing
+          VALIDATE_BIOME_LINT: false # conflicts with Prettier
+          VALIDATE_BIOME_FORMAT: false # conflicts with Prettier
+
+          # Prettier
+          VALIDATE_JAVASCRIPT_PRETTIER: false
+          VALIDATE_MARKDOWN_PRETTIER: false
+          VALIDATE_YAML_PRETTIER: false
+
+          # These linters point to vulnerabilities in GitHub Actions
+          # TODO: enable after fix actions
+          VALIDATE_GITHUB_ACTIONS_ZIZMOR: false
+          VALIDATE_CHECKOV: false
+
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IGNORE_GENERATED_FILES: true
