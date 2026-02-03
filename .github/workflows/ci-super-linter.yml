@@ -57,6 +57,9 @@ jobs:
           VALIDATE_PYTHON_BLACK: false # Avoid conflict: Ruff is preferred
           VALIDATE_GIT_COMMITLINT: false
 
+          # Don't lint the following files
+          FILTER_REGEX_EXCLUDE: "CONTRIBUTORS|tests/[^/]+/.*|benchmark/benchmarks"
+
           SAVE_SUPER_LINTER_SUMMARY: true # Required for generating linting reports in PR
 
           DEFAULT_BRANCH: main
