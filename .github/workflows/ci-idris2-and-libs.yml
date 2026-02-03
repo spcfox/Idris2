@@ -6,14 +6,14 @@ on:
       - '*'
     tags:
       - '*'
-    paths-ignore:
+    paths-ignore: &ignore
       - 'docs/**'
       - 'icons/**'
       - 'Release/**'
       - '**.md'
       - 'CONTRIBUTORS'
       - 'LICENSE'
-      - 'CHANGELOG.md'
+      - '.github/linters/**'
       - '.github/workflows/ci-bootstrap.yml'
       - '.github/workflows/ci-lint.yml'
       - '.github/workflows/ci-sphinx.yml'
@@ -21,17 +21,7 @@ on:
   pull_request:
     branches:
       - main
-    paths-ignore:
-      - 'docs/**'
-      - 'icons/**'
-      - 'Release/**'
-      - '**.md'
-      - 'CONTRIBUTORS'
-      - 'LICENSE'
-      - '.github/workflows/ci-bootstrap.yml'
-      - '.github/workflows/ci-lint.yml'
-      - '.github/workflows/ci-sphinx.yml'
-      - '.github/workflows/ci-super-linter.yml'
+    paths-ignore: *ignore
 
 concurrency:
   group: ${{ github.ref }}
@@ -359,29 +349,29 @@ jobs:
 
   # RACKET
 
-  ubuntu-self-host-racket:
-    needs: ubuntu-bootstrap-racket
-    runs-on: ubuntu-latest
-    if: false
-    env:
-      IDRIS2_CG: racket
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Download Idris2 Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ubuntu-installed-bootstrapped-idris2-racket
-          path: ~/.idris2/
-      - name: Install build dependencies
-        run: |
-          sudo apt-get install -y racket
-          echo "$HOME/.idris2/bin" >> "$GITHUB_PATH"
-          chmod +x "$HOME/.idris2/bin/idris2" "$HOME/.idris2/bin/idris2_app/"*
-      - name: Build self-hosted
-        run: make all IDRIS2_BOOT="idris2 -Werror" && make install
-      - name: Test self-hosted
-        run: make ci-ubuntu-test INTERACTIVE=''
+  # ubuntu-self-host-racket:
+  #   needs: ubuntu-bootstrap-racket
+  #   runs-on: ubuntu-latest
+  #   if: false
+  #   env:
+  #     IDRIS2_CG: racket
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #     - name: Download Idris2 Artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: ubuntu-installed-bootstrapped-idris2-racket
+  #         path: ~/.idris2/
+  #     - name: Install build dependencies
+  #       run: |
+  #         sudo apt-get install -y racket
+  #         echo "$HOME/.idris2/bin" >> "$GITHUB_PATH"
+  #         chmod +x "$HOME/.idris2/bin/idris2" "$HOME/.idris2/bin/idris2_app/"*
+  #     - name: Build self-hosted
+  #       run: make all IDRIS2_BOOT="idris2 -Werror" && make install
+  #     - name: Test self-hosted
+  #       run: make ci-ubuntu-test INTERACTIVE=''
 
   ubuntu-self-host-previous-version:
     needs: [initialise, quick-check]
@@ -721,7 +711,7 @@ jobs:
       - name: Initialise DEPLOY variable
         run: |
           if [[ '${{ github.ref }}' == 'refs/heads/main' ]]; then
-             echo "IDRIS2_DEPLOY=true" >> "$GITHUB_ENV"
+            echo "IDRIS2_DEPLOY=true" >> "$GITHUB_ENV"
           fi
 
       - name: Download Idris2 Artifact
