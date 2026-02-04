@@ -93,7 +93,7 @@ could be any other knowledgable community member.
     Idris 2 API may be depending on them
 * Changes to prelude and base libraries
   - `prelude` and `base` are, in some sense, part of the language. There are a
-    lot of trade offs to be made in the design of the prelude especially - such
+    lot of trade-offs to be made in the design of the prelude especially - such
     as interface hierarchies - and while you may not agree with the way it looks,
     by and large these decisions have already been made so there must be a
     compelling reason for them to be changed.

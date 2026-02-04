@@ -1,4 +1,4 @@
-# UNIX Benchmark suite for Idris2
+# Unix Benchmark suite for Idris2
 
 Dependencies:
 - A working Idris2 installation

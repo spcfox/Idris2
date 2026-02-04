@@ -46,7 +46,7 @@ but not yet released.
   functionally replaces `installLibrary`.
 
 * The Nix flake's `buildIdris` `executable` property (previously `build`) has
-  been fixed in a few ways. It used to output a non-executable file for NodeJS
+  been fixed in a few ways. It used to output a non-executable file for Node.js
   builds (now the file has the executable bit set). It used to output the
   default Idris2 wrapper for Scheme builds which relies on utilities not
   guaranteed at runtime by the Nix derivation; now it rewraps the output to only
@@ -223,10 +223,10 @@ but not yet released.
   memoised. That is, once accessed, they are allowed to be not re-evaluated until garbage
   collector wipes them.
 
-#### NodeJS Backend
+#### Node.js Backend
 
-* The NodeJS executable output to `build/exec/` now has its executable bit set.
-  That file already had a NodeJS shebang at the top, so now it is fully ready to
+* The Node.js executable output to `build/exec/` now has its executable bit set.
+  That file already had a Node.js shebang at the top, so now it is fully ready to
   go after compilation.
 
 ### Library changes
@@ -396,7 +396,7 @@ but not yet released.
 
 #### Documentation
 
-* Module docstrings are now displayed for namespace indexes when documentation
+* Module docstrings are now displayed for namespace indices when documentation
   is built via `--mkdoc`.
 * Generated documentation are now removed via `--clean`.
 * Module docstrings are now limited to the first paragraph in the
@@ -414,7 +414,7 @@ but not yet released.
 * The termination checker is now a faithful implementation of the 2001 paper on
   size-change termination by Lee, Jones and Ben-Amram.
 * New function option `%unsafe` to mark definitions that are escape hatches
-  similar to the builtins `believe_me`, `assert_total`, etc.
+  similar to the built-ins `believe_me`, `assert_total`, etc.
 * Elaborator scripts were made be able to record warnings.
 * Rudimentary support for defining lazy functions (addressing issue
   [#1066](https://github.com/idris-lang/idris2/issues/1066)).
@@ -467,7 +467,7 @@ but not yet released.
 #### Node.js/Browser
 
 * Generated JavaScript files now include a shebang when using the Node.js backend
-* NodeJS now supports `popen`/`pclose` for the `Read` mode.
+* Node.js now supports `popen`/`pclose` for the `Read` mode.
 * `getChar` is now supported on Node.js and `putChar` is supported on both
   JavaScript backends.
 * Integer-indexed arrays are now supported.
@@ -1089,7 +1089,7 @@ filter p (x :: xs) with (p x)
   program mode (the default), at the cost of runtime performance being about
   half as good. The `--whole-program` flag overrides incremental compilation,
   and reverts to whole program compilation. Incremental compilation is currently
-  supported only by the Chez Scheme back end.
+  supported only by the Chez Scheme backend.
   This is currently supported only on Unix-like platforms (not yet Windows)
   - Note that you must set `IDRIS2_INC_CGS` when building and installing
     all libraries you plan to link with an incremental build.
@@ -1137,7 +1137,7 @@ Changed
 
 ### Installation changes
 
-* Added a new makefile target to install Idris 2 library documentation.  After `make install`, type
+* Added a new Makefile target to install Idris 2 library documentation.  After `make install`, type
   `make install-libdocs` to install it.  After that, the index file can be found here: ``idris2
   --libdir`/docs/index.html`.``
 
@@ -1312,7 +1312,7 @@ Added
 * Lots of small performance improvements, some of which may be especially
   noticeable in programs that do a lot of type level evaluation.
 * Added HTML documentation generation, using the `--mkdoc` flag
-* Support for auto-completion in bash-like shells was added.
+* Support for auto-completion in Bash-like shells was added.
 * Fixed case-splitting to respect any indentation there may be in the term being
   case-split and the surrounding symbols, instead of filtering out the
   whitespace and putting it back as indentation.

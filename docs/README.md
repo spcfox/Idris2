@@ -16,7 +16,7 @@ The recommended way is to use virtual environment for building documentation.
 
 *Note* [ReadTheDocs](https://readthedocs.org) works with Sphinx
  `v1.2.2`. If you install a more recent version of sphinx then
- 'incorrectly' marked up documentation may get passed the build system
+ 'incorrectly' marked up documentation may get passed the build tool
  of readthedocs and be ignored. In the past we had several code-blocks
  disappear because of that.
 

@@ -79,7 +79,7 @@ should target this file (`CHANGELOG_NEXT`).
 
 #### RefC Backend
 
-* Fixed an issue to do with `alligned_alloc` not existing on older MacOS
+* Fixed an issue to do with `alligned_alloc` not existing on older macOS
   versions, causing builds targeting PowerPC to fail (#3662).  For these
   systems, the compiler will now use `posix_memalign`.
 * Fixed integer comparison operators returning incorrect results on WASM32.

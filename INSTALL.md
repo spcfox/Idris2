@@ -44,7 +44,7 @@ The easiest way to install from source is via the existing generated Scheme
 code. The requirements are:
 
 - A Scheme compiler; either Chez Scheme (default), or Racket.
-- `bash`, `GNU make`, `gcc` or `clang`, `sha256sum` and `GMP`.  On Linux, you probably already
+- `Bash`, `GNU make`, `gcc` or `clang`, `sha256sum` and `GMP`.  On Linux, you probably already
   have these.  On macOS and major BSD flavours, you can install them using a
   package manager: for instance, on macOS, you can install with the
   `brew install coreutils gmp` and on OpenBSD, with the `pkg_add coreutils
@@ -72,7 +72,7 @@ Chez scheme version `10.0.0` or greater. Homebrew has been updated to ship Chez
 Scheme 10+ as of this writing. If you cannot install Chez Scheme 10+, install
 the Racket fork of chez scheme as described
 [below](#installing-chez-scheme-on-apple-silicon). If you install gmp via
-homebrew, you will also need to `export CPATH=/opt/homebrew/include`.
+Homebrew, you will also need to `export CPATH=/opt/homebrew/include`.
 
 ### 1: Set installation target directory
 
@@ -170,7 +170,7 @@ Idris2 supports tab auto-completion for Bash-like shells.
 
 #### For Bash Users
 
-From within bash, run the following command:
+From within Bash, run the following command:
 
 ```sh
 eval "$(idris2 --bash-completion-script idris2)"
@@ -178,15 +178,15 @@ eval "$(idris2 --bash-completion-script idris2)"
 
 You can also add it to your `.bashrc` file.
 
-#### For ZSH Users
+#### For Zsh Users
 
-From within ZSH, run the following commands:
+From within Zsh, run the following commands:
 
 ```sh
 eval "$(idris2 --zsh-completion-script idris2)"
 ```
 
-ZSH auto-completion is implemented via `bashcompinit`.
+Zsh auto-completion is implemented via `bashcompinit`.
 
 You can also add them to your `.zshrc` file.
 
