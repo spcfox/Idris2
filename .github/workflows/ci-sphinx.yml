@@ -1,5 +1,8 @@
 name: Sphinx
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -18,6 +21,8 @@ jobs:
 
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
     - name: Build docs
       run: |
         sudo apt-get install -y python3-sphinx

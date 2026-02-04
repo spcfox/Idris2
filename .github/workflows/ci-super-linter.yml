@@ -1,5 +1,8 @@
 name: Lint Code Base
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -15,6 +18,10 @@ jobs:
     name: Lint Code Base
     runs-on: ubuntu-latest
 
+    permissions:
+      statuses: write
+      pull-requests: write # Required for write report in PR
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -22,6 +29,7 @@ jobs:
           # Full git history is needed to get a proper list of changed files
           # within `super-linter`
           fetch-depth: 0
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
 
       - name: Check if linter configs changed
         id: linter-changes

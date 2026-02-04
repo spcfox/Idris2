@@ -1,5 +1,8 @@
 name: Idris2 and External Libs
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -51,8 +54,8 @@ jobs:
       - name: Checkout Project
         uses: actions/checkout@v4
         with:
-          # for pull_request so we can do HEAD^2
-          fetch-depth: 2
+          fetch-depth: 2 # for pull_request so we can do HEAD^2
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
 
       - name: Get commit message
         id: get_commit_message
@@ -85,6 +88,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Install build dependencies
         run: |
           sudo apt-get update
@@ -95,7 +100,7 @@ jobs:
       # or by rebuilding it if necessary.
       - name: Cache Chez Previous Version
         id: previous-version-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v4 # zizmor: ignore[cache-poisoning]
         with:
           path: Idris2-${{ env.IDRIS2_MINIMUM_COMPAT_VERSION }}
           key: ${{ runner.os }}-idris2-bootstrapped-chez-${{ env.IDRIS2_MINIMUM_COMPAT_VERSION }}
@@ -143,6 +148,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Install build dependencies
         run: |
           sudo apt-get update
@@ -171,6 +178,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Install build dependencies
         run: |
           brew update
@@ -211,6 +220,8 @@ jobs:
           git config --global core.autocrlf false
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Get Chez Scheme
         run: |
           git clone --depth 1 --branch v9.5.8a https://github.com/cisco/ChezScheme
@@ -255,6 +266,7 @@ jobs:
     - uses: actions/checkout@v4
       with:
           fetch-depth: 0
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
     - uses: cachix/install-nix-action@v18
     - name: Test with nix
       env:
@@ -276,6 +288,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Install build dependencies
         run: |
           sudo apt-get update
@@ -308,6 +322,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Download Idris2 Artifact
         uses: actions/download-artifact@v4
         with:
@@ -333,6 +349,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Download Idris2 Artifact
         uses: actions/download-artifact@v4
         with:
@@ -356,29 +374,30 @@ jobs:
 
   # RACKET
 
-  ubuntu-self-host-racket:
-    needs: ubuntu-bootstrap-racket
-    runs-on: ubuntu-latest
-    if: false
-    env:
-      IDRIS2_CG: racket
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Download Idris2 Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ubuntu-installed-bootstrapped-idris2-racket
-          path: ~/.idris2/
-      - name: Install build dependencies
-        run: |
-          sudo apt-get install -y racket
-          echo "$HOME/.idris2/bin" >> "$GITHUB_PATH"
-          chmod +x "$HOME/.idris2/bin/idris2" "$HOME/.idris2/bin/idris2_app/"*
-      - name: Build self-hosted
-        run: make all IDRIS2_BOOT="idris2 -Werror" && make install
-      - name: Test self-hosted
-        run: make ci-ubuntu-test INTERACTIVE=''
+  # ubuntu-self-host-racket:
+  #   needs: ubuntu-bootstrap-racket
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     IDRIS2_CG: racket
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
+  #     - name: Download Idris2 Artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: ubuntu-installed-bootstrapped-idris2-racket
+  #         path: ~/.idris2/
+  #     - name: Install build dependencies
+  #       run: |
+  #         sudo apt-get install -y racket
+  #         echo "$HOME/.idris2/bin" >> "$GITHUB_PATH"
+  #         chmod +x "$HOME/.idris2/bin/idris2" "$HOME/.idris2/bin/idris2_app/"*
+  #     - name: Build self-hosted
+  #       run: make all IDRIS2_BOOT="idris2 -Werror" && make install
+  #     - name: Test self-hosted
+  #       run: make ci-ubuntu-test INTERACTIVE=''
 
   ubuntu-self-host-previous-version:
     needs: [initialise, quick-check]
@@ -393,6 +412,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Download Idris2 Artifact
         uses: actions/download-artifact@v4
         with:
@@ -435,6 +456,8 @@ jobs:
           echo "PWD=$(c:\msys64\usr\bin\cygpath -u $(pwd))" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Get Chez Scheme
         run: |
           git clone --depth 1 --branch v9.5.8a https://github.com/cisco/ChezScheme
@@ -483,6 +506,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Download Idris2 Artifact
         uses: actions/download-artifact@v4
         with:
@@ -537,6 +562,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 'ohad/collie'
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Build Collie
         run: |
           make
@@ -569,6 +595,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 'frex-project/idris-frex'
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Build Frex
         run: |
           make
@@ -604,6 +631,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 'stefan-hoeck/idris2-elab-util'
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Build idris2-elab-util
         run: |
           make all
@@ -631,6 +659,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 'stefan-hoeck/idris2-pack'
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       # by default, pack uses the main idris2 head, not the current job's one
       - name: Toml setup
         run: |
@@ -676,6 +705,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 'idris-community/idris2-lsp'
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Toml setup
         run: |
           { echo "[idris2]"
@@ -708,6 +738,8 @@ jobs:
   ub-test-katla-and-html:
     needs: [initialise, ubuntu-self-host-previous-version]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # for deploy github pages
     if: |
       !contains(needs.initialise.outputs.commit_message, '[ci:')
       || contains(needs.initialise.outputs.commit_message, '[ci: html]')
@@ -717,7 +749,7 @@ jobs:
 
       - name: Initialise DEPLOY variable
         run: |
-          if [[ '${{ github.ref }}' == 'refs/heads/main' ]]; then
+          if [[ "${GITHUB_REF}" == 'refs/heads/main' ]]; then
             echo "IDRIS2_DEPLOY=true" >> "$GITHUB_ENV"
           fi
 
@@ -734,6 +766,8 @@ jobs:
           chmod +x "$HOME/.idris2/bin/idris2" "$HOME/.idris2/bin/idris2_app/"*
       - name: Checkout idris2
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Build API
         run: make install-api
         shell: bash
@@ -741,6 +775,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 'ohad/collie'
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Build and install Collie
         run: |
           make install
@@ -748,6 +783,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 'alexhumphreys/idrall'
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Build and install idrall
         run: |
           make install
@@ -755,6 +791,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 'idris-community/katla'
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Build and install katla
         run: |
           make
@@ -763,6 +800,8 @@ jobs:
           echo "${HOME}/.local/bin" >> "$GITHUB_PATH"
       - name: Checkout idris2
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Build html doc & landing page
         run: |
           make -C libs/prelude/ install docs IDRIS2=idris2

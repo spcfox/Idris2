@@ -1,4 +1,8 @@
 name: Lint the sources
+
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -15,6 +19,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Lint the sources
         run: python3 lint/lint.py
         shell: bash

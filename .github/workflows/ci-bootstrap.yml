@@ -9,6 +9,9 @@
 
 name: Bootstrap
 
+permissions:
+  contents: read
+
 on:
   push:
     paths:
@@ -27,8 +30,8 @@ jobs:
       - name: Checkout Project
         uses: actions/checkout@v4
         with:
-          # for pull_request so we can do HEAD^2
-          fetch-depth: 2
+          fetch-depth: 2 # for pull_request so we can do HEAD^2
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
 
       - name: Get commit message
         id: get_commit_message
@@ -54,6 +57,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Install build dependencies (LTS versions)
         run: |
           sudo apt-get update
