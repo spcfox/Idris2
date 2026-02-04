@@ -44,11 +44,11 @@ The easiest way to install from source is via the existing generated Scheme
 code. The requirements are:
 
 - A Scheme compiler; either Chez Scheme (default), or Racket.
-- `Bash`, `GNU make`, `gcc` or `clang`, `sha256sum` and `GMP`.  On Linux, you probably already
-  have these.  On macOS and major BSD flavours, you can install them using a
+- `Bash`, `GNU make`, `gcc` or `clang`, `sha256sum` and `GMP`. On Linux, you probably already
+  have these. On macOS and major BSD flavours, you can install them using a
   package manager: for instance, on macOS, you can install with the
-  `brew install coreutils gmp` and on OpenBSD, with the `pkg_add coreutils
-  bash gmake gmp` command. You specifically need the dev GMP library, which
+  `brew install coreutils gmp` and on OpenBSD, with the `pkg_add coreutils bash gmake gmp`
+  command. You specifically need the dev GMP library, which
   means on some systems the package you need to install will be named
   something more like `libgmp3-dev`. macOS ships with `clang` whereas `gcc` is
   more common for other \*nix distributions.
@@ -77,7 +77,7 @@ Homebrew, you will also need to `export CPATH=/opt/homebrew/include`.
 ### 1: Set installation target directory
 
 - Change the `PREFIX` in `config.mk` to the absolute path of your chosen
-installation destination. The default is to install in `$HOME/.idris2`
+  installation destination. The default is to install in `$HOME/.idris2`
 
 If you have an existing Idris 2, go to Step 3. Otherwise, read on...
 
@@ -88,7 +88,7 @@ Make sure that:
 Further, on Apple silicon Macs (M1/M2), you need to set the following environment
 variables:
 
-``` sh
+```sh
 export IDRIS2_LIBS=/opt/homebrew/lib
 export CPATH=/opt/homebrew/include:/opt/homebrew/lib
 ```
@@ -119,7 +119,7 @@ If you are building with Racket, you'll need to run `IDRIS2_CG=racket make insta
 
 ### 3: Installing with an existing Idris 2
 
-If you have the latest *released* version of Idris 2
+If you have the latest _released_ version of Idris 2
 (0.8.0 at the time of writing) installed:
 
 - `make all`
@@ -127,8 +127,8 @@ If you have the latest *released* version of Idris 2
 
 ### 4: (Optional) Installing Idris 2 library documentation
 
-After `make install`, type `make install-libdocs` to install Idris 2 library documentation.  After
-that, the index file can be found here: ``"${BROWSER:-echo}" "$(idris2 --libdir)"/docs/index.html``
+After `make install`, type `make install-libdocs` to install Idris 2 library documentation. After
+that, the index file can be found here: `"${BROWSER:-echo}" "$(idris2 --libdir)"/docs/index.html`
 
 ### 5: (Optional) Self-hosting step
 
@@ -138,8 +138,8 @@ that everything has worked correctly. Assuming that `idris2` is in your
 
 - `make clean` -- to make sure you're building everything with the new version
 - `make all && make install` -- OR
-`make all IDRIS2_BOOT='idris2 --codegen racket' && make install`
-if using Racket.
+  `make all IDRIS2_BOOT='idris2 --codegen racket' && make install`
+  if using Racket.
 
 ### 6: Running tests
 

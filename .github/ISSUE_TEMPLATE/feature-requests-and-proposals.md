@@ -1,10 +1,9 @@
 ---
 name: Feature requests and proposals
 about: What to do if you have a feature request or proposal
-title: ''
+title: ""
 labels: Feature request
-assignees: ''
-
+assignees: ""
 ---
 
 <!---
