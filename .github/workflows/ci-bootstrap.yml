@@ -1,3 +1,4 @@
+---
 ######################################################################
 # Unlike the main yml file this uses the LTS version of chezscheme,
 # not the hirsute one. The main purpose is to make sure that
@@ -15,15 +16,14 @@ permissions:
 on:
   push:
     paths:
-      - 'bootstrap/idris2_app/idris2.ss'
-      - '.github/workflows/ci-bootstrap.yml'
+      - "bootstrap/idris2_app/idris2.ss"
+      - ".github/workflows/ci-bootstrap.yml"
   pull_request:
     paths:
-      - 'bootstrap/idris2_app/idris2.ss'
-      - '.github/workflows/ci-bootstrap.yml'
+      - "bootstrap/idris2_app/idris2.ss"
+      - ".github/workflows/ci-bootstrap.yml"
 
 jobs:
-
   initialise:
     runs-on: ubuntu-24.04
     steps:
@@ -43,8 +43,7 @@ jobs:
           fi
 
     outputs:
-      commit_message:
-        echo "${{ steps.get_commit_message.outputs.commit_message }}"
+      commit_message: echo "${{ steps.get_commit_message.outputs.commit_message }}"
 
   bootstrap:
     needs: initialise
