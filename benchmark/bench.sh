@@ -32,7 +32,7 @@ usage() {
 }
 
 # begin args parsing
-optstring=":bc:fo:h"
+optstring=":bc:fo:h" # codespell:ignore fo
 while getopts ${optstring} arg; do
     case "${arg}" in
         # whether to build

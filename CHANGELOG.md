@@ -288,7 +288,7 @@ but not yet released.
 * Some pieces of `Data.Fin.Extra` from `contrib` were moved to `base` to modules
   `Data.Fin.Properties`, `Data.Fin.Arith` and `Data.Fin.Split`.
 
-* `Decidable.Decidable.decison` is now `public export`.
+* `Decidable.Decidable.decision` is now `public export`.
 
 * `Functor` is implemented for `PiInfo` from `Language.Reflection.TT`.
 
@@ -727,7 +727,7 @@ but not yet released.
   can be set to install into a staging directory for distro packaging.
 * Updates the docs for `envvars` to categorise when environment variables are
   used (runtime, build-time, or both).
-* Fixed build failure occuring when `make -j` is in effect.
+* Fixed build failure occurring when `make -j` is in effect.
 * Add `clean_names` function to `testutils.sh` to normalise machine names
 
 ## v0.6.0
@@ -906,7 +906,7 @@ but not yet released.
 
 * Adds `System.run`, which runs a shell command, and returns the stdout and
   return code of that run.
-* Adds escaped versions of `System.system`, `Systen.File.popen`, and
+* Adds escaped versions of `System.system`, `System.File.popen`, and
   `System.run`, which take a list of arguments, and escapes them.
 * Adds the `Injective` interface in module `Control.Function`.
 * Changes `System.pclose` to return the return code of the closed process.
@@ -1207,7 +1207,7 @@ Added
 - `Foldable` add `foldlM`, `foldMap`, and `toList`.
 - `Monad` interface `>=>`, `<=<` (Kleisli Arrows), and flipped bind (`=<<`).
 - `Pair` Applicative and Monad implementations.
-- `SnocList` datatype (fliped cons of a linked list).
+- `SnocList` datatype (flipped cons of a linked list).
 - `(.:)` function "blackbird operator" (Composition of a two-argument function
   with a single-argument one.)
 - `on` function (Eg, ```((+) `on` f) x y = f x + f y```)
@@ -1215,7 +1215,7 @@ Added
 Changed
 
 - `===`, `~=~`, and `<+>` operator precedence
-- Exctracted `Cast` interface and implementations from `Prelude.Types` to
+- Extracted `Cast` interface and implementations from `Prelude.Types` to
   `Prelude.Cast`
 - Renamed `Data.Strings` to `Data.String`
 
@@ -1235,7 +1235,7 @@ Added
 - `Data.List` `unzip` function.
 - `Data.List1` `zip*` and `unzip*` functions.
 - `Data.SnocList`.
-- `Data.Stream` `unzipWith` and `unzipWith3` fuctions.
+- `Data.Stream` `unzipWith` and `unzipWith3` functions.
 - `Data.Vect` `unzipWith` and `unzipWith3` functions.
 - `System.File` `withFile` and total read functions.
 

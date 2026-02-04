@@ -1,6 +1,6 @@
 // To compile this file for the samples `sample/ffi/Small.idr` and
 // `sample/ffi/Struct.idr`, you will need to manually compile and link it
-// into a `.so` file, and place it in a location where the resulting exectuable
+// into a `.so` file, and place it in a location where the resulting executable
 // can find it. For example:
 //      gcc -c -fPIC smallc.c -o smallc.o
 //      gcc smallc.o -shared -o libsmallc.so

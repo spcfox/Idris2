@@ -14,7 +14,7 @@ add `depends = test` to your test suite's package file.
 ## Golden
 
 Golden facilitates testing by way of comparing a test's output to a
-predetermined expecation. The module is well documented in its own source code
+predetermined expectation. The module is well documented in its own source code
 but the following is a primer.
 
 You first import the `Test.Golden` module and write an `IO` function to serve as

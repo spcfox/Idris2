@@ -33,7 +33,7 @@ general philosophy of the Idris project, which can be summarised as follows:
   properties of programs, but will not *require* them to do so.
 
 
-### Guidlines for Writing Issues
+### Guidelines for Writing Issues
 
 When writing an issue and describing the problem at hand, avoid linking to
 private channels of discussions such as Discord. Other contributors might not
@@ -42,7 +42,7 @@ find, or some people might not be able to use the service from their devices.
 Instead, write a clear summary of the situation so that anyone can
 understand what the issue is about without additional context.
 
-### Guidlines for Pull Requests
+### Guidelines for Pull Requests
 
 Many contributions will require accompanying tests and documentation updates.
 Bugfixes in particular should be accompanied by tests, to avoid future
@@ -63,7 +63,7 @@ you can add yourself to `CONTRIBUTORS`.
 In all cases, a pull request must have a short description that explains its purpose.
 However obvious you think it might be, it really helps reviewers know what to look for
 when reviewing the changes. A reviewer does not have to be an Idris maintainer and
-could be any other knowledgable community member.
+could be any other knowledgeable community member.
 
 ## Things We Will Almost Certainly Accept
 
