@@ -12,9 +12,11 @@ The [wiki](https://github.com/idris-lang/Idris2/wiki) lists a number of useful
 resources, in particular
 
 - [What's changed since Idris 1](https://idris2.readthedocs.io/en/latest/updates/updates.html)
+
 - [Resources for learning Idris](https://github.com/idris-lang/Idris2/wiki/Resources),
   including [official talks](https://github.com/idris-lang/Idris2/wiki/Resources#official-talks)
   that showcase its capabilities
+
 - [Editor support](https://github.com/idris-lang/Idris2/wiki/Editor-Support)
 
 ## Installation and Packages
@@ -38,44 +40,58 @@ Finally, `pack` also makes it easy to download, and keep updated version of, [id
 ### Tutorials
 
 - [_Functional Programming in Idris 2_](https://github.com/idris-community/idris2-tutorial)
+
 - [_A Tutorial on Elaborator Reflection in Idris 2_](https://github.com/stefan-hoeck/idris2-elab-util/blob/main/src/Doc/Index.md), accompanied by [library utilities](https://github.com/stefan-hoeck/idris2-elab-util)
+
 - [_An attempt at explaining Decidable Equality_](https://teh6.eu/en/post/intro-to-decidable-equality/)
 
 ### Official talks
 
 - [_What's New in Idris 2_](https://www.youtube.com/watch?v=nbClauMCeds), Edwin Brady, Berlin Functional Programming Group
+
 - [Scheme Workshop Keynote](https://www.youtube.com/watch?v=h9YAOaBWuIk), Edwin Brady, ACM SIGPLAN
+
 - [_Idris 2 - Type-driven Development of Idris_](https://www.youtube.com/watch?v=DRq2NgeFcO0), Edwin Brady, Curry On! 2019
+
 - [_Idris 2: Type-driven development of Idris_](https://www.youtube.com/watch?v=mOtKD7ml0NU), Edwin Brady, Code Mesh LDN 18
+
 - [_The implementation of Idris 2_](https://www.youtube.com/playlist?list=PLmYPUe8PWHKqBRJfwBr4qga7WIs7r60Ql), Edwin Brady, SPLV'20 and [accompanying code](https://github.com/edwinb/SPLV20)
 
 ### Community talks
 
 - [_Domain Driven Design Made Dependently Typed_](https://www.youtube.com/watch?v=QBj-4K-l-sg), Andor Penzes, Aug '21
+
 - [_Extending RefC - Making Idris 2 backends while avoiding most of the work_](https://www.youtube.com/watch?v=i-_U6US3bBk), Robert Wright, Sept '21
+
 - [_Introduction to JVM backend for Idris 2_](https://www.youtube.com/watch?v=kSIUsBQS3EE), Marimuthu Madasamy, Oct '21
+
 - [_Idris Data Science Infrastructure - Because sometimes we have to consider the real world_](https://www.youtube.com/watch?v=4jDlYJf9_34), Robert Wright, Dec '21
 
 ## Documentation
 
 - [Official documentation](https://idris2.readthedocs.io/en/latest/index.html)
+
 - Standard library online API reference
   - [official, latest](https://idris-lang.github.io/Idris2/)
   - [community](https://idris2docs.sinyax.net/)
+
 - [Community API reference for selected packages](https://idris2-quickdocs.surge.sh)
 
 ## Docker images
 
 - Multi-arch, multi-distro Docker [images](https://github.com/joshuanianji/idris-2-docker) for Idris 2
+
 - Official [images](https://github.com/stefan-hoeck/idris2-pack/pkgs/container/idris2-pack) for the Pack package manager
+
 - [alexhumphreys/idris2-dockerfile](https://github.com/alexhumphreys/idris2-dockerfile)
+
 - [mattpolzin/idris-docker](https://github.com/mattpolzin/idris-docker)
+
 - [dgellow/idris-docker-image](https://github.com/dgellow/idris-docker-image)
 
 ## Things still missing
 
-- Cumulativity (currently `Type : Type`. Bear that in mind when you think
-  you've proved something)
+- Cumulativity (currently `Type : Type`. Bear that in mind when you think you've proved something)
 - `rewrite` doesn't yet work on dependent types
 
 ## Contributions wanted

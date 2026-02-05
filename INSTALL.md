@@ -44,6 +44,7 @@ The easiest way to install from source is via the existing generated Scheme
 code. The requirements are:
 
 - A Scheme compiler; either Chez Scheme (default), or Racket.
+
 - `Bash`, `GNU make`, `gcc` or `clang`, `sha256sum` and `GMP`. On Linux, you probably already
   have these. On macOS and major BSD flavours, you can install them using a
   package manager: for instance, on macOS, you can install with the
@@ -137,6 +138,7 @@ that everything has worked correctly. Assuming that `idris2` is in your
 `PATH`.
 
 - `make clean` -- to make sure you're building everything with the new version
+
 - `make all && make install` -- OR
   `make all IDRIS2_BOOT='idris2 --codegen racket' && make install`
   if using Racket.

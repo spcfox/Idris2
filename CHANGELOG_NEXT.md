@@ -5,7 +5,7 @@ This CHANGELOG describes the merged but unreleased changes. Please see
 Idris2, as well as the sub-headings typically used for changes. All new PRs
 should target this file (`CHANGELOG_NEXT`).
 
-## [Next version]
+## Next version
 
 ### Documentation
 
@@ -40,6 +40,7 @@ should target this file (`CHANGELOG_NEXT`).
 - Fixed missing handling of dotted patterns See
   [#3669](https://github.com/idris-lang/Idris2/issues/3669),
   [comment](https://github.com/idris-lang/Idris2/issues/3644#issuecomment-3286320272).
+
 - Removed modules and functions moved to `base`:
   - `Libraries.Data.Fin` → `Data.Fin`
   - `Libraries.Data.IOArray` → `Data.IOArray`
@@ -53,24 +54,33 @@ should target this file (`CHANGELOG_NEXT`).
   - `Libraries.Data.SortedMap` → `Data.SortedMap`
   - `Libraries.Data.SortedSet` → `Data.SortedSet`
   - `Libraries.Utils.Binary.bufferData'` → `Data.Buffer.bufferData'`
+
 - Removed unused functions:
   - `Libraries.Data.List.Extra`: `breakAfter`, `splitAfter` and `zipMaybe`
   - `Libraries.Data.List.Quantifiers.Extra.tabulate`.
   - `Libraries.Utils.Binary.nonEmptyRev`
   - `Libraries.Utils.String.dotSep`
+
 - Fixes an issue when unifying labmda terms with implicits (#3670)
+
 - The "With clause does not match parent" error now points to the correct location
+
 - The compiler now warns the user when `impossible` clauses are ignored. This
   typically happens when a numeric literal or an ambiguous name appears in an
   `impossible` clause.
+
 - Do not inline `Core.sequence`, because it is recursively defined.
+
 - Fixed coverage checker issues (#1800, #1998, #2318, #2822, #3679).
+
 - Fixed totality checking in namespace and mutual blocks (#2868, #3692).
+
 - Fixed incorrect argument multiplicity when using an as-pattern (#3687).
 
 ### Building/Packaging changes
 
 - Fix parsing of capitalised package names containing hyphens.
+
 - Change `flake.nix` to point at `idris-community/idris2-mode` as the URL for
   `inputs.idris-emacs-src` (from the user fork `redfish64/idris2-mode`).
 
@@ -81,6 +91,7 @@ should target this file (`CHANGELOG_NEXT`).
 - Fixed an issue to do with `alligned_alloc` not existing on older macOS
   versions, causing builds targeting PowerPC to fail (#3662). For these
   systems, the compiler will now use `posix_memalign`.
+
 - Fixed integer comparison operators returning incorrect results on WASM32.
   The `idris2_extractInt` function incorrectly used `idris2_vp_to_Int32` for
   unboxed values, which dereferences unboxed pointers as `Value_Int32*` on
