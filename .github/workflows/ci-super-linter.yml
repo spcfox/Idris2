@@ -74,3 +74,72 @@ jobs:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IGNORE_GENERATED_FILES: true
+
+  remark-lint:
+    name: remark-lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6 # zizmor: ignore[cache-poisoning]
+        with:
+          node-version: "24"
+          cache-dependency-path: .github/linters/remark/package-lock.json
+
+      - name: Install Dependencies
+        run: npm --prefix .github/linters/remark install
+
+      - name: Run remark-lint
+        id: remark
+        run: |
+          set -o pipefail
+          npm -C .github/linters/remark exec -- \
+              remark . \
+              --rc-path .github/linters/remark/remarkrc.mjs \
+              --ignore-path .github/linters/remark/remarkignore \
+              --ignore-path-resolve-from cwd \
+              --frail \
+              --no-color \
+              2>&1 | tee remark.log
+
+      - name: Generate report
+        if: always()
+        shell: bash
+        env:
+          REMARK_OUTCOME: ${{ steps.remark.outcome }}
+        run: |
+          # Parse stats from log
+          files_checked=$(grep -cE '\.md(: no issues found)?$' remark.log || echo "0")
+          files_ok=$(grep -cE ': no issues found$' remark.log || echo "0")
+          files_with_issues=$((files_checked - files_ok))
+          warn_count=$(grep -oP '^⚠[[:space:]]*\K[0-9]+(?= warnings?)' remark.log | tail -n 1 || echo "0")
+          warn_count="${warn_count:-0}"
+
+          if [[ "$REMARK_OUTCOME" == "success" ]]; then
+            status="Pass ✅"
+          else
+            status="Fail ❌"
+          fi
+
+          {
+            echo "## 📝 Remark Lint Summary"
+            echo
+            echo "| Metric | Count |"
+            echo "|--------|------:|"
+            echo "| **Status** | $status |"
+            echo "| Files checked | $files_checked |"
+            echo "| Files with issues | $files_with_issues |"
+            echo "| Warnings | $warn_count |"
+            echo
+            echo "<details>"
+            echo "<summary>📄 Full output</summary>"
+            echo
+            echo '```'
+            cat remark.log
+            echo '```'
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
