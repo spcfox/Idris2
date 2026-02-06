@@ -23,10 +23,34 @@ jobs:
           # within `super-linter`
           fetch-depth: 0
 
+      - name: Check if linter configs changed
+        id: linter-changes
+        uses: dorny/paths-filter@v3
+        with:
+          # Ignored for pull requests — compares with PR target branch
+          base: ${{ github.event.before }}
+          filters: |
+            linters:
+              - ".editorconfig"
+              - ".github/linters/**"
+              - ".github/workflows/ci-super-linter.yml"
+
+      - name: Log scan mode
+        env:
+          CHANGES: ${{ steps.linter-changes.outputs.linters }}
+        run: |
+          if [[ "$LINTERS_CHANGED" == "true" ]]; then
+            echo "🔍 Linter configs changed — full codebase scan"
+          else
+            echo "⚡ Incremental scan — changed files only"
+          fi
+
       - name: Lint Code Base
         uses: super-linter/super-linter/slim@v8
         env:
-          VALIDATE_ALL_CODEBASE: false # Lint only changed files
+          # Lint all files if linter configs changed
+          VALIDATE_ALL_CODEBASE: ${{ steps.linter-changes.outputs.linters == 'true' }}
+
           VALIDATE_CPP: false # Incompatible with C; clang-format is preferred
           VALIDATE_BIOME_LINT: false # Avoid conflict: Prettier is preferred
           VALIDATE_BIOME_FORMAT: false # Avoid conflict: Prettier is preferred
