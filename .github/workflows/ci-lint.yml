@@ -79,13 +79,63 @@ jobs:
     name: Idris linter
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
         with:
           persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
-      - name: Lint the sources
-        run: python3 lint/idris_lint.py
+
+      - name: Run Idris linter
+        id: idris
+        run: |
+          set -o pipefail
+          python lint/idris_lint.py 2>&1 | tee idris.log
+
+      - name: Generate report
+        if: always()
         shell: bash
+        env:
+          IDRIS_OUTCOME: ${{ steps.idris.outcome }}
+        run: |
+          # Parse stats from log
+          files_checked=$(awk '/Files checked:/ {print $NF}' idris.log || echo "0")
+          files_failed=$(awk '/Files with issues:/ {print $NF}' idris.log || echo "0")
+          trailing_ws=$(awk '/Trailing whitespace:/ {print $NF}' idris.log || echo "0")
+          missing_nl=$(awk '/Missing newlines:/ {print $NF}' idris.log || echo "0")
+          too_many_nl=$(awk '/Too many newlines:/ {print $NF}' idris.log || echo "0")
+          invalid_encoding=$(awk '/Invalid encoding:/ {print $NF}' idris.log || echo "0")
+          total_issues=$(awk '/Total issues:/ {print $NF}' idris.log || echo "0")
+
+          if [[ "$IDRIS_OUTCOME" == "success" ]]; then
+            status="Pass ✅"
+          else
+            status="Fail ❌"
+          fi
+
+          {
+            echo "## 🔮 Idris Lint Summary"
+            echo
+            echo "| Metric | Count |"
+            echo "|--------|------:|"
+            echo "| **Status** | $status |"
+            echo "| Files checked | $files_checked |"
+            echo "| Files with issues | $files_failed |"
+            echo "| Trailing whitespace | $trailing_ws |"
+            echo "| Missing newlines | $missing_nl |"
+            echo "| Too many newlines | $too_many_nl |"
+            echo "| Invalid encoding | $invalid_encoding |"
+            echo "| **Total issues** | $total_issues |"
+            echo
+            echo "<details>"
+            echo "<summary>📄 Full output</summary>"
+            echo
+            echo '```'
+            head -n 100 idris.log
+            if [[ $(wc -l < idris.log) -gt 100 ]]; then
+              echo "... (truncated)"
+            fi
+            echo '```'
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   remark-lint:
     name: remark-lint
