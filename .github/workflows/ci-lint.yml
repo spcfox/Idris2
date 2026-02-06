@@ -42,7 +42,7 @@ jobs:
             linters:
               - ".editorconfig"
               - ".github/linters/**"
-              - ".github/workflows/ci-super-linter.yml"
+              - ".github/workflows/ci-lint.yml"
 
       - name: Log scan mode
         env:
