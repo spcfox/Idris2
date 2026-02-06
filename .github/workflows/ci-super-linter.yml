@@ -16,7 +16,7 @@ on:
 
 jobs:
   build:
-    name: Lint Code Base
+    name: Super-linter
     runs-on: ubuntu-latest
 
     permissions:
@@ -74,6 +74,18 @@ jobs:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IGNORE_GENERATED_FILES: true
+
+  idris-lint:
+    name: Idris linter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
+      - name: Lint the sources
+        run: python3 lint/lint.py
+        shell: bash
 
   remark-lint:
     name: remark-lint

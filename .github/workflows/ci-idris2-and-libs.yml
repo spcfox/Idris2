@@ -28,7 +28,6 @@ on:
       - ".github/workflows/ci-bootstrap.yml"
       - ".github/workflows/ci-lint.yml"
       - ".github/workflows/ci-sphinx.yml"
-      - ".github/workflows/ci-super-linter.yml"
   pull_request:
     branches:
       - main
