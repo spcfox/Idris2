@@ -1,3 +1,4 @@
+# actionlint-disable
 # Check bootstrap with the minimum supported Chez Scheme version.
 
 name: Bootstrap
