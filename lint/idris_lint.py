@@ -10,6 +10,7 @@ files and checks them for:
 4. Invalid UTF-8 encoding in the file.
 """
 
+import argparse
 import os
 import sys
 from dataclasses import dataclass
@@ -88,23 +89,28 @@ def _lint_file(path: str, stats: LintStats) -> bool:
 
 def main() -> None:
     """Scan the directory tree and lint all found Idris files."""
+    parser = argparse.ArgumentParser(description="Idris Linter")
+    parser.add_argument(
+        "path",
+        nargs="?",
+        default=".",
+        help="Directory to scan (default: current directory)",
+    )
+    args = parser.parse_args()
+
     stats = LintStats()
 
-    for dirpath, _, filenames in os.walk("."):
+    for dirpath, _, filenames in os.walk(args.path):
         for filename in filenames:
             if not filename.endswith(".idr"):
                 continue
 
             stats.files_checked += 1
 
-            if dirpath == ".":
-                full = filename
-            else:
-                full = os.path.join(dirpath, filename)
-                if full.startswith("./"):
-                    full = full[2:]
+            full_path = os.path.join(dirpath, filename)
+            clean_path = os.path.normpath(full_path)
 
-            if not _lint_file(full, stats):
+            if not _lint_file(clean_path, stats):
                 stats.files_failed += 1
 
     # Sanity check
