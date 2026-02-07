@@ -84,7 +84,7 @@ jobs:
         with:
           persist-credentials: false # https://docs.zizmor.sh/audits/#artipacked
       - name: Lint the sources
-        run: python3 lint/lint.py
+        run: python3 lint/idris_lint.py
         shell: bash
 
   remark-lint:
