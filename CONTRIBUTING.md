@@ -55,19 +55,26 @@ we haven't been too prescriptive about this. If you're editing a source file,
 try to be consistent with the existing style choices made by previous authors.
 We may need to be more formal about this in future!
 
-Please remember to update `CHANGELOG_NEXT.md`, and if it's your first contribution
+Please remember to update `CHANGELOG_NEXT.md`,
+and if it's your first contribution
 you can add yourself to `CONTRIBUTORS`.
 
-In all cases, a pull request must have a short description that explains its purpose.
-However obvious you think it might be, it really helps reviewers know what to look for
-when reviewing the changes. A reviewer does not have to be an Idris maintainer and
-could be any other knowledgeable community member.
+In all cases,
+a pull request must have a short description
+that explains its purpose.
+However obvious you think it might be,
+it really helps reviewers know what to look for
+when reviewing the changes.
+A reviewer does not have to be an Idris maintainer
+and could be any other knowledgeable community member.
 
 ## Things We Will Almost Certainly Accept
 
 - Anything which fixes an issue on the issue tracker
   - For bugfixes, please make sure you include a new test for it.
-  - This is a good way to get your change included since it tremendously helps with reviewing.
+
+  - This is a good way to get your change included
+    since it tremendously helps with reviewing.
 
 - More tests, which test new features or, more importantly, existing features
   which are not exercised enough in the existing tests

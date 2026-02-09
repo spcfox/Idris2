@@ -79,11 +79,15 @@ my_great_test/
 These files define:
 
 1. Any Idris 2 source code needed for the test
-   (Test.idr, which can be named anything you'd like and is not limited to 1 file).
+   (Test.idr,
+   which can be named anything you'd like
+   and is not limited to 1 file).
 
 2. Any package information needed to build those source files (test.ipkg).
 
-3. The command run at the shell to execute your test (run, use `$1` in place of the name of the idris2 executable).
+3. The command run at the shell
+   to execute your test
+   (run, use `$1` in place of the name of the idris2 executable).
 
 4. Optional input passed to your test case (input).
 

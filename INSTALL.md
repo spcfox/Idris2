@@ -45,14 +45,24 @@ code. The requirements are:
 
 - A Scheme compiler; either Chez Scheme (default), or Racket.
 
-- `Bash`, `GNU make`, `gcc` or `clang`, `sha256sum` and `GMP`. On Linux, you probably already
-  have these. On macOS and major BSD flavours, you can install them using a
-  package manager: for instance, on macOS, you can install with the
-  `brew install coreutils gmp` and on OpenBSD, with the `pkg_add coreutils bash gmake gmp`
-  command. You specifically need the dev GMP library, which
-  means on some systems the package you need to install will be named
-  something more like `libgmp3-dev`. macOS ships with `clang` whereas `gcc` is
-  more common for other \*nix distributions.
+- `Bash`, `GNU make`, `gcc` or `clang`,
+  `sha256sum` and `GMP`.
+  On Linux,
+  you probably already have these.
+  On macOS and major BSD flavours,
+  you can install them using a package manager:
+  for instance,
+  on macOS,
+  you can install with the `brew install coreutils gmp`
+  and on OpenBSD,
+  with the `pkg_add coreutils bash gmake gmp` command.
+  You specifically need the dev GMP library,
+  which means on some systems
+  the package you need to install
+  will be named something more like `libgmp3-dev`.
+  macOS ships with `clang`
+  whereas `gcc` is more common
+  for other \*nix distributions.
 
 On Windows, it has been reported that installing via `MSYS2` works
 [MSYS2](https://www.msys2.org/). On Windows older than Windows 8, you may need
@@ -128,8 +138,12 @@ If you have the latest _released_ version of Idris 2
 
 ### 4: (Optional) Installing Idris 2 library documentation
 
-After `make install`, type `make install-libdocs` to install Idris 2 library documentation. After
-that, the index file can be found here: `"${BROWSER:-echo}" "$(idris2 --libdir)"/docs/index.html`
+After `make install`,
+type `make install-libdocs`
+to install Idris 2 library documentation.
+After that,
+the index file can be found here:
+`"${BROWSER:-echo}" "$(idris2 --libdir)"/docs/index.html`
 
 ### 5: (Optional) Self-hosting step
 

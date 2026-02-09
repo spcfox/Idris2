@@ -160,39 +160,62 @@ but not yet released.
 - Fix memory leaks of `IORef`. Now that `IORef` holds values by itself,
   `global_IORef_Storage` is no longer needed.
 
-- Pattern matching generates simpler code. This reduces `malloc`/`free` and memory
-  consumption. It also makes debugging easier.
+- Pattern matching generates simpler code.
+  This reduces `malloc`/`free` and memory consumption.
+  It also makes debugging easier.
 
-- Stopped useless string copying in the constructor to save memory. Also, name
-  generation was stopped for constructors that have tags.
+- Stopped useless string copying in the constructor
+  to save memory.
+  Also,
+  name generation was stopped
+  for constructors that have tags.
 
-- Special constructors such as `Nil` and `Nothing` were eliminated and assigned to
-  `NULL`.
+- Special constructors such as `Nil` and `Nothing`
+  were eliminated
+  and assigned to `NULL`.
 
-- Unbox `Bits32`, `Bits16`, `Bits8`, `Int32`, `Int16`, `Int8`. These types are now packed into
-  Value\*. Now, RefC backend requires at least 32 bits for pointers.
-  16-bit CPUs are no longer supported. And we expect the address returned by
-  `malloc` to be aligned with at least 32 bits. Otherwise it cause a runtime error.
+- Unbox `Bits32`, `Bits16`, `Bits8`, `Int32`, `Int16`, `Int8`.
+  These types are now packed into Value\*.
+  Now,
+  RefC backend requires at least 32 bits for pointers.
+  16-bit CPUs are no longer supported.
+  And we expect the address returned by `malloc`
+  to be aligned with at least 32 bits.
+  Otherwise it cause a runtime error.
 
-- Rename C function to avoid confliction. But only a part.
+- Rename C function
+  to avoid confliction.
+  But only a part.
 
-- Suppress code generation of `_arglist` wrappers to reduce code size and compilation time.
+- Suppress code generation of `_arglist` wrappers
+  to reduce code size and compilation time.
 
-- Removed `Value_Arglist` to reduce Closure's allocation overhead and make code simply.
+- Removed `Value_Arglist`
+  to reduce Closure's allocation overhead
+  and make code simply.
 
-- Switch calling conventions based on the number of arguments to avoid limits on
-  the number of arguments and to reduce stack usage.
+- Switch calling conventions
+  based on the number of arguments
+  to avoid limits on the number of arguments
+  and to reduce stack usage.
 
-- Values that reference counters reaching their maximum limit are immortalized to
-  prevent counter overflow. This can potentially cause memory leaks, but they
-  occur rarely and are a better choice than crashing. Since overflow is no longer
-  a concern, changing `refCounter` from `int` to `uint16` reduces the size of `Value_Header`.
+- Values that reference counters reaching their maximum limit
+  are immortalized
+  to prevent counter overflow.
+  This can potentially cause memory leaks,
+  but they occur rarely
+  and are a better choice than crashing.
+  Since overflow is no longer a concern,
+  changing `refCounter` from `int` to `uint16`
+  reduces the size of `Value_Header`.
 
-- Values often found at runtime, such as integers less than 100 are generate
-  statically and share.
+- Values often found at runtime,
+  such as integers less than 100
+  are generate statically and share.
 
-- Constant `String`, `Int64`, `Bits64` and `Double` values are allocated statically as
-  immortal and shared.
+- Constant `String`, `Int64`, `Bits64` and `Double` values
+  are allocated statically
+  as immortal and shared.
 
 - A constant string for the representation of Pi type constructor is defined in
   the support library. Code that creates or pattern-matches on Pi types at
@@ -200,29 +223,45 @@ but not yet released.
 
 #### Chez
 
-- Fixed CSE soundness bug that caused delayed expressions to sometimes be eagerly
-  evaluated. Now when a delayed expression is lifted by CSE, it is compiled
-  using Scheme's `delay` and `force` to memoize them.
+- Fixed CSE soundness bug
+  that caused delayed expressions
+  to sometimes be eagerly evaluated.
+  Now when a delayed expression is lifted by CSE,
+  it is compiled using Scheme's `delay` and `force`
+  to memoize them.
 
 - More efficient `collect-request-handler` is used.
 
-- Add a codegen directive called `lazy=weakMemo` to make `Lazy` and `Inf` values _weakly_
-  memoised. That is, once accessed, they are allowed to be not re-evaluated until garbage
-  collector wipes them.
+- Add a codegen directive called `lazy=weakMemo`
+  to make `Lazy` and `Inf` values
+  _weakly_ memoised.
+  That is,
+  once accessed,
+  they are allowed to be not re-evaluated
+  until garbage collector wipes them.
 
-- Fixed the "cannot collect when multiple threads are active" error at the end
-  of a program by using the thread-safe function `collect-rendezvous` to pause all threads
+- Fixed the "cannot collect when multiple threads are active" error
+  at the end of a program
+  by using the thread-safe function `collect-rendezvous`
+  to pause all threads
   before starting the final GC.
 
 #### Racket
 
-- Fixed CSE soundness bug that caused delayed expressions to sometimes be eagerly
-  evaluated. Now when a delayed expression is lifted by CSE, it is compiled
-  using Scheme's `delay` and `force` to memoize them.
+- Fixed CSE soundness bug
+  that caused delayed expressions
+  to sometimes be eagerly evaluated.
+  Now when a delayed expression is lifted by CSE,
+  it is compiled using Scheme's `delay` and `force`
+  to memoize them.
 
-- Add a codegen directive called `lazy=weakMemo` to make `Lazy` and `Inf` values _weakly_
-  memoised. That is, once accessed, they are allowed to be not re-evaluated until garbage
-  collector wipes them.
+- Add a codegen directive called `lazy=weakMemo`
+  to make `Lazy` and `Inf` values
+  _weakly_ memoised.
+  That is,
+  once accessed,
+  they are allowed to be not re-evaluated
+  until garbage collector wipes them.
 
 #### Node.js Backend
 
@@ -243,19 +282,34 @@ but not yet released.
 
 - `Data.List.Lazy` was moved from `contrib` to `base`.
 
-- Added an `Interpolation` implementation for primitive decimal numeric types and `Nat`.
+- Added an `Interpolation`
+  implementation for primitive decimal numeric types and `Nat`.
 
 - Added append `(++)` for `List` version of `All`.
 
-- Moved helpers and theorems from contrib's `Data.HVect` into base's
-  `Data.Vect.Quantifiers.All` namespace. Some functions were renamed and some
-  already existed. Others had quantity changes -- in short, there were some
-  breaking changes here in addition to removing the respective functions from
-  contrib. If you hit a breaking change, please take a look at
-  [the PR](https://github.com/idris-lang/Idris2/pull/3191/files) and determine if you
-  simply need to update a function name or if your use-case requires additional
-  code changes in the base library. If it's the latter, open a bug ticket or
-  start a discussion on the Idris Discord to determine the best path forward.
+- Moved helpers and theorems
+  from contrib's `Data.HVect`
+  into base's `Data.Vect.Quantifiers.All` namespace.
+  Some functions were renamed
+  and some already existed.
+  Others had quantity changes -
+  in short,
+  there were some breaking changes here
+  in addition to removing the respective functions from contrib.
+
+  If you hit a breaking change,
+  please take a look at
+  [the PR](https://github.com/idris-lang/Idris2/pull/3191/files)
+  and determine
+  if you simply need to update a function name
+  or if your use-case requires additional code changes
+  in the base library.
+
+  If it's the latter,
+  open a bug ticket
+  or start a discussion
+  on the Idris Discord
+  to determine the best path forward.
 
 - Deprecate `bufferData` in favor of `bufferData'`. These functions are the same
   with the exception of the latter dealing in `Bits8` which is more correct than
@@ -310,10 +364,14 @@ but not yet released.
 
 - Deprecated `toList` function in favor of `Prelude.toList` in `Data.SortedSet`.
 
-- Several functions like `pop`, `differenceMap` and `toSortedMap` were added to `Data.Sorted{Map|Set}`
+- Several functions like `pop`, `differenceMap` and `toSortedMap`
+  were added
+  to `Data.Sorted{Map|Set}`
 
-- Added `kvList` function to `Data.SortedMap` and `Data.SortedMap.Dependent` to have an unambiguous
-  `toList` variant.
+- Added `kvList` function
+  to `Data.SortedMap`
+  and `Data.SortedMap.Dependent`
+  to have an unambiguous `toList` variant.
 
 - Refactored `Uninhabited` implementation for `Data.List.Elem`,
   `Data.List1.Elem`, `Data.SnocList.Elem`, and `Data.Vect.Elem` so it can be
@@ -330,14 +388,25 @@ but not yet released.
 - Added default definitions for `zipWith3` and `unzipWith3` in `Zippable`
   interface.
 
-- `Quantifiers` modules for `List`, `Vect`, `LazyList`, `List1` and `SnocList`
-  are harmonised among each other. Also, several existing functions related only to
-  `All` were moved to appropriate namespace. Couple new functions for `Any` were added.
+- `Quantifiers` modules
+  for `List`, `Vect`, `LazyList`, `List1` and `SnocList`
+  are harmonised among each other.
+  Also,
+  several existing functions related only to `All`
+  were moved to appropriate namespace.
+  Couple new functions for `Any`
+  were added.
 
-- Add a function `altAll` connecting `All` to `Any` using `Alternative` to all `Quantifiers` modules.
+- Add a function `altAll`
+  connecting `All` to `Any`
+  using `Alternative`
+  to all `Quantifiers` modules.
 
-- Fixed `blodwen-channel-get-with-timeout` implementation with proper recursive call on loop and
-  so that it now tracks time spent while attempting to acquire the mutex.
+- Fixed `blodwen-channel-get-with-timeout` implementation
+  with proper recursive call on loop
+  and so that
+  it now tracks time spent
+  while attempting to acquire the mutex.
 
 #### Contrib
 
@@ -376,11 +445,15 @@ but not yet released.
   - `Data/Morphisms/Algebra.idr`
   - `Data/Nat/Algebra.idr`
 
-- `prim__makeFuture` from `System.Future` is reimplemented as `%foreign` instead of
-  using now removed `MakeFuture` primitive
+- `prim__makeFuture` from `System.Future`
+  is reimplemented as `%foreign`
+  instead of using now removed `MakeFuture` primitive
 
-- The documentation for `Data.Validated.ValidatedL` has been corrected to reflect that
-  it uses a `List1` as an error accumulator, not a `List`.
+- The documentation for `Data.Validated.ValidatedL`
+  has been corrected to reflect that
+  it uses a `List1`
+  as an error accumulator,
+  not a `List`.
 
 #### Network
 
@@ -445,10 +518,12 @@ but not yet released.
 - Elaborator scripts were made to be able to access project files,
   allowing the support for type providers and similar stuff.
 
-- Elaborator scripts were made to be able to inspect which definitions are
-  referred to by another definitions, and in which function currently elaborator is.
-  These features together give an ability to inspect whether particular expressions
-  are recursive (including mutual recursion).
+- Elaborator scripts were made to be able to inspect
+  which definitions are referred to by another definitions,
+  and in which function currently elaborator is.
+  These features together give an ability to inspect
+  whether particular expressions are recursive
+  (including mutual recursion).
 
 ### REPL/CLI changes
 
@@ -484,9 +559,13 @@ but not yet released.
 
 #### Node.js/Browser
 
-- Generated JavaScript files now include a shebang when using the Node.js backend
+- Generated JavaScript files now include a shebang when using the Node.js backend.
+
 - Node.js now supports `popen`/`pclose` for the `Read` mode.
-- `getChar` is now supported on Node.js and `putChar` is supported on both JavaScript backends.
+
+- `getChar` is now supported on Node.js
+  and `putChar` is supported on both JavaScript backends.
+
 - Integer-indexed arrays are now supported.
 
 ### Compiler changes
@@ -543,12 +622,15 @@ but not yet released.
 - Fixed a bug that caused holes to appear unexpectedly during quotation of
   dependent pairs.
 
-- Fixed a bug that caused `f` to sometimes be replaced by `fx` after matching `fx = f x`.
+- Fixed a bug
+  that caused `f`
+  to sometimes be replaced by `fx`
+  after matching `fx = f x`.
 
 - Fixed a bug in the totality checker that missed indirect references to
   partial data.
 
-- Refactor the idris2protocols package to depend on fewer Idris2 modules.
+- Refactor the idris2 protocols package to depend on fewer Idris2 modules.
   We can now export the package independently.
   To avoid confusing tooling about which `.ipkg` to use, the
   package file is under the newly added `ipkg` sub-directory.
@@ -631,10 +713,13 @@ but not yet released.
 - Add `anyToFin` to `Data.Vect.Quantifiers.Any`,
   converting the `Any` witness to the index into the corresponding element.
 
-- Implemented `Ord` for `Language.Reflection.TT.Name`, `Language.Reflection.TT.Namespace`
+- Implemented `Ord` for
+  `Language.Reflection.TT.Name`,
+  `Language.Reflection.TT.Namespace`
   and `Language.Reflection.TT.UserName`.
 
-- Adds `leftmost` and `rightmost` to `Control.Order`, a generalisation of `min` and `max`.
+- Adds `leftmost` and `rightmost` to `Control.Order`,
+  a generalisation of `min` and `max`.
 
 - Adds `even` and `odd` to `Data.Integral`.
 
@@ -1248,9 +1333,14 @@ Changed
 
 ### Installation changes
 
-- Added a new Makefile target to install Idris 2 library documentation. After `make install`, type
-  `make install-libdocs` to install it. After that, the index file can be found here:
-  ``idris2 --libdir`/docs/index.html`.``
+- Added a new Makefile target
+  to install Idris 2 library documentation.
+  After `make install`,
+  type `make install-libdocs`
+  to install it.
+  After that,
+  the index file can be found here:
+  ``idris2 --libdir`/docs/index.html` ``.
 
 ## v0.4.0
 
@@ -1269,7 +1359,8 @@ Changed
   implicit parameters and give multiplicities for parameters. The old syntax is
   still available for compatibility purposes but will be removed in the future.
 
-- Add support for SnocList syntax: `[< 1, 2, 3]` desugars into `Lin :< 1 :< 2 :< 3`
+- Add support for SnocList syntax:
+  `[< 1, 2, 3]` desugars into `Lin :< 1 :< 2 :< 3`
   and their semantic highlighting.
 
 - Underscores can be used as visual separators for digit grouping purposes in
@@ -1384,7 +1475,10 @@ Added
 #### New test package
 
 - Moved `tests/Lib.idr` to package as `Test/Golden.idr`.
-- Removed `contrib/Test/Golden.idr` which duplicated the test framework now in the `test` package.
+
+- Removed `contrib/Test/Golden.idr`
+  which duplicated the test framework
+  now in the `test` package.
 
 ### Codegen changes
 
@@ -1419,7 +1513,7 @@ Added
   reduces the amount of memory needed to build large programs. Since this
   backend will skip calling the Chez compiler on modules that haven't changed,
   it also leads to shorter compilation times in large codebases where only some
-  files have changed -- for example when developing Idris2 code generators. The
+  files have changed - for example when developing Idris2 code generators. The
   codegen has a large parallelisation potential but at the moment, it is
   significantly slower for a full rebuild of a large codebase (the code
   generation stage takes about 3x longer).
@@ -1496,9 +1590,11 @@ Added
       whereas condition variables are supposed to be stateless, and only
       wake threads already in the queue.
 
-    The implementation was replaced with an implementation based on asynchronous
-    channels and mutexes, based on the following paper:
-    [Implementing Condition Variables with Semaphores](https://www.microsoft.com/en-us/research/wp-content/uploads/2004/12/ImplementingCVs.pdf) by Andrew Birrell
+    The implementation was replaced
+    with an implementation based on asynchronous channels and mutexes,
+    based on the following paper:
+    [Implementing Condition Variables with Semaphores](https://www.microsoft.com/en-us/research/wp-content/uploads/2004/12/ImplementingCVs.pdf)
+    by Andrew Birrell
 
   - Removed `threadID` and `blodwen-thisthread`. Formerly, in the Chez Scheme
     backend, this function returned "the thread ID of the current thread" as a
@@ -1562,7 +1658,9 @@ Added
 ### REPL/IDE mode changes
 
 - Added `:color (on|off)` option for colored terminal output.
-- Added `:consolewidth (auto|n)` option for printing margins. Mirrors the command-line option.
+
+- Added `:consolewidth (auto|n)` option for printing margins.
+  Mirrors the command-line option.
 
 ## v0.2.1
 

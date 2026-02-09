@@ -1,11 +1,16 @@
 # Tests
 
-_Note: The commands listed in this section should be run from the repository's root folder._
+_Note:
+The commands listed in this section
+should be run from the repository's root folder._
 
-Run all tests: `make test`
+Run all tests:
+`make test`
 
-To run only a subset of the tests use: `make test only=NAME`. `NAME` is matched against the path to each test case.
-
+To run only a subset of the tests use:
+`make test only=NAME`.
+`NAME` is matched
+against the path to each test case.
 Examples:
 
 - `make test only=chez` will run all Chez Scheme tests.

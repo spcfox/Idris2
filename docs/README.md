@@ -1,15 +1,25 @@
 # Documentation for the Idris Language
 
-This manual has been prepared using ReStructured Text and the [Sphinx Documentation Generator](https://www.sphinx-doc.org) for future inclusion on [Read The Docs](https://readthedocs.org).
+This manual has been prepared using ReStructured Text
+and the
+[Sphinx Documentation Generator](https://www.sphinx-doc.org)
+for future inclusion on
+[Read The Docs](https://readthedocs.org).
 
 ## Dependencies
 
-To build the manual, the following dependencies must be met. We assume that you have standard build automation tools already installed i.e. `make`.
+To build the manual,
+the following dependencies must be met.
+We assume that you have standard build automation tools already installed
+i.e. `make`.
 
 ### Sphinx-Doc
 
-Python should be installed by default on most systems.
-Sphinx can be installed either through your hosts package manager or using uv/pip/easy_install.
+Python should be installed by default
+on most systems.
+Sphinx can be installed
+either through your hosts package manager
+or using uv/pip/easy_install.
 
 The recommended way is to use virtual environment for building documentation.
 
@@ -41,7 +51,9 @@ source .venv/bin/activate
 
 ### LaTeX
 
-LaTeX can be installed either using your systems package manager or directly from TeXLive.
+LaTeX can be installed
+either using your systems package manager
+or directly from TeXLive.
 
 ## Build Instructions
 
@@ -61,4 +73,6 @@ rights to Documentation for Idris.
 More information concerning the CC0 can be found online at:\
 https://creativecommons.org/publicdomain/zero/1.0/
 
-When contributing material to the manual please bear in mind that the work will be licensed as above.
+When contributing material to the manual
+please bear in mind
+that the work will be licensed as above.
