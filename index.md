@@ -34,6 +34,7 @@
   background-color: whitesmoke;
 }
 </style>
+<!-- markdownlint-disable MD001 MD033 -->
 <style>
 body {
   width: 80%;
@@ -49,8 +50,8 @@ pre code {
 </style>
 
 <img src="idris-logo-base.png" style="float:right" alt="Idris 2 logo"/>
-Welcome to Idris2!
-==================
+
+# Welcome to Idris2!
 
 [Idris](https://www.idris-lang.org/) is a programming language designed to encourage
 _Type-Driven Development_.
@@ -75,9 +76,11 @@ The line starting with a triple pipe (`|||`) attaches documentation to the ident
 can consult it by loading the file in the REPL (`idris2 Main.idr`) and querying the compiler
 using the `:doc` command: `:doc main` will return:
 
-    Main.main : IO ()
-      My first Idris2 function
-      Visibility: private
+```console
+Main.main : IO ()
+  My first Idris2 function
+  Visibility: private
+```
 
 You should be able to use `:doc` on identifiers (e.g. `main`, `IO`, `()`, `putStrLn`, etc.) and
 keywords (`module`, `:`, `=`, `private`, etc.) and hopefully get helpful information.

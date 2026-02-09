@@ -34,6 +34,7 @@
   background-color: whitesmoke;
 }
 </style>
+<!-- markdownlint-disable MD001 MD033 -->
 <style>
 body {
   width: 80%;
@@ -75,10 +76,11 @@ The command <code>idris2 --exec main Main.idr</code> will compile the module and
 can consult it by loading the file in the REPL (<code>idris2 Main.idr</code>) and querying the compiler
 using the <code>:doc</code> command: <code>:doc main</code> will return:</p>
 
-<pre><code>Main.main : IO ()
+<p><code>console
+Main.main : IO ()
   My first Idris2 function
   Visibility: private
-</code></pre>
+</code></p>
 
 <p>You should be able to use <code>:doc</code> on identifiers (e.g. <code>main</code>, <code>IO</code>, <code>()</code>, <code>putStrLn</code>, etc.) and
 keywords (<code>module</code>, <code>:</code>, <code>=</code>, <code>private</code>, etc.) and hopefully get helpful information.</p>
