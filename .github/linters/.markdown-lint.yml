@@ -25,7 +25,11 @@ MD004:
 MD010:
   spaces_per_tab: 2
 MD013:
-  line_length: off # TODO: Set maximum line length
+  # Semantic Line Breaks strategy: One clause per line.
+  # Prioritize logical structure and readable diffs over strict wrapping.
+  # https://sembr.org/
+  line_length: 80
+  severity: warning
 MD024:
   siblings_only: true # Allow duplicate headings in CHANGELOG
 MD026:
