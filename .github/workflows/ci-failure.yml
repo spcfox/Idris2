@@ -1,0 +1,30 @@
+name: Failure Notification
+
+on:
+  workflow_run:
+    branches:
+      - main
+    workflows:
+      - "*"
+    types:
+      - completed
+
+jobs:
+  notify-zulip:
+    name: Send Zulip message
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'failure'
+    steps:
+      - name : Send Zulip message
+        uses: zulip/github-actions-zulip/send-message@v1
+        with:
+          api-key: ${{ secrets.ZULIP_API_KEY }}
+          email: ${{ vars.ZULIP_EMAIL }}
+          organization-url: ${{ vars.ZULIP_ORG_URL || 'https://idris-lang.zulipchat.com/' }}
+          type: "stream"
+          to: ${{ vars.ZULIP_CHANNEL || 'github' }}
+          topic: ${{ vars.ZULIP_TOPIC }}
+          content: |
+            :exclamation: `${{ github.event.workflow_run.name }}` failed
+            **Commit**: [`${{ github.event.workflow_run.head_sha }}`](${{ github.event.repository.html_url }}/commit/${{ github.event.workflow_run.head_sha }})
+            [Workflow Run](${{ github.event.workflow_run.html_url }})
