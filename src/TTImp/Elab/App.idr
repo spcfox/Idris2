@@ -560,7 +560,7 @@ mutual
                           fntm fnty (n, 1 + argpos) expargs autoargs namedargs kr expty
 
   export
-  findNamed : Name -> List (Name, RawImp) -> Maybe ((Name, RawImp), List (Name, RawImp))
+  findNamed : Name -> List (Name, a) -> Maybe ((Name, a), List (Name, a))
   findNamed n l = case partition ((== n) . fst) l of
                        (x :: xs, ys) => Just (x, (xs ++ ys))
                        _ => Nothing

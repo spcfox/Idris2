@@ -54,3 +54,23 @@ Issue2325:1:1--1:55
 Missing cases:
     fnc 0 _ _
 
+1/1: Building Issue3733 (Issue3733.idr)
+Warning: Issue3733:4:6--4:11:Cannot match on a partially applied constructor: (Main.MkX {imp:1})
+
+Issue3733:4:6--4:11
+ 1 | data X = MkX Int String
+ 2 | 
+ 3 | foo : X -> Int
+ 4 | foo (MkX x) impossible
+          ^^^^^
+
+Warning: Issue3733:6:6--6:15:Too many arguments
+
+Issue3733:6:6--6:15
+ 2 | 
+ 3 | foo : X -> Int
+ 4 | foo (MkX x) impossible
+ 5 | foo (MkX x s) = x
+ 6 | foo (MkX n s x) impossible
+          ^^^^^^^^^
+
