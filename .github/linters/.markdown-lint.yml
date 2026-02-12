@@ -1,10 +1,4 @@
 ---
-###########################
-###########################
-## Markdown Linter rules ##
-###########################
-###########################
-
 # Linter rules doc:
 # - https://github.com/DavidAnson/markdownlint
 #
@@ -15,33 +9,30 @@
 #   <!-- markdownlint-restore -->
 #
 
-###############
-# Rules by id #
-###############
-MD003:
-  style: atx # Heading style
-MD004:
-  style: dash # Bullet list style
-MD010:
+heading-style:
+  style: atx
+ul-style:
+  style: dash
+no-hard-tabs:
   spaces_per_tab: 2
-MD013:
+line-length:
   # Semantic Line Breaks strategy: One clause per line.
   # Prioritize logical structure and readable diffs over strict wrapping.
   # https://sembr.org/
   line_length: 80
   severity: warning
-MD024:
+no-duplicate-heading:
   siblings_only: true # Allow duplicate headings in CHANGELOG
-MD026:
+no-trailing-punctuation:
   punctuation: ".,;:。，；:" # List of not allowed
-MD034: false # Allow bare URLs
-MD041:
-  allow_preamble: true # Allow preamble before top-level header
-MD046:
-  style: fenced # Use fenced code blocks instead of indented
-MD048:
-  style: backtick # Use backticks for fenced code
-MD049:
-  style: underscore # Emphasis style
-MD050:
-  style: asterisk # Strong style
+no-bare-urls: false
+first-line-h1:
+  allow_preamble: true
+code-block-style:
+  style: fenced
+code-fence-style:
+  style: backtick
+emphasis-style:
+  style: underscore
+strong-style:
+  style: asterisk
