@@ -6,5 +6,8 @@
     "**/support/**",
     "**/bootstrap/**",
     "**/benchmark/benchmarks/**"
-  ]
+  ],
+  "formatsExts": {
+    "haskell": ["idr"]
+  }
 }
