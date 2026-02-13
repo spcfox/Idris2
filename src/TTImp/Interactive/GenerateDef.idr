@@ -57,9 +57,8 @@ expandClause : {auto c : Ref Ctxt Defs} ->
                Core (Search (List ImpClause))
 expandClause loc opts n c
     = do c <- uniqueRHS c
-         Right clause <- checkClause linear Private PartialOK False n [] (MkNested []) Env.empty c
-            | Left err => noResult -- TODO: impossible clause, do something
-                                   -- appropriate
+         CheckedClause clause <- checkClause linear Private PartialOK False n [] (MkNested []) Env.empty c
+            | _ => noResult -- TODO: impossible clause, do something appropriate
 
          let MkClause {vars} env lhs rhs = clause
          let Meta _ i fn _ = getFn rhs
