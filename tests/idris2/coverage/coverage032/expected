@@ -1,0 +1,25 @@
+1/1: Building Issue2167 (Issue2167.idr)
+Error: makeVoid is not covering.
+
+Issue2167:29:1--29:16
+ 25 | eqSameNeqAbsurd : SamePairView (PairNeq neq) PairEq -> Void
+ 26 | eqSameNeqAbsurd BothEq impossible
+ 27 | eqSameNeqAbsurd BothNeq impossible
+ 28 |
+ 29 | makeVoid : Void
+      ^^^^^^^^^^^^^^^
+
+Calls non covering function Main.pairViewIncSame
+Error: pairViewIncSame is not covering.
+
+Issue2167:18:1--18:163
+ 14 | data SamePairView : PairView a -> PairView b -> Type where
+ 15 |   BothEq : SamePairView PairEq PairEq
+ 16 |   BothNeq : SamePairView (PairNeq neqA) (PairNeq neqB)
+ 17 |
+ 18 | pairViewIncSame : {k : Nat} -> (p : (Nat, Nat)) -> (v : PairView p) -> (w : PairView (incrementIfEqual (fst p) k, incrementIfEqual (snd p) k)) -> SamePairView v w
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Missing cases:
+    pairViewIncSame (e, e) (PairNeq e) PairEq
+
