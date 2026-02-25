@@ -1167,10 +1167,7 @@ identifyUnreachableDefaults fc defs (NType {}) cs = pure empty
 identifyUnreachableDefaults fc defs nfty cs
     = do cs' <- traverse rep cs
          let (cs'', extraClauseIdxs) = dropRep (concat cs') empty
-         let extraClauseIdxs' =
-           if (length cs == (length cs'' + 1))
-              then extraClauseIdxs
-              else empty
+         let extraClauseIdxs' = extraClauseIdxs
          -- if a clause is unreachable under all the branches it can be found under
          -- then it is entirely unreachable.
          when (not $ null extraClauseIdxs') $
