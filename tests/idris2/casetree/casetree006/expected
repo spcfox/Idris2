@@ -1,0 +1,41 @@
+1/1: Building DefaultCasesLazy (DefaultCasesLazy.idr)
+Warning: Unreachable clause: extraDefault _
+
+DefaultCasesLazy:10:1--10:15
+ 06 |
+ 07 | extraDefault : Lazy MyBit -> Int
+ 08 | extraDefault A = 1
+ 09 | extraDefault B = 2
+ 10 | extraDefault _ = 3
+      ^^^^^^^^^^^^^^
+
+Warning: Unreachable clause: earlyDefault (Delay A)
+
+DefaultCasesLazy:18:1--18:15
+ 14 | usefulDefault _ = 2
+ 15 |
+ 16 | earlyDefault : Lazy MyBit -> Int
+ 17 | earlyDefault _ = 1
+ 18 | earlyDefault A = 2
+      ^^^^^^^^^^^^^^
+
+Warning: Unreachable clause: nestedExtraDefault _ _
+
+DefaultCasesLazy:34:1--34:23
+ 30 | nestedExtraDefault A A = 1
+ 31 | nestedExtraDefault A B = 2
+ 32 | nestedExtraDefault B A = 3
+ 33 | nestedExtraDefault B B = 4
+ 34 | nestedExtraDefault _ _ = 5
+      ^^^^^^^^^^^^^^^^^^^^^^
+
+Warning: Unreachable clause: nestedEarlyDefault B B
+
+DefaultCasesLazy:47:1--47:23
+ 43 | nestedEarlyDefault A A = 1
+ 44 | nestedEarlyDefault A B = 2
+ 45 | nestedEarlyDefault B A = 3
+ 46 | nestedEarlyDefault _ _ = 4
+ 47 | nestedEarlyDefault B B = 5
+      ^^^^^^^^^^^^^^^^^^^^^^
+

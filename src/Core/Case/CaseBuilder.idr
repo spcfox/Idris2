@@ -1165,6 +1165,13 @@ identifyUnreachableDefaults : {auto c : Ref Ctxt Defs} ->
 -- all case there
 identifyUnreachableDefaults fc defs (NPrimVal {}) cs = pure empty
 identifyUnreachableDefaults fc defs (NType {}) cs = pure empty
+identifyUnreachableDefaults fc defs (NDelayed {}) [] = pure empty
+identifyUnreachableDefaults fc defs (NDelayed {}) (_ :: cs)
+    = do let extraClauseIdxs = fromList $ concatMap findReachedAlts cs
+         unless (null extraClauseIdxs) $
+           log "compile.casetree.clauses" 25 $
+             "Marking the following clause indices as unreachable under the current branch of the tree: " ++ (show extraClauseIdxs)
+         pure extraClauseIdxs
 identifyUnreachableDefaults fc defs nfty cs
     = do cs' <- traverse rep cs
          let (cs'', extraClauseIdxs) = dropRep (concat cs') empty
@@ -1174,7 +1181,7 @@ identifyUnreachableDefaults fc defs nfty cs
               else empty
          -- if a clause is unreachable under all the branches it can be found under
          -- then it is entirely unreachable.
-         when (not $ null extraClauseIdxs') $
+         unless (null extraClauseIdxs') $
            log "compile.casetree.clauses" 25 $
              "Marking the following clause indices as unreachable under the current branch of the tree: " ++ (show extraClauseIdxs')
          pure extraClauseIdxs'
