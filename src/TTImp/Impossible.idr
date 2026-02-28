@@ -78,10 +78,11 @@ unknownType tm
          throw $ InternalError "Unknown type for argument in impossible clause: \{show tm'}"
 
 mismatchTypes : {auto c : Ref Ctxt Defs} ->
-                FC -> String -> ClosedTerm -> Core a
+                FC -> String -> ClosedNF -> Core a
 mismatchTypes fc given expected
-    = throw $ BadImpossibleClause fc
-        "Argument has type \{given}, but expected \{show !(toFullNames expected)}"
+    = do defs <- get Ctxt
+         exp <- toFullNames !(quote defs Env.empty expected)
+         throw $ BadImpossibleClause fc "Argument has type \{given}, but expected \{show exp}"
 
 mutual
   processArgs : {auto c : Ref Ctxt Defs} ->
@@ -95,8 +96,8 @@ mutual
                 Core ClosedTerm
   -- unnamed takes priority
   processArgs con fn (NBind _ x (Pi _ _ Explicit ty) sc) (e :: exps) autos named
-     = do e' <- mkTerm e.val (Just ty)
-          defs <- get Ctxt
+     = do defs <- get Ctxt
+          e' <- mkTerm e.val $ Just !(evalClosure defs ty)
           processArgs con (App e.fc fn e')
                       !(sc defs (toClosure defaultOpts Env.empty e'))
                       exps autos named
@@ -104,7 +105,7 @@ mutual
      = do defs <- get Ctxt
           case findNamed x named of
             Just ((_, e), named') =>
-               do e' <- mkTerm e.val (Just ty)
+               do e' <- mkTerm e.val $ Just !(evalClosure defs ty)
                   processArgs con (App e.fc fn e')
                               !(sc defs (toClosure defaultOpts Env.empty e'))
                               [] autos named'
@@ -125,7 +126,7 @@ mutual
                                       !(sc defs (toClosure defaultOpts Env.empty e'))
                                       exps autos named
             Just ((_, e), named') =>
-               do e' <- mkTerm e.val (Just ty)
+               do e' <- mkTerm e.val $ Just !(evalClosure defs ty)
                   processArgs con (App e.fc fn e')
                               !(sc defs (toClosure defaultOpts Env.empty e'))
                               exps autos named'
@@ -133,7 +134,7 @@ mutual
      = do defs <- get Ctxt
           case autos of
                (e :: autos') => -- unnamed takes priority
-                   do e' <- mkTerm e.val (Just ty)
+                   do e' <- mkTerm e.val $ Just !(evalClosure defs ty)
                       processArgs con (App e.fc fn e')
                                   !(sc defs (toClosure defaultOpts Env.empty e'))
                                   exps autos' named
@@ -146,7 +147,7 @@ mutual
                                        !(sc defs (toClosure defaultOpts Env.empty e'))
                                        exps [] named
                      Just ((_, e), named') =>
-                        do e' <- mkTerm e.val (Just ty)
+                        do e' <- mkTerm e.val $ Just !(evalClosure defs ty)
                            processArgs con (App e.fc fn e')
                                        !(sc defs (toClosure defaultOpts Env.empty e'))
                                        exps [] named'
@@ -159,7 +160,7 @@ mutual
   buildApp : {auto c : Ref Ctxt Defs} ->
              {auto s : Ref Syn SyntaxInfo} ->
              {auto q : Ref QVar Int} ->
-             FC -> Name -> Maybe ClosedClosure ->
+             FC -> Name -> Maybe ClosedNF ->
              (expargs : List (WithFC RawImp)) ->
              (autoargs : List (WithFC RawImp)) ->
              (namedargs : List (Name, WithFC RawImp)) ->
@@ -171,8 +172,7 @@ mutual
                throw (BadImpossibleClause fc "Can't deal with \{show n} in impossible clauses yet")
 
            gdefs <- lookupNameBy id n (gamma defs)
-           mty' <- traverseOpt (evalClosure defs) mty
-           [(n', i, gdef)] <- dropNoMatch mty' gdefs
+           [(n', i, gdef)] <- dropNoMatch mty gdefs
               | [] => if length gdefs == 0
                         then undefinedName fc n
                         else throw $ BadImpossibleClause fc "\{show n} does not match expected type"
@@ -192,16 +192,26 @@ mutual
   mkTerm : {auto c : Ref Ctxt Defs} ->
            {auto s : Ref Syn SyntaxInfo} ->
            {auto q : Ref QVar Int} ->
-           RawImp -> Maybe ClosedClosure ->
+           RawImp -> Maybe ClosedNF ->
            Core ClosedTerm
   mkTerm tm mty = go tm mty [] [] []
     where
       go : RawImp ->
-           Maybe ClosedClosure ->
+           Maybe ClosedNF ->
            (expargs : List (WithFC RawImp)) ->
            (autoargs : List (WithFC RawImp)) ->
            (namedargs : List (Name, WithFC RawImp)) ->
            Core ClosedTerm
+      go tm@(IDelay {}) Nothing _ _ _
+          = unknownType tm
+      go (IDelay fc tm) (Just (NDelayed _ r ty)) exps autos named
+          = do defs <- get Ctxt
+               TDelay fc r !(quote defs Env.empty ty) <$> go tm (Just ty) exps autos named
+      go (IDelay fc tm) (Just ty) _ _ _
+          = mismatchTypes fc "Lazy" ty
+      go tm (Just (NDelayed _ r ty)) exps autos named
+          = do defs <- get Ctxt
+               TDelay (getFC tm) r !(quote defs Env.empty ty) <$> go tm (Just ty) exps autos named
       go (IVar fc n) mty exps autos named
           = buildApp fc n mty exps autos named
       go (IAs fc fc' u n pat) mty exps autos named
@@ -216,29 +226,27 @@ mutual
           = go fn mty exps autos ((nm, MkFCVal fc arg) :: named)
       go (IMustUnify fc r tm) mty exps autos named
           = Erased fc . Dotted <$> go tm mty exps autos named
-      go tm@(IPrimVal fc c) Nothing _ _ _
-          = unknownType tm
+      go (IPrimVal fc c) Nothing _ _ _
+          = throw $ GenericMsg fc "\{show c} does not match expected type"
       go (IPrimVal fc c) (Just ty) _ _ _
-          = do defs <- get Ctxt
-               matchPrimType (primType c) !(quote defs Env.empty ty)
+          = do matchPrimType (primType c) ty
                pure (PrimVal fc c)
         where
           showPrimType : Maybe PrimType -> String
           showPrimType Nothing = "Type"
           showPrimType (Just t) = show t
 
-          matchPrimType : Maybe PrimType -> ClosedTerm -> Core ()
-          matchPrimType Nothing (TType {}) = pure ()
-          matchPrimType pty@(Just t1) ty@(PrimVal _ (PrT t2))
+          matchPrimType : Maybe PrimType -> ClosedNF -> Core ()
+          matchPrimType Nothing (NType {}) = pure ()
+          matchPrimType pty@(Just t1) ty@(NPrimVal _ (PrT t2))
               = unless (t1 == t2) $ mismatchTypes fc (showPrimType pty) ty
           matchPrimType pty ty = mismatchTypes fc (showPrimType pty) ty
       go tm@(IType {}) Nothing _ _ _
           = unknownType tm
-      go tm@(IType fc) (Just ty) _ _ _
-          = do defs <- get Ctxt
-               TType {} <- quote defs Env.empty ty
-                 | ty => mismatchTypes fc "Type" ty
-               pure (TType fc $ MN "top" 0)
+      go (IType fc) (Just (NType {})) _ _ _
+          = pure (TType fc $ MN "top" 0)
+      go (IType fc) (Just ty) _ _ _
+          = mismatchTypes fc "Type" ty
       -- We're taking UniqueDefault here, _and_ we're falling through to error otherwise, which is sketchy.
       -- One option is to try each and emit an AmbiguousElab? We maybe should respect `UniqueDefault` if there
       -- is no evidence (mty), but we should _try_ to resolve here if there is an mty.
