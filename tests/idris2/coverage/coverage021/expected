@@ -1,5 +1,5 @@
 1/1: Building Issue2250a (Issue2250a.idr)
-Warning: Issue2250a:15:5--15:9:Refl does not match expected type
+Warning: Refl does not match expected type
 
 Issue2250a:15:5--15:9
  11 | Ex1 : 3 `LessThanOrEqualTo` 5
@@ -34,7 +34,7 @@ Issue2250a:17:1--17:13
 
 Calls non covering function Main.Bug
 1/1: Building Issue2250b (Issue2250b.idr)
-Warning: Issue2250b:6:3--6:4:Z does not match expected type
+Warning: Z does not match expected type
 
 Issue2250b:6:3--6:4
  2 |
@@ -69,7 +69,7 @@ Issue2250b:9:1--9:9
 
 Calls non covering function Main.f
 1/1: Building Issue2250c (Issue2250c.idr)
-Warning: Issue2250c:4:3--4:5:MkUnit does not match expected type
+Warning: MkUnit does not match expected type
 
 Issue2250c:4:3--4:5
  1 | %default total
@@ -101,7 +101,7 @@ Missing cases:
     g _
 
 1/1: Building Issue3276 (Issue3276.idr)
-Warning: Issue3276:20:23--20:27:Refl does not match expected type
+Warning: Refl does not match expected type
 
 Issue3276:20:23--20:27
  16 | prf1 : Digit 51
@@ -125,7 +125,7 @@ Missing cases:
     dis0 _
 
 1/1: Building Visibility (Visibility.idr)
-Warning: Visibility:8:6--8:7:Z does not match expected type
+Warning: Z does not match expected type
 
 Visibility:8:6--8:7
  4 |     data Foo : Type where
@@ -149,7 +149,7 @@ Missing cases:
     boom _
 
 1/1: Building Head (Head.idr)
-Warning: Head:4:6--4:8:MkUnit does not match expected type
+Warning: MkUnit does not match expected type
 
 Head:4:6--4:8
  1 | total
@@ -158,7 +158,7 @@ Head:4:6--4:8
  4 | head () impossible
           ^^
 
-Warning: Head:9:7--9:8:Z does not match expected type
+Warning: Z does not match expected type
 
 Head:9:7--9:8
  5 |

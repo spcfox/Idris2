@@ -1,12 +1,12 @@
 1/1: Building Main (Main.idr)
-Warning: Main:2:10--2:13:Int does not match expected type
+Warning: Argument has type Type, but expected Builtin.Unit
 
 Main:2:10--2:13
  1 | matchInt : () -> Void
  2 | matchInt Int impossible
               ^^^
 
-Warning: Main:5:12--5:18:%World does not match expected type
+Warning: Argument has type Type, but expected Builtin.Unit
 
 Main:5:12--5:18
  1 | matchInt : () -> Void

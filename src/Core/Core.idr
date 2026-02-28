@@ -111,6 +111,7 @@ data Error : Type where
      BadDataConType : FC -> Name -> Name -> Error
      NotCovering : FC -> Name -> Covering -> Error
      NotTotal : FC -> Name -> PartialReason -> Error
+     BadImpossibleClause : FC -> String -> Error
      ImpossibleCase : Error
         -- ^ Not a true error.
         -- Thrown deliberately to signal the coverage checker that a case is impossible
@@ -273,6 +274,8 @@ Show Error where
 
   show (NotTotal fc n r)
        = show fc ++ ":" ++ show n ++ " is not total"
+  show (BadImpossibleClause fc msg)
+       = show fc ++ ":Bad impossible clause: " ++ msg
   show ImpossibleCase
        = "Case is impossible (not an error)"
   show (LinearUsed fc count n)
@@ -445,6 +448,7 @@ getErrorLoc (BadTypeConType loc _) = Just loc
 getErrorLoc (BadDataConType loc _ _) = Just loc
 getErrorLoc (NotCovering loc _ _) = Just loc
 getErrorLoc (NotTotal loc _ _) = Just loc
+getErrorLoc (BadImpossibleClause loc _) = Just loc
 getErrorLoc ImpossibleCase = Nothing
 getErrorLoc (LinearUsed loc _ _) = Just loc
 getErrorLoc (LinearMisuse loc _ _ _) = Just loc
@@ -537,6 +541,7 @@ killErrorLoc (InvisibleName fc x y) = InvisibleName emptyFC x y
 killErrorLoc (BadTypeConType fc x) = BadTypeConType emptyFC x
 killErrorLoc (BadDataConType fc x y) = BadDataConType emptyFC x y
 killErrorLoc (NotCovering fc x y) = NotCovering emptyFC x y
+killErrorLoc (BadImpossibleClause fc x) = BadImpossibleClause emptyFC x
 killErrorLoc ImpossibleCase = ImpossibleCase
 killErrorLoc (NotTotal fc x y) = NotTotal emptyFC x y
 killErrorLoc (LinearUsed fc k x) = LinearUsed emptyFC k x

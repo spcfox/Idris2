@@ -63,12 +63,25 @@ badClause : {auto c : Ref Ctxt Defs} ->
             List (Name, WithFC RawImp) ->
             Core a
 badClause fn exps autos named
-   = throw (GenericMsg (getLoc fn)
+   = throw (BadImpossibleClause (getLoc fn)
             ("Badly formed impossible clause "
                ++ show (!(toFullNames fn),
                         (.val) <$> exps,
                         (.val) <$> autos,
                         mapSnd (.val) <$> named)))
+
+unknownType : {auto c : Ref Ctxt Defs} ->
+              {auto s : Ref Syn SyntaxInfo} ->
+              RawImp -> Core a
+unknownType tm
+    = do tm' <- pterm (map defaultKindedName tm) -- hack
+         throw $ InternalError "Unknown type for argument in impossible clause: \{show tm'}"
+
+mismatchTypes : {auto c : Ref Ctxt Defs} ->
+                FC -> String -> ClosedTerm -> Core a
+mismatchTypes fc given expected
+    = throw $ BadImpossibleClause fc
+        "Argument has type \{given}, but expected \{show !(toFullNames expected)}"
 
 mutual
   processArgs : {auto c : Ref Ctxt Defs} ->
@@ -97,7 +110,7 @@ mutual
                               [] autos named'
             Nothing => -- Expected an explicit argument, but only implicits left
                        do let False = con
-                            | True => throw $ GenericMsg (getLoc fn) $
+                            | True => throw $ BadImpossibleClause (getLoc fn) $
                                                 "Cannot match on a partially applied constructor: "
                                                 ++ show !(toFullNames fn)
                           let True = null autos && null named
@@ -139,7 +152,7 @@ mutual
                                        exps [] named'
   processArgs _ fn _ [] [] [] = pure fn
   processArgs _ fn _ (x :: _) autos named
-     = throw $ GenericMsg x.fc "Too many arguments"
+     = throw $ BadImpossibleClause x.fc "Too many arguments"
   processArgs _ fn _ exps autos named
      = badClause fn exps autos named
 
@@ -155,15 +168,15 @@ mutual
       = do defs <- get Ctxt
            prims <- getPrimitiveNames
            when (n `elem` prims) $
-               throw (GenericMsg fc "Can't deal with \{show n} in impossible clauses yet")
+               throw (BadImpossibleClause fc "Can't deal with \{show n} in impossible clauses yet")
 
            gdefs <- lookupNameBy id n (gamma defs)
            mty' <- traverseOpt (evalClosure defs) mty
            [(n', i, gdef)] <- dropNoMatch mty' gdefs
               | [] => if length gdefs == 0
                         then undefinedName fc n
-                        else throw $ GenericMsg fc "\{show n} does not match expected type"
-              | ts => throw $ AmbiguousName fc (map fst ts)
+                        else throw $ BadImpossibleClause fc "\{show n} does not match expected type"
+              | ts => throw $ BadImpossibleClause fc "Ambiguous name \{show $ map fst ts}"
            tynf <- nf defs Env.empty (type gdef)
            -- #899 we need to make sure that type & data constructors are marked
            -- as such so that the coverage checker actually uses the matches in
@@ -181,57 +194,61 @@ mutual
            {auto q : Ref QVar Int} ->
            RawImp -> Maybe ClosedClosure ->
            Core ClosedTerm
-  mkTerm tm mty = go tm [] [] []
+  mkTerm tm mty = go tm mty [] [] []
     where
       go : RawImp ->
-          (expargs : List (WithFC RawImp)) ->
-          (autoargs : List (WithFC RawImp)) ->
-          (namedargs : List (Name, WithFC RawImp)) ->
-          Core ClosedTerm
-      go (IVar fc n) exps autos named
-        = buildApp fc n mty exps autos named
-      go (IAs fc fc' u n pat) exps autos named
-        = go pat exps autos named
-      go (IApp fc fn arg) exps autos named
-        = go fn (MkFCVal fc arg :: exps) autos named
-      go (IWithApp fc fn arg) exps autos named
-        = go fn (MkFCVal fc arg :: exps) autos named
-      go (IAutoApp fc fn arg) exps autos named
-        = go fn exps (MkFCVal fc arg :: autos) named
-      go (INamedApp fc fn nm arg) exps autos named
-        = go fn exps autos ((nm, MkFCVal fc arg) :: named)
-      go (IMustUnify fc r tm) exps autos named
-        = Erased fc . Dotted <$> go tm exps autos named
-      go (IPrimVal fc c) _ _ _
-          = do let tm = PrimVal fc c
-               True <- isValidPrimType
-                 | _ => throw $ GenericMsg fc "\{show tm} does not match expected type"
-               pure tm
-        where
-          isValidPrimType : Core Bool
-          isValidPrimType
-            = do defs <- get Ctxt
-                 Just ty <- traverseOpt (evalClosure defs) mty
-                   | _ => pure False
-                 case (primType c, ty) of
-                      (Nothing, NType {}) => pure True
-                      (Just t1, NPrimVal _ (PrT t2)) => pure (t1 == t2)
-                      _ => pure False
-      go (IType fc) _ _ _
+           Maybe ClosedClosure ->
+           (expargs : List (WithFC RawImp)) ->
+           (autoargs : List (WithFC RawImp)) ->
+           (namedargs : List (Name, WithFC RawImp)) ->
+           Core ClosedTerm
+      go (IVar fc n) mty exps autos named
+          = buildApp fc n mty exps autos named
+      go (IAs fc fc' u n pat) mty exps autos named
+          = go pat mty exps autos named
+      go (IApp fc fn arg) mty exps autos named
+          = go fn mty (MkFCVal fc arg :: exps) autos named
+      go (IWithApp fc fn arg) mty exps autos named
+          = go fn mty (MkFCVal fc arg :: exps) autos named
+      go (IAutoApp fc fn arg) mty exps autos named
+          = go fn mty exps (MkFCVal fc arg :: autos) named
+      go (INamedApp fc fn nm arg) mty exps autos named
+          = go fn mty exps autos ((nm, MkFCVal fc arg) :: named)
+      go (IMustUnify fc r tm) mty exps autos named
+          = Erased fc . Dotted <$> go tm mty exps autos named
+      go tm@(IPrimVal fc c) Nothing _ _ _
+          = unknownType tm
+      go (IPrimVal fc c) (Just ty) _ _ _
           = do defs <- get Ctxt
-               Just (NType {}) <- traverseOpt (evalClosure defs) mty
-                 | _ => throw $ GenericMsg fc "Type does not match expected type"
+               matchPrimType (primType c) !(quote defs Env.empty ty)
+               pure (PrimVal fc c)
+        where
+          showPrimType : Maybe PrimType -> String
+          showPrimType Nothing = "Type"
+          showPrimType (Just t) = show t
+
+          matchPrimType : Maybe PrimType -> ClosedTerm -> Core ()
+          matchPrimType Nothing (TType {}) = pure ()
+          matchPrimType pty@(Just t1) ty@(PrimVal _ (PrT t2))
+              = unless (t1 == t2) $ mismatchTypes fc (showPrimType pty) ty
+          matchPrimType pty ty = mismatchTypes fc (showPrimType pty) ty
+      go tm@(IType {}) Nothing _ _ _
+          = unknownType tm
+      go tm@(IType fc) (Just ty) _ _ _
+          = do defs <- get Ctxt
+               TType {} <- quote defs Env.empty ty
+                 | ty => mismatchTypes fc "Type" ty
                pure (TType fc $ MN "top" 0)
       -- We're taking UniqueDefault here, _and_ we're falling through to error otherwise, which is sketchy.
       -- One option is to try each and emit an AmbiguousElab? We maybe should respect `UniqueDefault` if there
       -- is no evidence (mty), but we should _try_ to resolve here if there is an mty.
-      go (IAlternative _ (UniqueDefault tm) _) exps autos named
-        = go tm exps autos named
-      go (Implicit fc _) _ _ _ = nextVar fc
-      go (IBindVar fc _) _ _ _ = nextVar fc
-      go tm _ _ _
-        = do tm' <- pterm (map defaultKindedName tm) -- hack
-             throw $ GenericMsg (getFC tm) "Unsupported term in impossible clause: \{show tm'}"
+      go (IAlternative _ (UniqueDefault tm) _) mty exps autos named
+          = go tm mty exps autos named
+      go (Implicit fc _) _ _ _ _ = nextVar fc
+      go (IBindVar fc _) _ _ _ _ = nextVar fc
+      go tm _ _ _ _
+          = do tm' <- pterm (map defaultKindedName tm) -- hack
+               throw $ BadImpossibleClause (getFC tm) "Unsupported term in impossible clause: \{show tm'}"
 
 -- Given an LHS that is declared 'impossible', build a term to match from,
 -- so that when we build the case tree for checking coverage, we take into

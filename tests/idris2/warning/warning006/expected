@@ -1,5 +1,5 @@
 1/1: Building Main (Main.idr)
-Warning: Main:6:6--6:7:Can't deal with fromInteger in impossible clauses yet
+Warning: Can't deal with fromInteger in impossible clauses yet
 
 Main:6:6--6:7
  2 | import Data.Vect
@@ -9,7 +9,7 @@ Main:6:6--6:7
  6 | head 0 _ impossible
           ^
 
-Warning: Main:13:9--13:10:Z does not match expected type
+Warning: Z does not match expected type
 
 Main:13:9--13:10
  09 | data Foo = Z | S Foo
@@ -19,7 +19,7 @@ Main:13:9--13:10
  13 | head' Z Z _ impossible
               ^
 
-Warning: Main:18:11--18:12:Ambiguous name [Main.Z, Prelude.Types.Z]
+Warning: Ambiguous name [Main.Z, Prelude.Types.Z]
 
 Main:18:11--18:12
  14 | head' (S k) _ (x :: xs) = x
@@ -30,14 +30,14 @@ Main:18:11--18:12
                 ^
 
 1/1: Building Issue2325 (Issue2325.idr)
-Warning: Issue2325:2:5--2:6:Can't deal with fromInteger in impossible clauses yet
+Warning: Can't deal with fromInteger in impossible clauses yet
 
 Issue2325:2:5--2:6
  1 | fnc : (a : Nat) -> (b : Nat) -> (a > b) = True -> Type
  2 | fnc 0 0 Refl impossible
          ^
 
-Warning: Issue2325:3:5--3:6:Can't deal with fromInteger in impossible clauses yet
+Warning: Can't deal with fromInteger in impossible clauses yet
 
 Issue2325:3:5--3:6
  1 | fnc : (a : Nat) -> (b : Nat) -> (a > b) = True -> Type
@@ -55,7 +55,7 @@ Missing cases:
     fnc 0 _ _
 
 1/1: Building Issue3733 (Issue3733.idr)
-Warning: Issue3733:4:6--4:11:Cannot match on a partially applied constructor: (Main.MkX {imp:1})
+Warning: Cannot match on a partially applied constructor: (Main.MkX {imp:1})
 
 Issue3733:4:6--4:11
  1 | data X = MkX Int String
@@ -64,7 +64,7 @@ Issue3733:4:6--4:11
  4 | foo (MkX x) impossible
           ^^^^^
 
-Warning: Issue3733:6:6--6:15:Too many arguments
+Warning: Too many arguments
 
 Issue3733:6:6--6:15
  2 |
@@ -73,4 +73,43 @@ Issue3733:6:6--6:15
  5 | foo (MkX x s) = x
  6 | foo (MkX n s x) impossible
           ^^^^^^^^^
+
+1/1: Building Prims (Prims.idr)
+Warning: Argument has type Type, but expected Int
+
+Prims:3:15--3:18
+ 1 | -- Primitive type on LHS
+ 2 | intImpossible : Int -> ()
+ 3 | intImpossible Int impossible
+                   ^^^
+
+Warning: Argument has type Type, but expected Int
+
+Prims:8:17--8:23
+ 4 | intImpossible _ = ()
+ 5 |
+ 6 | -- Primitive type on LHS
+ 7 | worldImpossible : Int -> ()
+ 8 | worldImpossible %World impossible
+                     ^^^^^^
+
+Warning: Argument has type %World, but expected Int
+
+Prims:13:19--13:27
+ 09 | worldImpossible _ = ()
+ 10 |
+ 11 | -- Primitive value on LHS
+ 12 | mkWorldImpossible : Int -> ()
+ 13 | mkWorldImpossible %MkWorld impossible
+                        ^^^^^^^^
+
+Warning: Argument has type Type, but expected Int
+
+Prims:18:16--18:20
+ 14 | mkWorldImpossible _ = ()
+ 15 |
+ 16 | -- Type on LHS
+ 17 | typeImpossible : Int -> ()
+ 18 | typeImpossible Type impossible
+                     ^^^^
 
