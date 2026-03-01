@@ -1175,7 +1175,7 @@ identifyUnreachableDefaults fc defs (NDelayed {}) (_ :: cs)
 identifyUnreachableDefaults fc defs (NTCon _ nm _ _) cs
     = do Just allCons <- getCons (gamma defs) nm
            | Nothing => pure empty
-         cs' <- for cs $ rep allCons
+         cs' <- for cs $ unfoldDefault fc allCons
          let (cs'', extraClauseIdxs) = dropRep (concat cs') empty
          let extraClauseIdxs' =
            if (length cs == (length cs'' + 1))
@@ -1188,10 +1188,6 @@ identifyUnreachableDefaults fc defs (NTCon _ nm _ _) cs
              "Marking the following clause indices as unreachable under the current branch of the tree: " ++ (show extraClauseIdxs')
          pure extraClauseIdxs'
   where
-    rep : List DataCon -> CaseAlt vars -> Core (List (CaseAlt vars))
-    rep allCons (DefaultCase sc) = pure $ map (mkAlt fc sc) allCons
-    rep _ c = pure [c]
-
     dropRep : List (CaseAlt vars) -> SortedSet Int -> (List (CaseAlt vars), SortedSet Int)
     dropRep [] extra = ([], extra)
     dropRep (c@(ConCase n t args sc) :: rest) extra

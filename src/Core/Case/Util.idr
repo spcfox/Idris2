@@ -53,3 +53,8 @@ tagIs t (ConCase _ t' _ _) = t == t'
 tagIs t (ConstCase {}) = False
 tagIs t (DelayCase {}) = False
 tagIs t (DefaultCase _) = True
+
+export
+unfoldDefault : FC -> List DataCon -> CaseAlt vars -> Core (List (CaseAlt vars))
+unfoldDefault fc allCons (DefaultCase sc) = pure $ map (mkAlt fc sc) allCons
+unfoldDefault _ _ c = pure [c]

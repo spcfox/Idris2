@@ -155,6 +155,19 @@ altMatch (ConCase n t _ _) (ConCase n' t' _ _) = t == t'
 altMatch (ConstCase c _) (ConstCase c' _) = c == c'
 altMatch _ _ = False
 
+shouldBeNonEmpty : List (CaseAlt vars) -> Core (List (CaseAlt vars))
+shouldBeNonEmpty alts
+    = if isNil alts
+         then pure [DefaultCase (Unmatched "Coverage check")]
+         else pure []
+
+shouldContainDefault : Ref Ctxt Defs => List (CaseAlt vars) -> Core (List (CaseAlt vars))
+shouldContainDefault alts
+    = if any isDefault alts
+         then do log "coverage.missing" 20 "Found default"
+                 pure []
+         else pure [DefaultCase (Unmatched "Coverage check")]
+
 -- Given a type and a list of case alternatives, return the
 -- well-typed alternatives which were *not* in the list
 getMissingAlts : {auto c : Ref Ctxt Defs} ->
@@ -164,34 +177,22 @@ getMissingAlts : {auto c : Ref Ctxt Defs} ->
 -- If it's a primitive other than WorldVal, there's too many to reasonably
 -- check, so require a catch all
 getMissingAlts fc defs (NPrimVal _ $ PrT WorldType) alts
-    = if isNil alts
-         then pure [DefaultCase (Unmatched "Coverage check")]
-         else pure []
+    = shouldBeNonEmpty alts
 getMissingAlts fc defs (NDelayed {}) alts
-    = if isNil alts
-         then pure [DefaultCase (Unmatched "Coverage check")]
-         else pure []
+    = shouldBeNonEmpty alts
 getMissingAlts fc defs (NPrimVal _ c) alts
   = do log "coverage.missing" 50 $ "Looking for missing alts at type " ++ show c
-       if any isDefault alts
-         then do log "coverage.missing" 20 "Found default"
-                 pure []
-         else pure [DefaultCase (Unmatched "Coverage check")]
+       shouldContainDefault alts
 -- Similarly for types
 getMissingAlts fc defs (NType {}) alts
     = do log "coverage.missing" 50 "Looking for missing alts at type Type"
-         if any isDefault alts
-           then do log "coverage.missing" 20 "Found default"
-                   pure []
-           else pure [DefaultCase (Unmatched "Coverage check")]
+         shouldContainDefault alts
 getMissingAlts fc defs (NErased _ (Dotted ty)) alts
     = getMissingAlts fc defs ty alts
 getMissingAlts fc defs (NTCon _ nm _ _) alts
     = do logC "coverage.missing" 50 $ do pure $ "Getting constructors for: " ++ show !(toFullNames nm)
          Just allCons <- getCons (gamma defs) nm
-           | Nothing => if any isDefault alts
-                           then pure []
-                           else pure [DefaultCase (Unmatched "Coverage check")]
+           | Nothing => shouldContainDefault alts
          pure (filter (noneOf alts)
                  (map (mkAlt fc (Unmatched "Coverage check")) allCons))
   where
@@ -199,9 +200,7 @@ getMissingAlts fc defs (NTCon _ nm _ _) alts
     noneOf : List (CaseAlt vars) -> CaseAlt vars -> Bool
     noneOf alts c = not $ any (altMatch c) alts
 getMissingAlts _ _ _ alts
-    = if any isDefault alts
-         then pure []
-         else pure [DefaultCase (Unmatched "Coverage check")]
+    = shouldContainDefault alts
 
 -- Mapping of variable to constructor tag already matched for it
 KnownVars : Scope -> Type -> Type
@@ -261,13 +260,9 @@ replaceDefaults fc defs (NErased _ (Dotted ty)) cs
 replaceDefaults fc defs (NTCon _ nm _ _) cs
     = do Just allCons <- getCons (gamma defs) nm
            | Nothing => pure cs
-         cs' <- for cs $ rep allCons
+         cs' <- for cs $ unfoldDefault fc allCons
          pure (dropRep (concat cs'))
   where
-    rep : List DataCon -> CaseAlt vars -> Core (List (CaseAlt vars))
-    rep allCons (DefaultCase sc) = pure $ map (mkAlt fc sc) allCons
-    rep _ c = pure [c]
-
     dropRep : List (CaseAlt vars) -> List (CaseAlt vars)
     dropRep [] = []
     dropRep (c@(ConCase n t args sc) :: rest)
