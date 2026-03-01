@@ -1,0 +1,5 @@
+. ../../../testutils.sh
+
+# expect a coverage error
+check Issue2648min.idr
+check Issue2648.idr

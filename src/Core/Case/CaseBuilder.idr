@@ -1172,8 +1172,10 @@ identifyUnreachableDefaults fc defs (NDelayed {}) (_ :: cs)
            log "compile.casetree.clauses" 25 $
              "Marking the following clause indices as unreachable under the current branch of the tree: " ++ (show extraClauseIdxs)
          pure extraClauseIdxs
-identifyUnreachableDefaults fc defs nfty cs
-    = do cs' <- traverse rep cs
+identifyUnreachableDefaults fc defs (NTCon _ nm _ _) cs
+    = do Just allCons <- getCons (gamma defs) nm
+           | Nothing => pure empty
+         cs' <- for cs $ rep allCons
          let (cs'', extraClauseIdxs) = dropRep (concat cs') empty
          let extraClauseIdxs' =
            if (length cs == (length cs'' + 1))
@@ -1186,11 +1188,9 @@ identifyUnreachableDefaults fc defs nfty cs
              "Marking the following clause indices as unreachable under the current branch of the tree: " ++ (show extraClauseIdxs')
          pure extraClauseIdxs'
   where
-    rep : CaseAlt vars -> Core (List (CaseAlt vars))
-    rep (DefaultCase sc)
-        = do allCons <- getCons defs nfty
-             pure (map (mkAlt fc sc) allCons)
-    rep c = pure [c]
+    rep : List DataCon -> CaseAlt vars -> Core (List (CaseAlt vars))
+    rep allCons (DefaultCase sc) = pure $ map (mkAlt fc sc) allCons
+    rep _ c = pure [c]
 
     dropRep : List (CaseAlt vars) -> SortedSet Int -> (List (CaseAlt vars), SortedSet Int)
     dropRep [] extra = ([], extra)
@@ -1204,6 +1204,7 @@ identifyUnreachableDefaults fc defs nfty cs
     dropRep (c :: rest) extra
         = let (rest', extra') = dropRep rest extra
           in  (c :: rest', extra')
+identifyUnreachableDefaults _ _ _ _ = pure empty
 
 ||| Find unreachable default paths through the tree for each clause.
 ||| This is accomplished by expanding default clases into all concrete constructions

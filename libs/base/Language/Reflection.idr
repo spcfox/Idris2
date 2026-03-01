@@ -92,7 +92,7 @@ data Elab : Type -> Type where
      -- Get the type of a local variable
      GetLocalType : Name -> Elab TTImp
      -- Get the constructors of a data type. The name must be fully resolved.
-     GetCons : Name -> Elab (List Name)
+     GetCons : Name -> Elab (List Name) -- TODO: return Maybe
      -- Get all function definition names referred in a definition. The name must be fully resolved.
      GetReferredFns : Name -> Elab (List Name)
      -- Get the name of the current and outer functions, if it is applicable
@@ -195,7 +195,7 @@ interface Monad m => Elaboration m where
   getLocalType : Name -> m TTImp
 
   ||| Get the constructors of a fully qualified data type name
-  getCons : Name -> m (List Name)
+  getCons : Name -> m (List Name) -- TODO: return Maybe
 
   ||| Get all the name of function definitions that a given definition refers to (transitively)
   getReferredFns : Name -> m (List Name)

@@ -16,23 +16,19 @@ record DataCon where
 ||| Given a normalised type, get all the possible constructors for that
 ||| type family, with their type, name, tag, and arity.
 export
-getCons : Defs -> NF vars -> Core (List DataCon)
-getCons defs (NTCon _ tn _ _)
-    = case !(lookupDefExact tn (gamma defs)) of
-           Just (TCon _ _ _ _ _ cons _) =>
-                do cs' <- traverse addTy (fromMaybe [] cons)
-                   pure (catMaybes cs')
-           _ => throw (InternalError "Called `getCons` on something that is not a Type constructor")
+getCons : Ref Ctxt Defs => Context -> Name -> Core (Maybe (List DataCon))
+getCons gam tn
+    = case !(lookupDefExact tn gam) of
+           Just (TCon _ _ _ _ _ cons _) => traverseOpt (traverse addTy) cons
+           _ => throw $ InternalError $ "Called `getCons` on non-type constructor: " ++ show !(toFullNames tn)
   where
-    addTy : Name -> Core (Maybe DataCon)
+    addTy : Name -> Core DataCon
     addTy cn
-        = do Just gdef <- lookupCtxtExact cn (gamma defs)
-                  | _ => pure Nothing
+        = do Just gdef <- lookupCtxtExact cn gam
+                  | Nothing => throw (UndefinedName emptyFC cn)
              case (gdef.definition, gdef.type) of
-                  (DCon t arity _, ty) =>
-                        pure . Just $ MkDataCon cn t arity
-                  _ => pure Nothing
-getCons defs _ = pure []
+                  (DCon t arity _, ty) => pure $ MkDataCon cn t arity
+                  _ => throw $ InternalError $ "Called `addTy` on non-data constructor: " ++ show !(toFullNames cn)
 
 emptyRHS : FC -> CaseTree vars -> CaseTree vars
 emptyRHS fc (Case idx el sc alts) = Case idx el sc (map emptyRHSalt alts)

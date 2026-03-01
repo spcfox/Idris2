@@ -1,0 +1,56 @@
+1/1: Building Issue2648min (Issue2648min.idr)
+Error: boom is not covering.
+
+Issue2648min:4:1--4:12
+ 1 | foo : (b ** (b = False)) -> Void
+ 2 | foo (True ** Refl) impossible
+ 3 |
+ 4 | boom : Void
+     ^^^^^^^^^^^
+
+Calls non covering function Main.foo
+Error: foo is not covering.
+
+Issue2648min:1:1--1:33
+ 1 | foo : (b ** (b = False)) -> Void
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Missing cases:
+    foo (_ ** _)
+
+1/1: Building Issue2648 (Issue2648.idr)
+Error: aVoid is not covering.
+
+Issue2648:10:1--10:13
+ 06 |
+ 07 | notTwo : Even 2 -> Void
+ 08 | notTwo (MkEven (S (S Z)) (Z ** Refl)) impossible
+ 09 |
+ 10 | aVoid : Void
+      ^^^^^^^^^^^^
+
+Calls non covering function Main.notTwo
+Error: notTwo is not covering.
+
+Issue2648:7:1--7:24
+ 3 |
+ 4 | two : Even 2
+ 5 | two = MkEven 2 (1 ** Refl)
+ 6 |
+ 7 | notTwo : Even 2 -> Void
+     ^^^^^^^^^^^^^^^^^^^^^^^
+
+Missing cases:
+    notTwo (MkEven 2 (_ ** _))
+
+Error: trivial is not covering.
+
+Issue2648:13:1--13:12
+ 09 |
+ 10 | aVoid : Void
+ 11 | aVoid = notTwo two
+ 12 |
+ 13 | trivial : a
+      ^^^^^^^^^^^
+
+Calls non covering function Main.aVoid

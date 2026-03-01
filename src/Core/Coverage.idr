@@ -167,6 +167,10 @@ getMissingAlts fc defs (NPrimVal _ $ PrT WorldType) alts
     = if isNil alts
          then pure [DefaultCase (Unmatched "Coverage check")]
          else pure []
+getMissingAlts fc defs (NDelayed {}) alts
+    = if isNil alts
+         then pure [DefaultCase (Unmatched "Coverage check")]
+         else pure []
 getMissingAlts fc defs (NPrimVal _ c) alts
   = do log "coverage.missing" 50 $ "Looking for missing alts at type " ++ show c
        if any isDefault alts
@@ -180,16 +184,24 @@ getMissingAlts fc defs (NType {}) alts
            then do log "coverage.missing" 20 "Found default"
                    pure []
            else pure [DefaultCase (Unmatched "Coverage check")]
-getMissingAlts fc defs nfty alts
-    = do log "coverage.missing" 50 $ "Getting constructors for: " ++ show nfty
-         logNF "coverage.missing" 20 "Getting constructors for" (mkEnv fc _) nfty
-         allCons <- getCons defs nfty
+getMissingAlts fc defs (NErased _ (Dotted ty)) alts
+    = getMissingAlts fc defs ty alts
+getMissingAlts fc defs (NTCon _ nm _ _) alts
+    = do logC "coverage.missing" 50 $ do pure $ "Getting constructors for: " ++ show !(toFullNames nm)
+         Just allCons <- getCons (gamma defs) nm
+           | Nothing => if any isDefault alts
+                           then pure []
+                           else pure [DefaultCase (Unmatched "Coverage check")]
          pure (filter (noneOf alts)
                  (map (mkAlt fc (Unmatched "Coverage check")) allCons))
   where
     -- Return whether the alternative c matches none of the given cases in alts
     noneOf : List (CaseAlt vars) -> CaseAlt vars -> Bool
     noneOf alts c = not $ any (altMatch c) alts
+getMissingAlts _ _ _ alts
+    = if any isDefault alts
+         then pure []
+         else pure [DefaultCase (Unmatched "Coverage check")]
 
 -- Mapping of variable to constructor tag already matched for it
 KnownVars : Scope -> Type -> Type
@@ -243,15 +255,18 @@ replaceDefaults : {auto c : Ref Ctxt Defs} ->
 -- all case there
 replaceDefaults fc defs (NPrimVal {}) cs = pure cs
 replaceDefaults fc defs (NType {}) cs = pure cs
-replaceDefaults fc defs nfty cs
-    = do cs' <- traverse rep cs
+replaceDefaults fc defs (NDelayed {}) cs = pure cs
+replaceDefaults fc defs (NErased _ (Dotted ty)) cs
+    = replaceDefaults fc defs ty cs
+replaceDefaults fc defs (NTCon _ nm _ _) cs
+    = do Just allCons <- getCons (gamma defs) nm
+           | Nothing => pure cs
+         cs' <- for cs $ rep allCons
          pure (dropRep (concat cs'))
   where
-    rep : CaseAlt vars -> Core (List (CaseAlt vars))
-    rep (DefaultCase sc)
-        = do allCons <- getCons defs nfty
-             pure (map (mkAlt fc sc) allCons)
-    rep c = pure [c]
+    rep : List DataCon -> CaseAlt vars -> Core (List (CaseAlt vars))
+    rep allCons (DefaultCase sc) = pure $ map (mkAlt fc sc) allCons
+    rep _ c = pure [c]
 
     dropRep : List (CaseAlt vars) -> List (CaseAlt vars)
     dropRep [] = []
@@ -260,6 +275,7 @@ replaceDefaults fc defs nfty cs
           -- we've just removed it
         = c :: dropRep (filter (not . tagIs t) rest)
     dropRep (c :: rest) = c :: dropRep rest
+replaceDefaults _ _ _ cs = pure cs
 
 -- Traverse a case tree and refine the arguments while matching, so that
 -- when we reach a leaf we know what patterns were used to get there,
