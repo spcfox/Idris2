@@ -6,6 +6,7 @@ import Core.Env
 import Core.Primitives
 import Core.Value
 
+import Data.List.Quantifiers
 import Data.Vect
 
 import Libraries.Data.WithDefault
@@ -84,6 +85,27 @@ record TermWithEnv (free : Scope) where
     locEnv : LocalEnv free varsEnv
     term : Term $ Scope.addInner free varsEnv
 
+logEnv : {vars : _} ->
+         {auto c : Ref Ctxt Defs} ->
+         LogTopic ->
+         Nat -> String -> Env Term vars -> Core ()
+logEnv s n msg env
+    = when !(logging s n) $
+        do logString s.topic n msg
+           dumpEnv env
+  where
+    dumpEnv : {vs : Scope} -> Env Term vs -> Core ()
+    dumpEnv [] = pure ()
+    dumpEnv {vs = x :: _} (Let _ c val ty :: bs)
+        = do logTerm s n (msg ++ ": let " ++ show x) val
+             logTerm s n (msg ++ ":" ++ show c ++ " " ++ show x) ty
+             dumpEnv bs
+    dumpEnv {vs = x :: _} (b :: bs)
+        = do logTerm s n (msg ++ ":" ++ show (multiplicity b) ++ " " ++
+                          show (piInfo b) ++ " " ++
+                          show x) (binderType b)
+             dumpEnv bs
+
 parameters (defs : Defs) (topopts : EvalOpts)
   mutual
     eval : {auto c : Ref Ctxt Defs} ->
@@ -91,7 +113,8 @@ parameters (defs : Defs) (topopts : EvalOpts)
            Env Term free -> LocalEnv free vars ->
            Term (vars ++ free) -> Stack free -> Core (NF free)
     eval env locs (Local fc mrig idx prf) stk
-        = do log "eval" 50 $ "Evaluating local \{show idx}"
+        = do log "eval" 50 $ "Evaluating local \{show !(toFullNames $ nameAt prf)} [\{show idx}]"
+             log "eval" 50 "Local environment size \{show $ length vars}"
              evalLocal env fc mrig idx prf stk locs
     eval env locs (Ref fc nt fn) stk
         = do logC "eval" 50 $ do pure "Evaluating Ref \{show !(toFullNames fn)}"
@@ -225,7 +248,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
         = applyToStack env' nf stk
 
     evalLocal : {auto c : Ref Ctxt Defs} ->
-                {free : _} ->
+                {free, vars : _} ->
                 Env Term free ->
                 FC -> Maybe Bool ->
                 (idx : Nat) -> (0 p : IsVar nm idx (vars ++ free)) ->
@@ -235,16 +258,18 @@ parameters (defs : Defs) (topopts : EvalOpts)
     -- If it's one of the free variables, we are done unless the free
     -- variable maps to a let-binding
     evalLocal env fc mrig idx prf stk []
-        = if not (holesOnly topopts || argHolesOnly topopts)
-             -- if we know it's not a let, no point in even running `getBinder`
-             && fromMaybe True mrig
-             then
-               case getBinder prf env of
-                    Let _ _ val _ => eval env LocalEnv.empty val stk
-                    _ => pure $ NApp fc (NLocal mrig idx prf) stk
-             else pure $ NApp fc (NLocal mrig idx prf) stk
-    evalLocal env fc mrig Z First stk (x :: locs)
-        = evalLocClosure env fc mrig stk x
+        = do log "eval.local" 50 $ "Evaluating local \{show !(toFullNames $ nameAt prf)} [\{show idx}] in empty local environment"
+             if not (holesOnly topopts || argHolesOnly topopts)
+                -- if we know it's not a let, no point in even running `getBinder`
+                && fromMaybe True mrig
+                then
+                  case getBinder prf env of
+                       Let _ _ val _ => eval env LocalEnv.empty val stk
+                       _ => pure $ NApp fc (NLocal mrig idx prf) stk
+                else pure $ NApp fc (NLocal mrig idx prf) stk
+    evalLocal env fc mrig Z prf@First stk (x :: locs)
+        = do log "eval.local" 50 $ "Evaluating local \{show !(toFullNames $ nameAt prf)} in non-empty local environment"
+             evalLocClosure env fc mrig stk x
     evalLocal {vars = x :: xs} {free}
               env fc mrig (S idx) (Later p) stk (_ :: locs)
         = evalLocal {vars = xs} env fc mrig idx p stk locs

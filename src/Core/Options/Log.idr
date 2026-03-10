@@ -131,6 +131,7 @@ knownTopics = [
     ("eval.ref", Just "Evaluating refs (unavailable by default, edit Core.Normalise.Eval & recompile)"),
     ("eval.stuck", Nothing),
     ("eval.stuck.outofscope", Nothing),
+    ("eval.local", Nothing),
     ("eval", Nothing),
     ("ide-mode.completion", Just "Autocompletion requests"),
     ("ide-mode.hole", Just "Displaying hole contexts"),
