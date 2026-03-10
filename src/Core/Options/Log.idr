@@ -132,6 +132,7 @@ knownTopics = [
     ("eval.stuck", Nothing),
     ("eval.stuck.outofscope", Nothing),
     ("eval.local", Nothing),
+    ("eval.closure", Nothing),
     ("eval", Nothing),
     ("ide-mode.completion", Just "Autocompletion requests"),
     ("ide-mode.hole", Just "Displaying hole contexts"),

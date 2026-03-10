@@ -243,9 +243,11 @@ parameters (defs : Defs) (topopts : EvalOpts)
                      Closure free ->
                      Core (NF free)
     evalLocClosure env fc mrig stk (MkClosure opts locs' env' tm')
-        = evalWithOpts defs opts env' locs' tm' stk
+        = do logTerm "eval.closure" 50 "Evaluating closure from Term" tm'
+             evalWithOpts defs opts env' locs' tm' stk
     evalLocClosure {free} env fc mrig stk (MkNFClosure opts env' nf)
-        = applyToStack env' nf stk
+        = do log "eval.closure" 50 "evaluating closure from NF: \{show nf}"
+             applyToStack env' nf stk
 
     evalLocal : {auto c : Ref Ctxt Defs} ->
                 {free, vars : _} ->
