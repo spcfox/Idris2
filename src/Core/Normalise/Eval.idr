@@ -55,6 +55,22 @@ export
 toClosure : EvalOpts -> Env Term outer -> Term outer -> Closure outer
 toClosure opts env tm = MkClosure opts LocalEnv.empty env tm
 
+mkClosure : {vars : _} ->
+            EvalOpts ->
+            LocalEnv free vars -> Env Term free ->
+            Term (vars ++ free) -> Closure free
+mkClosure opts locs env tm@(Local _ _ idx prf)
+    = fromMaybe (MkClosure opts locs env tm) (getLocal idx prf locs)
+  where
+    getLocal : {vars : _} ->
+               (idx : Nat) -> (0 p : IsVar nm idx (vars ++ free)) ->
+               LocalEnv free vars ->
+               Maybe (Closure free)
+    getLocal idx prf [] = Nothing
+    getLocal Z First (x :: locs) = Just x
+    getLocal (S idx) (Later p) (_ :: locs) = getLocal idx p locs
+mkClosure opts locs env tm = MkClosure opts locs env tm
+
 updateLimit : NameType -> Name -> EvalOpts -> Core (Maybe EvalOpts)
 updateLimit Func n opts
     = pure $ if isNil (reduceLimit opts)
@@ -102,18 +118,18 @@ parameters (defs : Defs) (topopts : EvalOpts)
         -- a closure and calling APPLY.
         closeArgs : List (Term (Scope.addInner free vars)) -> List (Closure free)
         closeArgs [] = []
-        closeArgs (t :: ts) = MkClosure topopts locs env t :: closeArgs ts
+        closeArgs (t :: ts) = mkClosure topopts locs env t :: closeArgs ts
     eval env locs (Bind fc x (Lam _ r _ ty) scope) (thunk :: stk)
         = eval env (snd thunk :: locs) scope stk
     eval env locs (Bind fc x b@(Let _ r val ty) scope) stk
         = if (holesOnly topopts || argHolesOnly topopts) && not (tcInline topopts)
-             then do let b' = map (MkClosure topopts locs env) b
+             then do let b' = map (mkClosure topopts locs env) b
                      pure $ NBind fc x b'
                         (\defs', arg => evalWithOpts defs' topopts
                                                 env (arg :: locs) scope stk)
-             else eval env (MkClosure topopts locs env val :: locs) scope stk
+             else eval env (mkClosure topopts locs env val :: locs) scope stk
     eval env locs (Bind fc x b scope) stk
-        = do let b' = map (MkClosure topopts locs env) b
+        = do let b' = map (mkClosure topopts locs env) b
              pure $ NBind fc x b'
                       (\defs', arg => evalWithOpts defs' topopts
                                               env (arg :: locs) scope stk)
@@ -121,18 +137,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
         = case strategy topopts of
                CBV => do arg' <- eval env locs arg []
                          eval env locs fn ((fc, MkNFClosure topopts env arg') :: stk)
-               CBN => do let arg' = fromMaybe (MkClosure topopts locs env arg) $ case arg of
-                                      Local _ _ idx prf => getLocal idx prf locs
-                                      _ => Nothing
-                         eval env locs fn ((fc, arg') :: stk)
-      where
-        getLocal : {vars : _} ->
-                   (idx : Nat) -> (0 p : IsVar nm idx (vars ++ free)) ->
-                   LocalEnv free vars ->
-                   Maybe (Closure free)
-        getLocal idx prf [] = Nothing
-        getLocal Z First (x :: locs) = Just x
-        getLocal (S idx) (Later p) (_ :: locs) = getLocal idx p locs
+               CBN => eval env locs fn ((fc, mkClosure topopts locs env arg) :: stk)
     eval env locs (As fc s n tm) stk
         = if removeAs topopts
              then eval env locs tm stk
@@ -143,8 +148,8 @@ parameters (defs : Defs) (topopts : EvalOpts)
         = do ty' <- eval env locs ty stk
              pure (NDelayed fc r ty')
     eval env locs (TDelay fc r ty tm) stk
-        = pure (NDelay fc r (MkClosure topopts locs env ty)
-                            (MkClosure topopts locs env tm))
+        = pure (NDelay fc r (mkClosure topopts locs env ty)
+                            (mkClosure topopts locs env tm))
     eval env locs (TForce fc r tm) stk
         = do tm' <- eval env locs tm []
              case tm' of
