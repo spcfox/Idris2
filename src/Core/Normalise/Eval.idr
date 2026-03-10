@@ -151,7 +151,19 @@ parameters (defs : Defs) (topopts : EvalOpts)
              case strategy topopts of
                   CBV => do arg' <- eval env locs arg []
                             eval env locs fn ((fc, MkNFClosure topopts env arg') :: stk)
-                  CBN => eval env locs fn ((fc, MkClosure topopts locs env arg) :: stk)
+                  CBN => do logTerm "eval" 50 "Evaluating app \{show !(toFullNames fn)}" arg
+                            let arg' = fromMaybe (MkClosure topopts locs env arg) $ case arg of
+                                          Local _ _ idx prf => getLocal idx prf locs
+                                          _ => Nothing
+                            eval env locs fn ((fc, arg') :: stk)
+      where
+        getLocal : {vars : _} ->
+                   (idx : Nat) -> (0 p : IsVar nm idx (vars ++ free)) ->
+                   LocalEnv free vars ->
+                   Maybe (Closure free)
+        getLocal idx prf [] = Nothing
+        getLocal Z First (x :: locs) = Just x
+        getLocal (S idx) (Later p) (_ :: locs) = getLocal idx p locs
     eval env locs (As fc s n tm) stk
         = do log "eval" 50 $ "Evaluating as \{show !(toFullNames n)}"
              if removeAs topopts
