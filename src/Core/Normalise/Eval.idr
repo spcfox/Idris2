@@ -91,11 +91,14 @@ parameters (defs : Defs) (topopts : EvalOpts)
            Env Term free -> LocalEnv free vars ->
            Term (vars ++ free) -> Stack free -> Core (NF free)
     eval env locs (Local fc mrig idx prf) stk
-        = evalLocal env fc mrig idx prf stk locs
+        = do log "eval" 50 $ "Evaluating local \{show idx}"
+             evalLocal env fc mrig idx prf stk locs
     eval env locs (Ref fc nt fn) stk
-        = evalRef env False fc nt fn stk (NApp fc (NRef nt fn) stk)
+        = do logC "eval" 50 $ do pure "Evaluating Ref \{show !(toFullNames fn)}"
+             evalRef env False fc nt fn stk (NApp fc (NRef nt fn) stk)
     eval {vars} {free} env locs (Meta fc name idx args) stk
-        = evalMeta env fc name idx (closeArgs args) stk
+        = do logC "eval" 50 $ do pure "Evaluating Meta \{show !(toFullNames name)}"
+             evalMeta env fc name idx (closeArgs args) stk
       where
         -- Yes, it's just a map, but specialising it by hand since we
         -- use this a *lot* and it saves the run time overhead of making
@@ -104,46 +107,59 @@ parameters (defs : Defs) (topopts : EvalOpts)
         closeArgs [] = []
         closeArgs (t :: ts) = MkClosure topopts locs env t :: closeArgs ts
     eval env locs (Bind fc x (Lam _ r _ ty) scope) (thunk :: stk)
-        = eval env (snd thunk :: locs) scope stk
+        = do log "eval" 50 $ "Evaluating lambda"
+             eval env (snd thunk :: locs) scope stk
     eval env locs (Bind fc x b@(Let _ r val ty) scope) stk
-        = if (holesOnly topopts || argHolesOnly topopts) && not (tcInline topopts)
-             then do let b' = map (MkClosure topopts locs env) b
-                     pure $ NBind fc x b'
-                        (\defs', arg => evalWithOpts defs' topopts
-                                                env (arg :: locs) scope stk)
-             else eval env (MkClosure topopts locs env val :: locs) scope stk
+        = do log "eval" 50 $ "Evaluating let"
+             if (holesOnly topopts || argHolesOnly topopts) && not (tcInline topopts)
+                then do let b' = map (MkClosure topopts locs env) b
+                        pure $ NBind fc x b'
+                           (\defs', arg => evalWithOpts defs' topopts
+                                                   env (arg :: locs) scope stk)
+                else eval env (MkClosure topopts locs env val :: locs) scope stk
     eval env locs (Bind fc x b scope) stk
-        = do let b' = map (MkClosure topopts locs env) b
+        = do log "eval" 50 $ "Evaluating bind"
+             let b' = map (MkClosure topopts locs env) b
              pure $ NBind fc x b'
                       (\defs', arg => evalWithOpts defs' topopts
                                               env (arg :: locs) scope stk)
     eval env locs (App fc fn arg) stk
-        = case strategy topopts of
-               CBV => do arg' <- eval env locs arg []
-                         eval env locs fn ((fc, MkNFClosure topopts env arg') :: stk)
-               CBN => eval env locs fn ((fc, MkClosure topopts locs env arg) :: stk)
+        = do log "eval" 50 $ "Evaluating app \{show !(toFullNames fn)}"
+             case strategy topopts of
+                  CBV => do arg' <- eval env locs arg []
+                            eval env locs fn ((fc, MkNFClosure topopts env arg') :: stk)
+                  CBN => eval env locs fn ((fc, MkClosure topopts locs env arg) :: stk)
     eval env locs (As fc s n tm) stk
-        = if removeAs topopts
-             then eval env locs tm stk
-             else do n' <- eval env locs n stk
-                     tm' <- eval env locs tm stk
-                     pure (NAs fc s n' tm')
+        = do log "eval" 50 $ "Evaluating as \{show !(toFullNames n)}"
+             if removeAs topopts
+                then eval env locs tm stk
+                else do n' <- eval env locs n stk
+                        tm' <- eval env locs tm stk
+                        pure (NAs fc s n' tm')
     eval env locs (TDelayed fc r ty) stk
-        = do ty' <- eval env locs ty stk
+        = do log "eval" 50 $ "Evaluating delayed"
+             ty' <- eval env locs ty stk
              pure (NDelayed fc r ty')
     eval env locs (TDelay fc r ty tm) stk
-        = pure (NDelay fc r (MkClosure topopts locs env ty)
-                            (MkClosure topopts locs env tm))
+        = do log "eval" 50 $ "Evaluating delay"
+             pure (NDelay fc r (MkClosure topopts locs env ty)
+                               (MkClosure topopts locs env tm))
     eval env locs (TForce fc r tm) stk
-        = do tm' <- eval env locs tm []
+        = do log "eval" 50 $ "Evaluating force"
+             tm' <- eval env locs tm []
              case tm' of
                   NDelay fc r _ arg =>
                       eval env (arg :: locs) (Local {name = UN (Basic "fvar")} fc Nothing _ First) stk
                   _ => pure (NForce fc r tm' stk)
-    eval env locs (PrimVal fc c) stk = pure $ NPrimVal fc c
+    eval env locs (PrimVal fc c) stk
+      = do log "eval" 50 $ "Evaluating primval"
+           pure $ NPrimVal fc c
     eval env locs (Erased fc a) stk
-      = NErased fc <$> traverse @{%search} @{CORE} (\ t => eval env locs t stk) a
-    eval env locs (TType fc u) stk = pure $ NType fc u
+      = do log "eval" 50 $ "Evaluating erased"
+           NErased fc <$> traverse @{%search} @{CORE} (\ t => eval env locs t stk) a
+    eval env locs (TType fc u) stk
+      = do log "eval" 50 $ "Evaluating type"
+           pure $ NType fc u
 
     -- Apply an evaluated argument (perhaps cached from an earlier evaluation)
     -- to a stack
