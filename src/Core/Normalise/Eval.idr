@@ -163,7 +163,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
                       (\defs', arg => evalWithOpts defs' topopts
                                               env (arg :: locs) scope stk)
     eval env locs (App fc fn arg) stk
-        = do log "eval" 50 $ "Evaluating app \{show !(toFullNames fn)}"
+        = do logTerm "eval" 50 "Evaluating app \{show !(toFullNames fn)} to" arg
              case strategy topopts of
                   CBV => do arg' <- eval env locs arg []
                             eval env locs fn ((fc, MkNFClosure topopts env arg') :: stk)
@@ -262,7 +262,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
         = do logTerm "eval.closure" 50 "Evaluating closure from Term" tm'
              evalWithOpts defs opts env' locs' tm' stk
     evalLocClosure {free} env fc mrig stk (MkNFClosure opts env' nf)
-        = do log "eval.closure" 50 "evaluating closure from NF: \{show nf}"
+        = do logC "eval.closure" 50 $ do pure "Evaluating closure from NF: \{show !(toFullNames nf)}"
              applyToStack env' nf stk
 
     evalLocal : {auto c : Ref Ctxt Defs} ->
