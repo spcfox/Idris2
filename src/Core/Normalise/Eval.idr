@@ -100,10 +100,54 @@ record TermWithEnv (free : Scope) where
     locEnv : LocalEnv free varsEnv
     term : Term $ Scope.addInner free varsEnv
 
-parameters (defs : Defs) (topopts : EvalOpts)
+updateLocal : EvalOpts -> Env Term free ->
+              (idx : Nat) -> (0 p : IsVar nm idx (vars ++ free)) ->
+              LocalEnv free vars -> NF free ->
+              LocalEnv free vars
+updateLocal opts env Z First (x :: locs) nf
+    = MkNFClosure opts env nf :: locs
+updateLocal opts env (S idx) (Later p) (x :: locs) nf
+    = x :: updateLocal opts env idx p locs nf
+updateLocal _ _ _ _ locs nf = locs
+
+-- TODO note the list of closures is stored RTL
+getCaseBound : List (Closure free) ->
+               (args : Scope) ->
+               LocalEnv free more ->
+               Maybe (LocalEnv free (Scope.addInner more args))
+getCaseBound []            []        loc = Just loc
+getCaseBound []            (_ :: _)  loc = Nothing -- mismatched arg length
+getCaseBound (arg :: args) []        loc = Nothing -- mismatched arg length
+getCaseBound (arg :: args) (n :: ns) loc = (arg ::) <$> getCaseBound args ns loc
+
+-- Take arguments from the stack, as long as there's enough.
+-- Returns the arguments, and the rest of the stack
+takeFromStack : (arity : Nat) -> Stack free ->
+                Maybe (Vect arity (Closure free), Stack free)
+takeFromStack arity stk = takeStk arity stk []
+  where
+    takeStk : (remain : Nat) -> Stack free ->
+              Vect got (Closure free) ->
+              Maybe (Vect (got + remain) (Closure free), Stack free)
+    takeStk {got} Z stk acc = Just (rewrite plusZeroRightNeutral got in
+                                reverse acc, stk)
+    takeStk (S k) [] acc = Nothing
+    takeStk {got} (S k) (arg :: stk) acc
+       = rewrite sym (plusSuccRightSucc got k) in
+                 takeStk k stk (snd arg :: acc)
+
+argsFromStack : (args : List Name) ->
+                Stack free ->
+                Maybe (LocalEnv free args, Stack free)
+argsFromStack [] stk = Just ([], stk)
+argsFromStack (n :: ns) [] = Nothing
+argsFromStack (n :: ns) (arg :: args)
+     = do (loc', stk') <- argsFromStack ns args
+          pure (snd arg :: loc', stk')
+
+parameters {auto c : Ref Ctxt Defs} (defs : Defs) (topopts : EvalOpts)
   mutual
-    eval : {auto c : Ref Ctxt Defs} ->
-           {free, vars : _} ->
+    eval : {free, vars : _} ->
            Env Term free -> LocalEnv free vars ->
            Term (vars ++ free) -> Stack free -> Core (NF free)
     eval env locs (Local fc mrig idx prf) stk
@@ -164,8 +208,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
     -- Apply an evaluated argument (perhaps cached from an earlier evaluation)
     -- to a stack
     export
-    applyToStack : {auto c : Ref Ctxt Defs} ->
-                   {free : _} ->
+    applyToStack : {free : _} ->
                    Env Term free ->
                    NF free -> Stack free -> Core (NF free)
     applyToStack env (NBind fc _ (Lam {}) sc) (arg :: stk)
@@ -212,20 +255,17 @@ parameters (defs : Defs) (topopts : EvalOpts)
       = NErased fc <$> traverse @{%search} @{CORE} (\ t => applyToStack env t stk) a
     applyToStack env nf@(NType fc _) _ = pure nf
 
-    evalLocClosure : {auto c : Ref Ctxt Defs} ->
-                     {free : _} ->
+    evalLocClosure : {free : _} ->
                      Env Term free ->
-                     FC -> Maybe Bool ->
                      Stack free ->
                      Closure free ->
                      Core (NF free)
-    evalLocClosure env fc mrig stk (MkClosure opts locs' env' tm')
+    evalLocClosure env stk (MkClosure opts locs' env' tm')
         = evalWithOpts defs opts env' locs' tm' stk
-    evalLocClosure {free} env fc mrig stk (MkNFClosure opts env' nf)
+    evalLocClosure env stk (MkNFClosure opts env' nf)
         = applyToStack env' nf stk
 
-    evalLocal : {auto c : Ref Ctxt Defs} ->
-                {free : _} ->
+    evalLocal : {free : _} ->
                 Env Term free ->
                 FC -> Maybe Bool ->
                 (idx : Nat) -> (0 p : IsVar nm idx (vars ++ free)) ->
@@ -244,22 +284,11 @@ parameters (defs : Defs) (topopts : EvalOpts)
                     _ => pure $ NApp fc (NLocal mrig idx prf) stk
              else pure $ NApp fc (NLocal mrig idx prf) stk
     evalLocal env fc mrig Z First stk (x :: locs)
-        = evalLocClosure env fc mrig stk x
+        = evalLocClosure env stk x
     evalLocal env fc mrig (S idx) (Later p) stk (_ :: locs)
         = evalLocal env fc mrig idx p stk locs
 
-    updateLocal : EvalOpts -> Env Term free ->
-                  (idx : Nat) -> (0 p : IsVar nm idx (vars ++ free)) ->
-                  LocalEnv free vars -> NF free ->
-                  LocalEnv free vars
-    updateLocal opts env Z First (x :: locs) nf
-        = MkNFClosure opts env nf :: locs
-    updateLocal opts env (S idx) (Later p) (x :: locs) nf
-        = x :: updateLocal opts env idx p locs nf
-    updateLocal _ _ _ _ locs nf = locs
-
-    evalMeta : {auto c : Ref Ctxt Defs} ->
-               {free : _} ->
+    evalMeta : {free : _} ->
                Env Term free ->
                FC -> Name -> Int -> List (Closure free) ->
                Stack free -> Core (NF free)
@@ -273,8 +302,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
     -- The commented out logging here might still be useful one day, but
     -- evalRef is used a lot and even these tiny checks turn out to be
     -- worth skipping if we can
-    evalRef : {auto c : Ref Ctxt Defs} ->
-              {free : _} ->
+    evalRef : {free : _} ->
               Env Term free ->
               (isMeta : Bool) ->
               FC -> NameType -> Name -> Stack free -> (def : Lazy (NF free)) ->
@@ -323,19 +351,8 @@ parameters (defs : Defs) (topopts : EvalOpts)
                    pure nf
                 else pure def
 
-    -- TODO note the list of closures is stored RTL
-    getCaseBound : List (Closure free) ->
-                   (args : Scope) ->
-                   LocalEnv free more ->
-                   Maybe (LocalEnv free (Scope.addInner more args))
-    getCaseBound []            []        loc = Just loc
-    getCaseBound []            (_ :: _)  loc = Nothing -- mismatched arg length
-    getCaseBound (arg :: args) []        loc = Nothing -- mismatched arg length
-    getCaseBound (arg :: args) (n :: ns) loc = (arg ::) <$> getCaseBound args ns loc
-
     -- Returns the case term from the matched pattern with the LocalEnv (arguments from constructor pattern ConCase)
-    evalConAlt : {auto c : Ref Ctxt Defs} ->
-                 {more, free : _} ->
+    evalConAlt : {more, free : _} ->
                  Env Term free ->
                  LocalEnv free more -> EvalOpts -> FC ->
                  Stack free ->
@@ -348,8 +365,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
                    | Nothing => pure GotStuck
               evalTree env bound opts fc stk sc
 
-    tryAlt : {auto c : Ref Ctxt Defs} ->
-             {free, more : _} ->
+    tryAlt : {free, more : _} ->
              Env Term free ->
              LocalEnv free more -> EvalOpts -> FC ->
              Stack free -> NF free -> CaseAlt more ->
@@ -412,8 +428,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
         concrete _ = False
     tryAlt _ _ _ _ _ _ _ = pure GotStuck
 
-    findAlt : {auto c : Ref Ctxt Defs} ->
-              {args, free : _} ->
+    findAlt : {args, free : _} ->
               Env Term free ->
               LocalEnv free args -> EvalOpts -> FC ->
               Stack free -> NF free -> List (CaseAlt args) ->
@@ -432,8 +447,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
                        pure GotStuck
               pure res
 
-    evalTree : {auto c : Ref Ctxt Defs} ->
-               {args, free : _} -> Env Term free -> LocalEnv free args ->
+    evalTree : {args, free : _} -> Env Term free -> LocalEnv free args ->
                EvalOpts -> FC ->
                Stack free -> CaseTree args ->
                Core (CaseResult (TermWithEnv free))
@@ -450,33 +464,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
           = pure (Result $ MkTermEnv loc $ embed tm)
     evalTree env loc opts fc stk _ = pure GotStuck
 
-    -- Take arguments from the stack, as long as there's enough.
-    -- Returns the arguments, and the rest of the stack
-    takeFromStack : (arity : Nat) -> Stack free ->
-                    Maybe (Vect arity (Closure free), Stack free)
-    takeFromStack arity stk = takeStk arity stk []
-      where
-        takeStk : (remain : Nat) -> Stack free ->
-                  Vect got (Closure free) ->
-                  Maybe (Vect (got + remain) (Closure free), Stack free)
-        takeStk {got} Z stk acc = Just (rewrite plusZeroRightNeutral got in
-                                    reverse acc, stk)
-        takeStk (S k) [] acc = Nothing
-        takeStk {got} (S k) (arg :: stk) acc
-           = rewrite sym (plusSuccRightSucc got k) in
-                     takeStk k stk (snd arg :: acc)
-
-    argsFromStack : (args : List Name) ->
-                    Stack free ->
-                    Maybe (LocalEnv free args, Stack free)
-    argsFromStack [] stk = Just ([], stk)
-    argsFromStack (n :: ns) [] = Nothing
-    argsFromStack (n :: ns) (arg :: args)
-         = do (loc', stk') <- argsFromStack ns args
-              pure (snd arg :: loc', stk')
-
-    evalOp : {auto c : Ref Ctxt Defs} ->
-             {arity, free : _} ->
+    evalOp : {arity, free : _} ->
              (Vect arity (NF free) -> Maybe (NF free)) ->
              Stack free -> (def : Lazy (NF free)) ->
              Core (NF free)
@@ -495,8 +483,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
         evalAll [] = pure []
         evalAll (c :: cs) = pure $ !(evalClosure defs c) :: !(evalAll cs)
 
-    evalDef : {auto c : Ref Ctxt Defs} ->
-              {free : _} ->
+    evalDef : {free : _} ->
               Env Term free -> EvalOpts ->
               (isMeta : Bool) -> FC ->
               RigCount -> Def -> List DefFlag ->
