@@ -52,8 +52,27 @@ evalArg : {auto c : Ref Ctxt Defs} -> {free : _} -> Defs -> Closure free -> Core
 evalArg defs c = evalClosure defs c
 
 export
-toClosure : EvalOpts -> Env Term outer -> Term outer -> Closure outer
-toClosure opts env tm = MkClosure opts LocalEnv.empty env tm
+toClosure' : EvalOpts -> Env Term outer -> Term outer -> Closure' outer
+toClosure' opts env tm = MkClosure opts LocalEnv.empty env tm
+
+export
+mkClosure : {vars : _} -> EvalOpts -> LocalEnv free vars ->
+            Env Term free -> Term (Scope.addInner free vars) -> Core (Closure free)
+mkClosure opts locs env tm
+  = map MkMClosure $ coreLift $ newIORef (MkClosure opts locs env tm)
+
+export
+mkNFClosure : EvalOpts -> Env Term free -> NF free -> Core (Closure free)
+mkNFClosure opts env nf
+  = map MkMClosure $ coreLift $ newIORef (MkNFClosure opts env nf)
+
+export
+readClosure : Closure free -> Core (Closure' free)
+readClosure (MkMClosure ref) = coreLift $ readIORef ref
+
+export
+toClosure : EvalOpts -> Env Term outer -> Term outer -> Core (Closure outer)
+toClosure opts env tm = mkClosure opts LocalEnv.empty env tm
 
 updateLimit : NameType -> Name -> EvalOpts -> Core (Maybe EvalOpts)
 updateLimit Func n opts
@@ -95,33 +114,32 @@ parameters (defs : Defs) (topopts : EvalOpts)
     eval env locs (Ref fc nt fn) stk
         = evalRef env False fc nt fn stk (NApp fc (NRef nt fn) stk)
     eval {vars} {free} env locs (Meta fc name idx args) stk
-        = evalMeta env fc name idx (closeArgs args) stk
+        = evalMeta env fc name idx !(closeArgs args) stk
       where
         -- Yes, it's just a map, but specialising it by hand since we
         -- use this a *lot* and it saves the run time overhead of making
         -- a closure and calling APPLY.
-        closeArgs : List (Term (Scope.addInner free vars)) -> List (Closure free)
-        closeArgs [] = []
-        closeArgs (t :: ts) = MkClosure topopts locs env t :: closeArgs ts
+        closeArgs : List (Term (Scope.addInner free vars)) -> Core (List (Closure free))
+        closeArgs = traverse $ mkClosure topopts locs env
     eval env locs (Bind fc x (Lam _ r _ ty) scope) (thunk :: stk)
         = eval env (snd thunk :: locs) scope stk
     eval env locs (Bind fc x b@(Let _ r val ty) scope) stk
         = if (holesOnly topopts || argHolesOnly topopts) && not (tcInline topopts)
-             then do let b' = map (MkClosure topopts locs env) b
+             then do b' <- traverse (mkClosure topopts locs env) b
                      pure $ NBind fc x b'
                         (\defs', arg => evalWithOpts defs' topopts
                                                 env (arg :: locs) scope stk)
-             else eval env (MkClosure topopts locs env val :: locs) scope stk
+             else eval env (!(mkClosure topopts locs env val) :: locs) scope stk
     eval env locs (Bind fc x b scope) stk
-        = do let b' = map (MkClosure topopts locs env) b
+        = do b' <- traverse (mkClosure topopts locs env) b
              pure $ NBind fc x b'
                       (\defs', arg => evalWithOpts defs' topopts
                                               env (arg :: locs) scope stk)
     eval env locs (App fc fn arg) stk
         = case strategy topopts of
                CBV => do arg' <- eval env locs arg []
-                         eval env locs fn ((fc, MkNFClosure topopts env arg') :: stk)
-               CBN => eval env locs fn ((fc, MkClosure topopts locs env arg) :: stk)
+                         eval env locs fn ((fc, !(mkNFClosure topopts env arg')) :: stk)
+               CBN => eval env locs fn ((fc, !(mkClosure topopts locs env arg)) :: stk)
     eval env locs (As fc s n tm) stk
         = if removeAs topopts
              then eval env locs tm stk
@@ -132,8 +150,8 @@ parameters (defs : Defs) (topopts : EvalOpts)
         = do ty' <- eval env locs ty stk
              pure (NDelayed fc r ty')
     eval env locs (TDelay fc r ty tm) stk
-        = pure (NDelay fc r (MkClosure topopts locs env ty)
-                            (MkClosure topopts locs env tm))
+        = pure (NDelay fc r !(mkClosure topopts locs env ty)
+                            !(mkClosure topopts locs env tm))
     eval env locs (TForce fc r tm) stk
         = do tm' <- eval env locs tm []
              case tm' of
@@ -203,10 +221,19 @@ parameters (defs : Defs) (topopts : EvalOpts)
                      Stack free ->
                      Closure free ->
                      Core (NF free)
-    evalLocClosure env fc mrig stk (MkClosure opts locs' env' tm')
-        = evalWithOpts defs opts env' locs' tm' stk
-    evalLocClosure {free} env fc mrig stk (MkNFClosure opts env' nf)
-        = applyToStack env' nf stk
+    evalLocClosure env fc mrig stk (MkMClosure ref) = coreLift (readIORef ref) >>= \case
+      MkClosure opts locs' env' tm' => do
+        logTerm "eval.closure" 50 "Evaluating local closure" tm'
+        res <- evalWithOpts defs opts env' locs' tm' stk
+        coreLift $ writeIORef ref $ Evaluated res
+        pure res
+      MkNFClosure opts env' nf => do
+        res <- applyToStack env' nf stk
+        coreLift $ writeIORef ref $ Evaluated res
+        pure res
+      Evaluated nf => do
+        logC "eval.closure" 50 $ do pure "Local closure already evaluated: \{show !(toFullNames nf)}"
+        pure nf
 
     evalLocal : {auto c : Ref Ctxt Defs} ->
                 {free : _} ->
@@ -236,12 +263,12 @@ parameters (defs : Defs) (topopts : EvalOpts)
     updateLocal : EvalOpts -> Env Term free ->
                   (idx : Nat) -> (0 p : IsVar nm idx (vars ++ free)) ->
                   LocalEnv free vars -> NF free ->
-                  LocalEnv free vars
+                  Core (LocalEnv free vars)
     updateLocal opts env Z First (x :: locs) nf
-        = MkNFClosure opts env nf :: locs
+        = pure $ !(mkNFClosure opts env nf) :: locs
     updateLocal opts env (S idx) (Later p) (x :: locs) nf
-        = x :: updateLocal opts env idx p locs nf
-    updateLocal _ _ _ _ locs nf = locs
+        = pure $ x :: !(updateLocal opts env idx p locs nf)
+    updateLocal _ _ _ _ locs nf = pure locs
 
     evalMeta : {auto c : Ref Ctxt Defs} ->
                {free : _} ->
@@ -369,7 +396,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
            env loc opts fc stk (NBind pfc x (Pi fc' r e aty) scty) (ConCase (UN (Basic "->")) tag [s,t] sc)
        = evalConAlt {more} env loc opts fc stk [s,t]
                   [aty,
-                   MkNFClosure opts env (NBind pfc x (Lam fc' r e aty) scty)]
+                   !(mkNFClosure opts env (NBind pfc x (Lam fc' r e aty) scty))]
                   sc
     tryAlt {more}
            env loc opts fc stk (NBind pfc x (Pi fc' r e aty) scty) (ConCase nm tag args sc)
@@ -429,7 +456,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
            logC "eval.casetree" 5 $ do
              xval <- toFullNames xval
              pure "Evaluated \{show name} to \{show xval}"
-           let loc' = updateLocal opts env idx (embedIsVar x) loc xval
+           loc' <- updateLocal opts env idx (embedIsVar x) loc xval
            findAlt env loc' opts fc stk xval alts
     evalTree env loc opts fc stk (STerm _ tm)
           = pure (Result $ MkTermEnv loc $ embed tm)
@@ -544,19 +571,39 @@ parameters (defs : Defs) (topopts : EvalOpts)
 -- write it explicitly, but it does appear after the parameters in 'eval'!
 evalWithOpts {vars} defs opts = eval {vars} defs opts
 
-evalClosure defs (MkClosure opts locs env tm)
-    = eval defs opts env locs tm []
-evalClosure defs (MkNFClosure opts env nf)
-    = applyToStack defs opts env nf []
+evalClosure defs (MkMClosure ref)
+  = coreLift (readIORef ref) >>= \case
+      MkClosure opts locs env tm => do
+        logTerm "eval.closure" 50 "Evaluating closure" tm
+        res <- eval defs opts env locs tm []
+        coreLift $ writeIORef ref $ Evaluated res
+        pure res
+      MkNFClosure opts env nf => do
+        res <- applyToStack defs opts env nf []
+        coreLift $ writeIORef ref $ Evaluated res
+        pure res
+      Evaluated nf => do
+        logC "eval.closure" 50 $ do pure "Closure already evaluated: \{show !(toFullNames nf)}"
+        pure nf
 
 export
 evalClosureWithOpts : {auto c : Ref Ctxt Defs} ->
                       {free : _} ->
                       Defs -> EvalOpts -> Closure free -> Core (NF free)
-evalClosureWithOpts defs opts (MkClosure _ locs env tm)
-    = eval defs opts env locs tm []
-evalClosureWithOpts defs opts (MkNFClosure _ env nf)
-    = applyToStack defs opts env nf []
+evalClosureWithOpts defs opts (MkMClosure ref)
+  = coreLift (readIORef ref) >>= \case
+      MkClosure _ locs env tm => do
+        logTerm "eval.closure" 50 "Evaluating closure" tm
+        res <- eval defs opts env locs tm []
+        coreLift $ writeIORef ref $ Evaluated res
+        pure res
+      MkNFClosure _ env nf => do
+        res <- applyToStack defs opts env nf []
+        coreLift $ writeIORef ref $ Evaluated res
+        pure res
+      Evaluated nf => do
+        logC "eval.closure" 50 $ do pure "Closure already evaluated: \{show !(toFullNames nf)}"
+        pure nf
 
 export
 nf : {auto c : Ref Ctxt Defs} ->
