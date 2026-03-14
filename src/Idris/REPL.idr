@@ -835,7 +835,7 @@ loadMainFile f
 replEval : {auto c : Ref Ctxt Defs} ->
            {vs : _} ->
            REPLEval -> Defs -> Env Term vs -> Term vs -> Core (Term vs)
-replEval NormaliseAll = normaliseOpts ({ strategy := CBV } withAll)
+replEval NormaliseAll = normaliseOpts withAllCBV
 replEval _ = normalise
 
 ||| Produce the normal form of a PTerm, along with its inferred type

@@ -91,6 +91,10 @@ export
 cbv : EvalOpts
 cbv = { strategy := CBV } defaultOpts
 
+export
+withAllCBV : EvalOpts
+withAllCBV = { strategy := CBV } withAll
+
 mutual
   -- TODO swap arguments and type as `Scope -> Scoped`
   public export
