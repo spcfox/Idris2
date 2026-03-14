@@ -98,7 +98,7 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
     scriptRet : Reflect a => a -> Core (NF vars)
     scriptRet tm
         = do defs <- get Ctxt
-             nfOpts withAll defs env !(reflect fc defs False env tm)
+             nfOpts ({ strategy := CBNeed } withAll) defs env !(reflect fc defs False env tm)
 
     reifyFC : Defs -> Closure vars -> Core FC
     reifyFC defs mbfc = pure $ case !(evalClosure defs mbfc >>= reify defs) of
@@ -157,14 +157,14 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
         = do act <- elabScript rig fc nest env !(evalClosure defs act) exp
              act <- quote defs env act
              fm <- evalClosure defs fm
-             applyToStack defs withHoles env fm [(getLoc act, !(toClosure withAll env act))]
+             applyToStack defs withHoles env fm [(getLoc act, !(toClosure ({ strategy := CBNeed } withAll) env act))]
     elabCon defs "Ap" [_,_,actF,actX]
         -- actF : Elab (A -> B)
         -- actX : Elab A
         = do actF <- elabScript rig fc nest env !(evalClosure defs actF) exp
              actX <- elabScript rig fc nest env !(evalClosure defs actX) exp
              actX <- quote defs env actX
-             applyToStack defs withHoles env actF [(getLoc actX, !(toClosure withAll env actX))]
+             applyToStack defs withHoles env actF [(getLoc actX, !(toClosure ({ strategy := CBNeed } withAll) env actX))]
     elabCon defs "Bind" [_,_,act,k]
         -- act : Elab A
         -- k : A -> Elab B
@@ -176,7 +176,7 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
                                 !(evalClosure defs act) exp
              act <- quote defs env act
              k <- evalClosure defs k
-             r <- applyToStack defs withAll env k [(getLoc act, !(toClosure withAll env act))]
+             r <- applyToStack defs ({ strategy := CBNeed } withAll) env k [(getLoc act, !(toClosure ({ strategy := CBNeed } withAll) env act))]
              elabScript rig fc nest env r exp
     elabCon defs "Fail" [_, mbfc, msg]
         = do msg' <- evalClosure defs msg
@@ -244,7 +244,7 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
              NBind bfc x (Lam fc' c p ty) sc <- evalClosure defs scope
                    | _ => failWith defs "Not a lambda"
              n <- genVarName "x"
-             sc' <- sc defs !(toClosure withAll env (Ref bfc Bound n))
+             sc' <- sc defs !(toClosure ({ strategy := CBNeed } withAll) env (Ref bfc Bound n))
              qsc <- quote empty env sc'
              let lamsc = refToLocal n x qsc
              qp <- quotePi p
@@ -262,7 +262,7 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
          quotePi (DefImplicit t) = failWith defs "Can't add default lambda"
     elabCon defs "Goal" []
         = do let Just gty = exp
-                 | Nothing => nfOpts withAll defs env
+                 | Nothing => nfOpts ({ strategy := CBNeed } withAll) defs env
                                      !(reflect fc defs False env (the (Maybe RawImp) Nothing))
              ty <- getTerm gty
              scriptRet (Just $ map rawName $ !(unelabUniqueBinders env ty))
@@ -372,7 +372,7 @@ checkRunElab rig elabinfo nest env fc reqExt script exp
                            check rig elabinfo nest env script (Just (gnf env elabtt))
          solveConstraints inTerm Normal
          defs <- get Ctxt -- checking might have resolved some holes
-         nfstm <- nfOpts withAll defs env stm
+         nfstm <- nfOpts ({ strategy := CBNeed } withAll) defs env stm
          ntm <- logTime 2 "Elaboration script" $
                   elabScript rig fc nest env nfstm $ Just (gnf env expected)
          defs <- get Ctxt -- might have updated as part of the script
