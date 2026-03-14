@@ -139,7 +139,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
         = case strategy topopts of
                CBV => do arg' <- eval env locs arg []
                          eval env locs fn ((fc, !(mkNFClosure topopts env arg')) :: stk)
-               CBN => eval env locs fn ((fc, !(mkClosure topopts locs env arg)) :: stk)
+               _ => eval env locs fn ((fc, !(mkClosure topopts locs env arg)) :: stk)
     eval env locs (As fc s n tm) stk
         = if removeAs topopts
              then eval env locs tm stk
@@ -225,11 +225,13 @@ parameters (defs : Defs) (topopts : EvalOpts)
       MkClosure opts locs' env' tm' => do
         logTerm "eval.closure" 50 "Evaluating local closure" tm'
         res <- evalWithOpts defs opts env' locs' tm' stk
-        coreLift $ writeIORef ref $ Evaluated res
+        when (isCallByNeed opts) $
+          coreLift $ writeIORef ref $ Evaluated res
         pure res
       MkNFClosure opts env' nf => do
         res <- applyToStack env' nf stk
-        coreLift $ writeIORef ref $ Evaluated res
+        when (isCallByNeed opts) $
+          coreLift $ writeIORef ref $ Evaluated res
         pure res
       Evaluated nf => do
         logC "eval.closure" 50 $ do pure "Local closure already evaluated: \{show !(toFullNames nf)}"
@@ -576,11 +578,13 @@ evalClosure defs (MkMClosure ref)
       MkClosure opts locs env tm => do
         logTerm "eval.closure" 50 "Evaluating closure" tm
         res <- eval defs opts env locs tm []
-        coreLift $ writeIORef ref $ Evaluated res
+        when (isCallByNeed opts) $
+          coreLift $ writeIORef ref $ Evaluated res
         pure res
       MkNFClosure opts env nf => do
         res <- applyToStack defs opts env nf []
-        coreLift $ writeIORef ref $ Evaluated res
+        when (isCallByNeed opts) $
+          coreLift $ writeIORef ref $ Evaluated res
         pure res
       Evaluated nf => do
         logC "eval.closure" 50 $ do pure "Closure already evaluated: \{show !(toFullNames nf)}"
@@ -595,11 +599,13 @@ evalClosureWithOpts defs opts (MkMClosure ref)
       MkClosure _ locs env tm => do
         logTerm "eval.closure" 50 "Evaluating closure" tm
         res <- eval defs opts env locs tm []
-        coreLift $ writeIORef ref $ Evaluated res
+        when (isCallByNeed opts) $
+          coreLift $ writeIORef ref $ Evaluated res
         pure res
       MkNFClosure _ env nf => do
         res <- applyToStack defs opts env nf []
-        coreLift $ writeIORef ref $ Evaluated res
+        when (isCallByNeed opts) $
+          coreLift $ writeIORef ref $ Evaluated res
         pure res
       Evaluated nf => do
         logC "eval.closure" 50 $ do pure "Closure already evaluated: \{show !(toFullNames nf)}"
