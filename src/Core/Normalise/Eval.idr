@@ -221,21 +221,9 @@ parameters (defs : Defs) (topopts : EvalOpts)
                      Stack free ->
                      Closure free ->
                      Core (NF free)
-    evalLocClosure env fc mrig stk (MkMClosure ref) = coreLift (readIORef ref) >>= \case
-      MkClosure opts locs' env' tm' => do
-        logTerm "eval.closure" 50 "Evaluating local closure" tm'
-        res <- evalWithOpts defs opts env' locs' tm' stk
-        when (isCallByNeed opts) $
-          coreLift $ writeIORef ref $ Evaluated res
-        pure res
-      MkNFClosure opts env' nf => do
-        res <- applyToStack env' nf stk
-        when (isCallByNeed opts) $
-          coreLift $ writeIORef ref $ Evaluated res
-        pure res
-      Evaluated nf => do
-        logC "eval.closure" 50 $ do pure "Local closure already evaluated: \{show !(toFullNames nf)}"
-        pure nf
+    evalLocClosure env fc mrig stk clos
+        = do nf <- evalClosure defs clos
+             applyToStack env nf stk
 
     evalLocal : {auto c : Ref Ctxt Defs} ->
                 {free : _} ->
@@ -578,6 +566,8 @@ evalClosure defs (MkMClosure ref)
       MkClosure opts locs env tm => do
         logTerm "eval.closure" 50 "Evaluating closure" tm
         res <- eval defs opts env locs tm []
+        logTerm "eval.closure" 50 "Evaluated" tm
+        logC "eval.closure" 50 $ do pure "... to: \{show !(toFullNames res)}"
         when (isCallByNeed opts) $
           coreLift $ writeIORef ref $ Evaluated res
         pure res
