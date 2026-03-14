@@ -552,15 +552,6 @@ evalClosure defs (MkNFClosure opts env nf)
     = applyToStack defs opts env nf []
 
 export
-evalClosureWithOpts : {auto c : Ref Ctxt Defs} ->
-                      {free : _} ->
-                      Defs -> EvalOpts -> Closure free -> Core (NF free)
-evalClosureWithOpts defs opts (MkClosure _ locs env tm)
-    = eval defs opts env locs tm []
-evalClosureWithOpts defs opts (MkNFClosure _ env nf)
-    = applyToStack defs opts env nf []
-
-export
 nf : {auto c : Ref Ctxt Defs} ->
      {vars : _} ->
      Defs -> Env Term vars -> Term vars -> Core (NF vars)
