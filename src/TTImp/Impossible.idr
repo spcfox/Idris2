@@ -37,7 +37,7 @@ match nty (n, i, rty)
     sameRet (NType {}) (NType {}) = pure True
     sameRet nf (NBind fc _ (Pi {}) sc)
         = do defs <- get Ctxt
-             sc' <- sc defs (toClosure defaultOpts Env.empty (Erased fc Placeholder))
+             sc' <- sc defs !(toClosure defaultOpts Env.empty (Erased fc Placeholder))
              sameRet nf sc'
     sameRet _ _ = pure False
 
@@ -85,7 +85,7 @@ mutual
      = do e' <- mkTerm e.val (Just ty)
           defs <- get Ctxt
           processArgs con (App e.fc fn e')
-                      !(sc defs (toClosure defaultOpts Env.empty e'))
+                      !(sc defs !(toClosure defaultOpts Env.empty e'))
                       exps autos named
   processArgs con fn (NBind _ x (Pi _ _ Explicit ty) sc) [] autos named
      = do defs <- get Ctxt
@@ -93,7 +93,7 @@ mutual
             Just ((_, e), named') =>
                do e' <- mkTerm e.val (Just ty)
                   processArgs con (App e.fc fn e')
-                              !(sc defs (toClosure defaultOpts Env.empty e'))
+                              !(sc defs !(toClosure defaultOpts Env.empty e'))
                               [] autos named'
             Nothing => -- Expected an explicit argument, but only implicits left
                        do let False = con
@@ -109,12 +109,12 @@ mutual
             Nothing => do let fc = getLoc fn
                           e' <- nextVar fc
                           processArgs con (App fc fn e')
-                                      !(sc defs (toClosure defaultOpts Env.empty e'))
+                                      !(sc defs !(toClosure defaultOpts Env.empty e'))
                                       exps autos named
             Just ((_, e), named') =>
                do e' <- mkTerm e.val (Just ty)
                   processArgs con (App e.fc fn e')
-                              !(sc defs (toClosure defaultOpts Env.empty e'))
+                              !(sc defs !(toClosure defaultOpts Env.empty e'))
                               exps autos named'
   processArgs con fn (NBind _ x (Pi _ _ AutoImplicit ty) sc) exps autos named
      = do defs <- get Ctxt
@@ -122,7 +122,7 @@ mutual
                (e :: autos') => -- unnamed takes priority
                    do e' <- mkTerm e.val (Just ty)
                       processArgs con (App e.fc fn e')
-                                  !(sc defs (toClosure defaultOpts Env.empty e'))
+                                  !(sc defs !(toClosure defaultOpts Env.empty e'))
                                   exps autos' named
                [] =>
                   case findNamed x named of
@@ -130,12 +130,12 @@ mutual
                         do let fc = getLoc fn
                            e' <- nextVar fc
                            processArgs con (App fc fn e')
-                                       !(sc defs (toClosure defaultOpts Env.empty e'))
+                                       !(sc defs !(toClosure defaultOpts Env.empty e'))
                                        exps [] named
                      Just ((_, e), named') =>
                         do e' <- mkTerm e.val (Just ty)
                            processArgs con (App e.fc fn e')
-                                       !(sc defs (toClosure defaultOpts Env.empty e'))
+                                       !(sc defs !(toClosure defaultOpts Env.empty e'))
                                        exps [] named'
   processArgs _ fn _ [] [] [] = pure fn
   processArgs _ fn _ (x :: _) autos named
