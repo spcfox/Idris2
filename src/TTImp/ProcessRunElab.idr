@@ -35,6 +35,6 @@ processRunElab eopts nest env fc tm
          exp <- appCon fc defs n [unit]
 
          stm <- checkTerm tidx InExpr eopts nest env tm (gnf env exp)
-         nfstm <- nfOpts withAll defs env stm
+         nfstm <- nfOpts ({ strategy := CBNeed } withAll) defs env stm
          ignore $ logTime 2 "Elaboration script" $
            elabScript top fc nest env nfstm Nothing

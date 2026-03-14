@@ -8,7 +8,7 @@ import Data.List.Quantifiers
 %default covering
 
 public export
-data EvalOrder = CBV | CBN
+data EvalOrder = CBV | CBN | CBNeed
 
 public export
 record EvalOpts where
@@ -22,6 +22,12 @@ record EvalOpts where
   reduceLimit : List (Name, Nat) -- reduction limits for given names. If not
                      -- present, no limit
   strategy : EvalOrder
+
+export
+isCallByNeed : EvalOpts -> Bool
+isCallByNeed opts = case opts.strategy of
+  CBNeed => True
+  _ => False
 
 export
 defaultOpts : EvalOpts
@@ -90,6 +96,10 @@ cbn = defaultOpts
 export
 cbv : EvalOpts
 cbv = { strategy := CBV } defaultOpts
+
+export
+cbneed : EvalOpts
+cbneed = { strategy := CBNeed } defaultOpts
 
 mutual
   -- TODO swap arguments and type as `Scope -> Scoped`
