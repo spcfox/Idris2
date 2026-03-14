@@ -255,16 +255,6 @@ parameters {auto c : Ref Ctxt Defs} (defs : Defs) (topopts : EvalOpts)
       = NErased fc <$> traverse @{%search} @{CORE} (\ t => applyToStack env t stk) a
     applyToStack env nf@(NType fc _) _ = pure nf
 
-    evalLocClosure : {free : _} ->
-                     Env Term free ->
-                     Stack free ->
-                     Closure free ->
-                     Core (NF free)
-    evalLocClosure env stk (MkClosure opts locs' env' tm')
-        = evalWithOpts defs opts env' locs' tm' stk
-    evalLocClosure env stk (MkNFClosure opts env' nf)
-        = applyToStack env' nf stk
-
     evalLocal : {free : _} ->
                 Env Term free ->
                 FC -> Maybe Bool ->
@@ -284,7 +274,7 @@ parameters {auto c : Ref Ctxt Defs} (defs : Defs) (topopts : EvalOpts)
                     _ => pure $ NApp fc (NLocal mrig idx prf) stk
              else pure $ NApp fc (NLocal mrig idx prf) stk
     evalLocal env fc mrig Z First stk (x :: locs)
-        = evalLocClosure env stk x
+        = applyToStack env !(evalClosure defs x) stk
     evalLocal env fc mrig (S idx) (Later p) stk (_ :: locs)
         = evalLocal env fc mrig idx p stk locs
 
