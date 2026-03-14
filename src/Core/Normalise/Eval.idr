@@ -221,9 +221,12 @@ parameters (defs : Defs) (topopts : EvalOpts)
                      Stack free ->
                      Closure free ->
                      Core (NF free)
-    evalLocClosure env fc mrig stk clos
-        = do nf <- evalClosure defs clos
-             applyToStack env nf stk
+    evalLocClosure env fc mrig [] clos
+        = evalClosure defs clos
+    evalLocClosure env fc mrig stk (MkMClosure ref) = coreLift (readIORef ref) >>= \case
+      MkClosure opts locs' env' tm' => evalWithOpts defs opts env' locs' tm' stk
+      MkNFClosure opts env' nf => applyToStack env' nf stk
+      Evaluated nf => applyToStack env nf stk
 
     evalLocal : {auto c : Ref Ctxt Defs} ->
                 {free : _} ->
