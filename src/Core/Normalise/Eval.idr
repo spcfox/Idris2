@@ -127,7 +127,10 @@ parameters (defs : Defs) (topopts : EvalOpts)
                      pure $ NBind fc x b'
                         (\defs', arg => evalWithOpts defs' topopts
                                                 env (arg :: locs) scope stk)
-             else eval env (mkClosure topopts locs env val :: locs) scope stk
+             else case strategy topopts of
+                    CBV => do val' <- eval env locs val []
+                              eval env (MkNFClosure topopts env val' :: locs) scope stk
+                    CBN => eval env (mkClosure topopts locs env val :: locs) scope stk
     eval env locs (Bind fc x b scope) stk
         = do let b' = map (mkClosure topopts locs env) b
              pure $ NBind fc x b'
