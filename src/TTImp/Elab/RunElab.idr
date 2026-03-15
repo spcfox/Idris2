@@ -236,17 +236,12 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
              defs <- get Ctxt
              empty <- clearDefs defs
              scriptRet $ map rawName !(unelabUniqueBinders env !(quote empty env tm'))
-    elabCon defs "NormaliseAs" [exp, ttimp]
-        = do exp' <- evalClosure defs exp
-             ttimp' <- evalClosure defs ttimp
-             tidx <- resolveName (UN $ Basic "[elaborator script]")
-             e <- newRef EST (initEState tidx env)
-             (checktm, _) <- runDelays (const True) $
-                     check rig (initElabInfo InExpr) nest env !(reify defs ttimp')
-                           (Just (glueBack defs env exp'))
-             empty <- clearDefs defs
-             res <- scriptRet $ map rawName !(unelabUniqueBinders env !(quote defs env !(nf empty env checktm)))
-             pure res
+    elabCon defs "NormaliseAs" [exp', ttimp]
+        = do act <- elabCon defs "Check" [exp', ttimp]
+             act <- quote defs env act
+             let k = NDCon emptyFC (NS reflectionNS (UN (Basic "Quote"))) 0 2 [(emptyFC, exp')]
+             r <- applyToStack defs ({ strategy := CBNeed } withAll) env k [(getLoc act, !(toClosure ({ strategy := CBNeed } withAll) env act))]
+             elabScript rig fc nest env r exp
     elabCon defs "Lambda" [x, _, scope]
         = do empty <- clearDefs defs
              NBind bfc x (Lam fc' c p ty) sc <- evalClosure defs scope
