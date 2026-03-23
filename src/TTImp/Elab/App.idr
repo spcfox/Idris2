@@ -229,7 +229,7 @@ mutual
                    -- We have to get the normal form eventually anyway, but
                    -- it might be too early to do it now if something is
                    -- blocking it and we're not yet ready to search.
-                   metaty <- catch (quoteOpts (MkQuoteOpts False False (Just 10))
+                   metaty <- catch (quoteOpts (MkQuoteOpts False False (Just 10) False)
                                               defs env aty)
                                    (\err => quote empty env aty)
                    est <- get EST

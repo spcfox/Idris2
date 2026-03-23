@@ -18,6 +18,7 @@ record QuoteOpts where
                   -- That means, stop on encountering a block function or
                   -- local
   sizeLimit : Maybe Nat
+  evalAll : Bool
 
 public export
 interface Quote tm where
@@ -38,11 +39,11 @@ interface Quote tm where
 
     quote defs env tm
         = do q <- newRef QVar 0
-             quoteGen q (MkQuoteOpts True False Nothing) defs env tm
+             quoteGen q (MkQuoteOpts True False Nothing False) defs env tm
 
     quoteLHS defs env tm
         = do q <- newRef QVar 0
-             quoteGen q (MkQuoteOpts True True Nothing) defs env tm
+             quoteGen q (MkQuoteOpts True True Nothing False) defs env tm
 
     quoteOpts opts defs env tm
         = do q <- newRef QVar 0
@@ -62,7 +63,7 @@ mutual
               Env Term free -> Closure free ->
               Core (Term (bound ++ free))
   quoteArg q opts defs bounds env a
-      = quoteGenNF q opts defs bounds env !(evalClosure defs a)
+      = quoteGenNF q opts defs bounds env !(evalClosure {evalAll = opts.evalAll} defs a)
 
   quoteArgWithFC : {auto c : Ref Ctxt Defs} ->
                    {bound, free : _} ->
@@ -133,7 +134,7 @@ mutual
   quotePi q opts defs bounds env Implicit = pure Implicit
   quotePi q opts defs bounds env AutoImplicit = pure AutoImplicit
   quotePi q opts defs bounds env (DefImplicit t)
-      = do t' <- quoteGenNF q opts defs bounds env !(evalClosure defs t)
+      = do t' <- quoteGenNF q opts defs bounds env !(evalClosure {evalAll = opts.evalAll} defs t)
            pure (DefImplicit t')
 
   quoteBinder : {auto c : Ref Ctxt Defs} ->
@@ -142,27 +143,27 @@ mutual
                 Env Term free -> Binder (Closure free) ->
                 Core (Binder (Term (bound ++ free)))
   quoteBinder q opts defs bounds env (Lam fc r p ty)
-      = do ty' <- quoteGenNF q opts defs bounds env !(evalClosure defs ty)
+      = do ty' <- quoteGenNF q opts defs bounds env !(evalClosure {evalAll = opts.evalAll} defs ty)
            p' <- quotePi q opts defs bounds env p
            pure (Lam fc r p' ty')
   quoteBinder q opts defs bounds env (Let fc r val ty)
-      = do val' <- quoteGenNF q opts defs bounds env !(evalClosure defs val)
-           ty' <- quoteGenNF q opts defs bounds env !(evalClosure defs ty)
+      = do val' <- quoteGenNF q opts defs bounds env !(evalClosure {evalAll = opts.evalAll} defs val)
+           ty' <- quoteGenNF q opts defs bounds env !(evalClosure {evalAll = opts.evalAll} defs ty)
            pure (Let fc r val' ty')
   quoteBinder q opts defs bounds env (Pi fc r p ty)
-      = do ty' <- quoteGenNF q opts defs bounds env !(evalClosure defs ty)
+      = do ty' <- quoteGenNF q opts defs bounds env !(evalClosure {evalAll = opts.evalAll} defs ty)
            p' <- quotePi q opts defs bounds env p
            pure (Pi fc r p' ty')
   quoteBinder q opts defs bounds env (PVar fc r p ty)
-      = do ty' <- quoteGenNF q opts defs bounds env !(evalClosure defs ty)
+      = do ty' <- quoteGenNF q opts defs bounds env !(evalClosure {evalAll = opts.evalAll} defs ty)
            p' <- quotePi q opts defs bounds env p
            pure (PVar fc r p' ty')
   quoteBinder q opts defs bounds env (PLet fc r val ty)
-      = do val' <- quoteGenNF q opts defs bounds env !(evalClosure defs val)
-           ty' <- quoteGenNF q opts defs bounds env !(evalClosure defs ty)
+      = do val' <- quoteGenNF q opts defs bounds env !(evalClosure {evalAll = opts.evalAll} defs val)
+           ty' <- quoteGenNF q opts defs bounds env !(evalClosure {evalAll = opts.evalAll} defs ty)
            pure (PLet fc r val' ty')
   quoteBinder q opts defs bounds env (PVTy fc r ty)
-      = do ty' <- quoteGenNF q opts defs bounds env !(evalClosure defs ty)
+      = do ty' <- quoteGenNF q opts defs bounds env !(evalClosure {evalAll = opts.evalAll} defs ty)
            pure (PVTy fc r ty')
 
   quoteGenNF : {auto c : Ref Ctxt Defs} ->
@@ -206,9 +207,9 @@ mutual
       = do argQ <- quoteGenNF q opts defs bound env arg
            pure (TDelayed fc r argQ)
   quoteGenNF q opts defs bound env (NDelay fc r ty arg)
-      = do argNF <- evalClosure defs (toHolesOnly arg)
+      = do argNF <- evalClosure {evalAll = opts.evalAll} defs (toHolesOnly arg)
            argQ <- quoteGenNF q opts defs bound env argNF
-           tyNF <- evalClosure defs (toHolesOnly ty)
+           tyNF <- evalClosure {evalAll = opts.evalAll} defs (toHolesOnly ty)
            tyQ <- quoteGenNF q opts defs bound env tyNF
            pure (TDelay fc r tyQ argQ)
     where
@@ -220,7 +221,7 @@ mutual
       = do args' <- quoteArgsWithFC q opts defs bound env args
            case arg of
                 NDelay fc _ _ arg =>
-                   do argNF <- evalClosure defs arg
+                   do argNF <- evalClosure {evalAll = opts.evalAll} defs arg
                       pure $ applyStackWithFC !(quoteGenNF q opts defs bound env argNF) args'
                 _ => do arg' <- quoteGenNF q opts defs bound env arg
                         pure $ applyStackWithFC (TForce fc r arg') args'
@@ -239,7 +240,7 @@ Quote Term where
 
 export
 Quote Closure where
-  quoteGen q opts defs env c = quoteGen q opts defs env !(evalClosure defs c)
+  quoteGen q opts defs env c = quoteGen q opts defs env !(evalClosure {evalAll = opts.evalAll} defs c)
 
 quoteWithPiGen : {auto _ : Ref Ctxt Defs} ->
                  {bound, vars : _} ->
@@ -267,4 +268,4 @@ quoteWithPi : {auto c : Ref Ctxt Defs} ->
               Defs -> Env Term vars -> NF vars -> Core (Term vars)
 quoteWithPi defs env tm
     = do q <- newRef QVar 0
-         quoteWithPiGen q (MkQuoteOpts True False Nothing) defs None env tm
+         quoteWithPiGen q (MkQuoteOpts True False Nothing False) defs None env tm

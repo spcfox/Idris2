@@ -866,7 +866,7 @@ mutual
                                           (NApp loc (NMeta mname mref margs) $ map (EmptyFC,) margs')
                                           tmnf
                      let qopts = MkQuoteOpts False False
-                                             (Just defs.options.elabDirectives.nfThreshold)
+                                             (Just defs.options.elabDirectives.nfThreshold) False
                      tm <- catch (quoteOpts qopts empty env tmnf)
                                  (\err => quote defs env tmnf)
                      Just tm <- occursCheck loc env mode mname tm

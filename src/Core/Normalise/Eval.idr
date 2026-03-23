@@ -566,9 +566,11 @@ parameters (defs : Defs) (topopts : EvalOpts)
 evalWithOpts {vars} defs opts = eval {vars} defs opts
 
 evalClosure defs (MkMClosure clos ref)
-    = if evalAll
+    = if evalAll || (closureOptions clos).evalAll
          then coreLift (readIORef ref) >>= \case
-                Just nf => do case clos of
+                Just nf => do log "eval.closure" 50 "opts evalAll: \{show (closureOptions clos).evalAll}"
+                              log "eval.closure" 50 "arg evalAll: \{show evalAll}"
+                              case clos of
                                 MkClosure opts locs env' tm' =>
                                   do logTerm "eval.closure" 10 "Find cached normal form for closure" tm'
                                 _ => pure ()
@@ -581,7 +583,9 @@ evalClosure defs (MkMClosure clos ref)
   where
     evalClosure' : Closure' free -> Core (NF free)
     evalClosure' (MkClosure opts locs env tm) = do
-      logTerm "eval.closure" 50 "Evaluating closure evalAll: \{show opts.evalAll}" tm
+      log "eval.closure" 50 "opts evalAll: \{show opts.evalAll}"
+      log "eval.closure" 50 "arg evalAll: \{show evalAll}"
+      logTerm "eval.closure" 50 "Evaluating closure" tm
       res <- eval defs ({evalAll $= (evalAll ||)} opts) env locs tm []
       logTerm "eval.closure" 50 "Evaluated" tm
       logC "eval.closure" 50 $ do pure "... to: \{show !(toFullNames res)}"

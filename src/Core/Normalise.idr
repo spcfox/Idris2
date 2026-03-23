@@ -78,7 +78,7 @@ tryNormaliseSizeLimit : {auto c : Ref Ctxt Defs} ->
                      Env Term free -> Term free -> Core (Term free)
 tryNormaliseSizeLimit defs limit env tm
     = do tm' <- nf defs env tm
-         quoteOpts (MkQuoteOpts False False (Just limit)) defs env tm'
+         quoteOpts (MkQuoteOpts False False (Just limit) False) defs env tm'
 
 -- The size limit here is the depth of stuck applications. If it gets past
 -- that size, return the original
@@ -89,7 +89,7 @@ normaliseSizeLimit : {auto c : Ref Ctxt Defs} ->
                      Env Term free -> Term free -> Core (Term free)
 normaliseSizeLimit defs limit env tm
     = catch (do tm' <- nf defs env tm
-                quoteOpts (MkQuoteOpts False False (Just limit)) defs env tm')
+                quoteOpts (MkQuoteOpts False False (Just limit) False) defs env tm')
             (\err => pure tm)
 
 export
