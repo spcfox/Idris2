@@ -184,7 +184,7 @@ mutual
                          Just Z => throw (InternalError "Size limit exceeded")
                          Just (S k) => pure ({ sizeLimit := Just k } opts)
            args' <- if patterns opts && not (topLevel opts) && isRef f
-                       then do empty <- clearDefs defs
+                       then do empty <- if opts.evalAll then pure defs else clearDefs defs
                                quoteArgsWithFC q opts' empty bound env args
                                else quoteArgsWithFC q ({ topLevel := False } opts')
                                                     defs bound env args
