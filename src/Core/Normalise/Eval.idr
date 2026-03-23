@@ -45,7 +45,9 @@ evalWithOpts : {auto c : Ref Ctxt Defs} ->
 
 export
 evalClosure : {auto c : Ref Ctxt Defs} ->
-              {free : _} -> Defs -> Closure free -> Core (NF free)
+              {free : _} ->
+              {default False evalAll : Bool} ->
+              Defs -> Closure free -> Core (NF free)
 
 export
 evalArg : {auto c : Ref Ctxt Defs} -> {free : _} -> Defs -> Closure free -> Core (NF free)
@@ -219,12 +221,12 @@ parameters (defs : Defs) (topopts : EvalOpts)
                      Core (NF free)
     evalLocClosure env fc mrig [] clos
         = do log "eval.closure" 50 "Using cached normal form for local closure"
-             evalClosure defs clos
+             evalClosure {evalAll = topopts.evalAll} defs clos
     evalLocClosure env fc mrig stk (MkMClosure clos ref) = coreLift (readIORef ref) >>= \case
       Just nf => applyToStack env nf stk
       Nothing => case clos of
         MkClosure opts locs env' tm' => do log "eval.closure" 10 $ "Evaluating local closure: " ++ show tm'
-                                           evalWithOpts defs opts env' locs tm' stk
+                                           evalWithOpts defs ({evalAll $= (topopts.evalAll ||)} opts) env' locs tm' stk
         MkNFClosure opts env' nf => applyToStack env' nf stk
 
     evalLocal : {auto c : Ref Ctxt Defs} ->
@@ -497,7 +499,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
         -- No traverse for Vect in Core...
         evalAll : Vect n (Closure free) -> Core (Vect n (NF free))
         evalAll [] = pure []
-        evalAll (c :: cs) = pure $ !(evalClosure defs c) :: !(evalAll cs)
+        evalAll (c :: cs) = pure $ !(evalClosure {evalAll = topopts.evalAll} defs c) :: !(evalAll cs)
 
     evalDef : {auto c : Ref Ctxt Defs} ->
               {free : _} ->
@@ -564,7 +566,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
 evalWithOpts {vars} defs opts = eval {vars} defs opts
 
 evalClosure defs (MkMClosure clos ref)
-    = if evalAll (closureOptions clos)
+    = if evalAll
          then coreLift (readIORef ref) >>= \case
                 Just nf => do case clos of
                                 MkClosure opts locs env' tm' =>
@@ -580,11 +582,11 @@ evalClosure defs (MkMClosure clos ref)
     evalClosure' : Closure' free -> Core (NF free)
     evalClosure' (MkClosure opts locs env tm) = do
       logTerm "eval.closure" 50 "Evaluating closure evalAll: \{show opts.evalAll}" tm
-      res <- eval defs opts env locs tm []
+      res <- eval defs ({evalAll $= (evalAll ||)} opts) env locs tm []
       logTerm "eval.closure" 50 "Evaluated" tm
       logC "eval.closure" 50 $ do pure "... to: \{show !(toFullNames res)}"
       pure res
-    evalClosure' (MkNFClosure opts env nf) = applyToStack defs opts env nf []
+    evalClosure' (MkNFClosure opts env nf) = applyToStack defs ({evalAll $= (evalAll ||)} opts) env nf []
 
 export
 nf : {auto c : Ref Ctxt Defs} ->
