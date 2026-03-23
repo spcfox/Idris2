@@ -232,10 +232,17 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
              empty <- clearDefs defs
              nf empty env checktm
     elabCon defs "Quote" [exp, tm]
-        = do tm' <- evalClosure defs tm
+        = do log "elab.script" 10 "quoting term"
+             tm' <- evalClosure defs tm
+             log "elab.script" 10 $ "term to quote: " ++ show tm'
              defs <- get Ctxt
              empty <- clearDefs defs
-             scriptRet $ map rawName !(unelabUniqueBinders env !(quote empty env tm'))
+             log "elab.script" 10 $ "before quoting"
+             qtm <- quote empty env tm'
+             log "elab.script" 10 $ "after quoting: " ++ show qtm
+             ttimp <- unelabUniqueBinders env qtm
+             log "elab.script" 10 $ "unelabbed term: " ++ show ttimp
+             scriptRet $ map rawName ttimp
     elabCon defs "NormaliseAs" [exp', ttimp]
         = do act <- elabCon defs "Check" [exp', ttimp]
              act <- quote defs env act
