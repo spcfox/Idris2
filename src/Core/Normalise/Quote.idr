@@ -206,24 +206,16 @@ mutual
       = do argQ <- quoteGenNF q opts defs bound env arg
            pure (TDelayed fc r argQ)
   quoteGenNF q opts defs bound env (NDelay fc r ty arg)
-      = do toHolesOnly arg
-           argNF <- evalClosure defs arg
+      = do argNF <- evalClosure defs (toHolesOnly arg)
            argQ <- quoteGenNF q opts defs bound env argNF
-           toHolesOnly ty
-           tyNF <- evalClosure defs ty
+           tyNF <- evalClosure defs (toHolesOnly ty)
            tyQ <- quoteGenNF q opts defs bound env tyNF
            pure (TDelay fc r tyQ argQ)
     where
-      toHolesOnly : Closure vs -> Core ()
-      toHolesOnly (MkMClosure ref) = coreLift (readIORef ref) >>= \case
-        (MkClosure opts locs env tm) =>
-          coreLift $ writeIORef ref $ MkClosure ({ holesOnly := True, argHolesOnly := True } opts) locs env tm
-        _ => pure ()
-      -- toHolesOnly (MkClosure opts locs env tm)
-      --     = MkClosure ({ holesOnly := True,
-      --                    argHolesOnly := True } opts)
-      --                 locs env tm
-      -- toHolesOnly c = c
+      toHolesOnly : Closure vs -> Closure vs
+      toHolesOnly (MkMClosure (MkClosure opts locs env tm) ref)
+          = MkMClosure (MkClosure ({ holesOnly := True, argHolesOnly := True } opts) locs env tm) ref
+      toHolesOnly c = c
   quoteGenNF q opts defs bound env (NForce fc r arg args)
       = do args' <- quoteArgsWithFC q opts defs bound env args
            case arg of
