@@ -10,6 +10,12 @@ import Data.List.Quantifiers
 public export
 data EvalOrder = CBV | CBN | CBNeed
 
+export
+Show EvalOrder where
+  show CBV = "Call-By-Value"
+  show CBN = "Call-By-Name"
+  show CBNeed = "Call-By-Need"
+
 public export
 record EvalOpts where
   constructor MkEvalOpts

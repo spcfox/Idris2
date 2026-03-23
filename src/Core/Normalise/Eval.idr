@@ -224,7 +224,8 @@ parameters (defs : Defs) (topopts : EvalOpts)
     evalLocClosure env fc mrig [] clos
         = evalClosure defs clos
     evalLocClosure env fc mrig stk (MkMClosure ref) = coreLift (readIORef ref) >>= \case
-      MkClosure opts locs' env' tm' => evalWithOpts defs opts env' locs' tm' stk
+      MkClosure opts locs' env' tm' => do log "eval.closure" 10 $ "Evaluating local closure: " ++ show tm'
+                                          evalWithOpts defs opts env' locs' tm' stk
       MkNFClosure opts env' nf => applyToStack env' nf stk
       Evaluated nf => applyToStack env nf stk
 
@@ -567,7 +568,7 @@ evalWithOpts {vars} defs opts = eval {vars} defs opts
 evalClosure defs (MkMClosure ref)
   = coreLift (readIORef ref) >>= \case
       MkClosure opts locs env tm => do
-        logTerm "eval.closure" 50 "Evaluating closure" tm
+        logTerm "eval.closure" 50 "Evaluating closure with \{show opts.strategy}" tm
         res <- eval defs opts env locs tm []
         logTerm "eval.closure" 50 "Evaluated" tm
         logC "eval.closure" 50 $ do pure "... to: \{show !(toFullNames res)}"
