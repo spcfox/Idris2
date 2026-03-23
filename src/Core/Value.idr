@@ -8,13 +8,12 @@ import Data.List.Quantifiers
 %default covering
 
 public export
-data EvalOrder = CBV | CBN | CBNeed
+data EvalOrder = CBV | CBN
 
 export
 Show EvalOrder where
   show CBV = "Call-By-Value"
   show CBN = "Call-By-Name"
-  show CBNeed = "Call-By-Need"
 
 public export
 record EvalOpts where
@@ -28,12 +27,6 @@ record EvalOpts where
   reduceLimit : List (Name, Nat) -- reduction limits for given names. If not
                      -- present, no limit
   strategy : EvalOrder
-
-export
-isCallByNeed : EvalOpts -> Bool
-isCallByNeed opts = case opts.strategy of
-  CBNeed => True
-  _ => False
 
 export
 defaultOpts : EvalOpts
@@ -96,16 +89,8 @@ onLHS : EvalOpts
 onLHS = { removeAs := False } defaultOpts
 
 export
-cbn : EvalOpts
-cbn = defaultOpts
-
-export
 cbv : EvalOpts
 cbv = { strategy := CBV } defaultOpts
-
-export
-cbneed : EvalOpts
-cbneed = { strategy := CBNeed } defaultOpts
 
 mutual
   -- TODO swap arguments and type as `Scope -> Scoped`
@@ -121,11 +106,10 @@ mutual
                    Env Term free ->
                    Term (Scope.addInner free vars) -> Closure' free
        MkNFClosure : EvalOpts -> Env Term free -> NF free -> Closure' free
-       Evaluated : NF free -> Closure' free
 
   public export
   data Closure : Scoped where
-    MkMClosure : IORef (Closure' free) -> Closure free
+    MkMClosure : Closure' free -> IORef (Maybe (NF free)) -> Closure free
 
   -- The head of a value: things you can apply arguments to
   public export
@@ -172,6 +156,11 @@ ClosedClosure = Closure []
 public export
 ClosedNF : Type
 ClosedNF = NF []
+
+public export
+closureOptions : Closure' free -> EvalOpts
+closureOptions (MkClosure opts _ _ _) = opts
+closureOptions (MkNFClosure opts _ _) = opts
 
 namespace LocalEnv
   public export

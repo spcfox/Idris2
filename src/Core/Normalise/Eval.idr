@@ -59,16 +59,12 @@ export
 mkClosure : {vars : _} -> EvalOpts -> LocalEnv free vars ->
             Env Term free -> Term (Scope.addInner free vars) -> Core (Closure free)
 mkClosure opts locs env tm
-  = map MkMClosure $ coreLift $ newIORef (MkClosure opts locs env tm)
+  = MkMClosure (MkClosure opts locs env tm) <$> coreLift (newIORef Nothing)
 
 export
 mkNFClosure : EvalOpts -> Env Term free -> NF free -> Core (Closure free)
 mkNFClosure opts env nf
-  = map MkMClosure $ coreLift $ newIORef (MkNFClosure opts env nf)
-
-export
-readClosure : Closure free -> Core (Closure' free)
-readClosure (MkMClosure ref) = coreLift $ readIORef ref
+  = MkMClosure (MkNFClosure opts env nf) <$> coreLift (newIORef Nothing)
 
 export
 toClosure : EvalOpts -> Env Term outer -> Term outer -> Core (Closure outer)
@@ -222,12 +218,14 @@ parameters (defs : Defs) (topopts : EvalOpts)
                      Closure free ->
                      Core (NF free)
     evalLocClosure env fc mrig [] clos
-        = evalClosure defs clos
-    evalLocClosure env fc mrig stk (MkMClosure ref) = coreLift (readIORef ref) >>= \case
-      MkClosure opts locs' env' tm' => do log "eval.closure" 10 $ "Evaluating local closure: " ++ show tm'
-                                          evalWithOpts defs opts env' locs' tm' stk
-      MkNFClosure opts env' nf => applyToStack env' nf stk
-      Evaluated nf => applyToStack env nf stk
+        = do log "eval.closure" 50 "Using cached normal form for local closure"
+             evalClosure defs clos
+    evalLocClosure env fc mrig stk (MkMClosure clos ref) = coreLift (readIORef ref) >>= \case
+      Just nf => applyToStack env nf stk
+      Nothing => case clos of
+        MkClosure opts locs env' tm' => do log "eval.closure" 10 $ "Evaluating local closure: " ++ show tm'
+                                           evalWithOpts defs opts env' locs tm' stk
+        MkNFClosure opts env' nf => applyToStack env' nf stk
 
     evalLocal : {auto c : Ref Ctxt Defs} ->
                 {free : _} ->
@@ -565,45 +563,28 @@ parameters (defs : Defs) (topopts : EvalOpts)
 -- write it explicitly, but it does appear after the parameters in 'eval'!
 evalWithOpts {vars} defs opts = eval {vars} defs opts
 
-evalClosure defs (MkMClosure ref)
-  = coreLift (readIORef ref) >>= \case
-      MkClosure opts locs env tm => do
-        logTerm "eval.closure" 50 "Evaluating closure with \{show opts.strategy}" tm
-        res <- eval defs opts env locs tm []
-        logTerm "eval.closure" 50 "Evaluated" tm
-        logC "eval.closure" 50 $ do pure "... to: \{show !(toFullNames res)}"
-        when (isCallByNeed opts) $
-          coreLift $ writeIORef ref $ Evaluated res
-        pure res
-      MkNFClosure opts env nf => do
-        res <- applyToStack defs opts env nf []
-        when (isCallByNeed opts) $
-          coreLift $ writeIORef ref $ Evaluated res
-        pure res
-      Evaluated nf => do
-        logC "eval.closure" 50 $ do pure "Closure already evaluated: \{show !(toFullNames nf)}"
-        pure nf
-
-export
-evalClosureWithOpts : {auto c : Ref Ctxt Defs} ->
-                      {free : _} ->
-                      Defs -> EvalOpts -> Closure free -> Core (NF free)
-evalClosureWithOpts defs opts (MkMClosure ref)
-  = coreLift (readIORef ref) >>= \case
-      MkClosure _ locs env tm => do
-        logTerm "eval.closure" 50 "Evaluating closure" tm
-        res <- eval defs opts env locs tm []
-        when (isCallByNeed opts) $
-          coreLift $ writeIORef ref $ Evaluated res
-        pure res
-      MkNFClosure _ env nf => do
-        res <- applyToStack defs opts env nf []
-        when (isCallByNeed opts) $
-          coreLift $ writeIORef ref $ Evaluated res
-        pure res
-      Evaluated nf => do
-        logC "eval.closure" 50 $ do pure "Closure already evaluated: \{show !(toFullNames nf)}"
-        pure nf
+evalClosure defs (MkMClosure clos ref)
+    = if evalAll (closureOptions clos)
+         then coreLift (readIORef ref) >>= \case
+                Just nf => do case clos of
+                                MkClosure opts locs env' tm' =>
+                                  do logTerm "eval.closure" 10 "Find cached normal form for closure" tm'
+                                _ => pure ()
+                              log "eval.closure" 50 $ "Using cached normal form for closure: " ++ show nf
+                              pure nf
+                Nothing => do res <- evalClosure' clos
+                              coreLift $ writeIORef ref $ Just res
+                              pure res
+         else evalClosure' clos
+  where
+    evalClosure' : Closure' free -> Core (NF free)
+    evalClosure' (MkClosure opts locs env tm) = do
+      logTerm "eval.closure" 50 "Evaluating closure evalAll: \{show opts.evalAll}" tm
+      res <- eval defs opts env locs tm []
+      logTerm "eval.closure" 50 "Evaluated" tm
+      logC "eval.closure" 50 $ do pure "... to: \{show !(toFullNames res)}"
+      pure res
+    evalClosure' (MkNFClosure opts env nf) = applyToStack defs opts env nf []
 
 export
 nf : {auto c : Ref Ctxt Defs} ->
