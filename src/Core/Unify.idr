@@ -1126,15 +1126,14 @@ mutual
   dumpArg : {vars : _} ->
             {auto c : Ref Ctxt Defs} ->
             Env Term vars -> Closure vars -> Core ()
-  dumpArg env cl@(MkMClosure ref) = coreLift (readIORef ref) >>= \case
-    MkClosure opts loc lenv tm => do
-           defs <- get Ctxt
+  dumpArg env cl@(MkMClosure (MkClosure opts loc lenv tm) _)
+      = do defs <- get Ctxt
            empty <- clearDefs defs
            logTerm "unify" 20 "Term: " tm
-           nf <- evalClosure empty !(mkClosure opts loc lenv tm)
+           nf <- evalClosure empty cl
            logNF "unify" 20 "  " env nf
-    _ => do
-           defs <- get Ctxt
+  dumpArg env cl
+      = do defs <- get Ctxt
            empty <- clearDefs defs
            nf <- evalClosure empty cl
            logNF "unify" 20 "  " env nf
