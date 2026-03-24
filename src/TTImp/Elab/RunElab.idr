@@ -234,7 +234,7 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
     elabCon defs "Quote" [exp, tm]
         = do log "elab.script" 10 "quoting term"
              tm' <- evalClosure {evalAll = True} defs tm
-             log "elab.script" 10 $ "term to quote: " ++ show tm'
+             logC "elab.script" 10 $ do pure $ "term to quote: " ++ show !(toFullNames tm')
              defs <- get Ctxt
              empty <- clearDefs defs
              log "elab.script" 10 $ "before quoting"

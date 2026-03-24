@@ -1,6 +1,6 @@
 module Core.Normalise.Quote
 
-import Core.Context
+import Core.Context.Log
 import Core.Env
 import Core.Normalise.Eval
 import Core.Value
@@ -63,7 +63,8 @@ mutual
               Env Term free -> Closure free ->
               Core (Term (bound ++ free))
   quoteArg q opts defs bounds env a
-      = quoteGenNF q opts defs bounds env !(evalClosure {evalAll = opts.evalAll} defs a)
+      = do log "quote" 50 "Quoting an argument"
+           quoteGenNF q opts defs bounds env !(evalClosure {evalAll = opts.evalAll} defs a)
 
   quoteArgWithFC : {auto c : Ref Ctxt Defs} ->
                    {bound, free : _} ->
@@ -172,13 +173,15 @@ mutual
                Defs -> Bounds bound ->
                Env Term vars -> NF vars -> Core (Term (bound ++ vars))
   quoteGenNF q opts defs bound env (NBind fc n b sc)
-      = do var <- genName "qv"
+      = do log "quote" 50 "Quoting a bind"
+           var <- genName "qv"
            sc' <- quoteGenNF q opts defs (Add n var bound) env
                        !(sc defs !(toClosure defaultOpts env (Ref fc Bound var)))
            b' <- quoteBinder q opts defs bound env b
            pure (Bind fc n b' sc')
   quoteGenNF q opts defs bound env (NApp fc f args)
-      = do f' <- quoteHead q opts defs fc bound env f
+      = do logC "quote" 50 $ do pure "Quoting an application: \{show !(toFullNames f)}"
+           f' <- quoteHead q opts defs fc bound env f
            opts' <- case sizeLimit opts of
                          Nothing => pure opts
                          Just Z => throw (InternalError "Size limit exceeded")
@@ -194,20 +197,25 @@ mutual
       isRef (NRef {}) = True
       isRef _ = False
   quoteGenNF q opts defs bound env (NDCon fc n t ar args)
-      = do args' <- quoteArgsWithFC q opts defs bound env args
+      = do logC "quote" 50 $ do pure "Quoting a data constructor \{show !(toFullNames n)}"
+           args' <- quoteArgsWithFC q opts defs bound env args
            pure $ applyStackWithFC (Ref fc (DataCon t ar) n) args'
   quoteGenNF q opts defs bound env (NTCon fc n ar args)
-      = do args' <- quoteArgsWithFC q opts defs bound env args
+      = do logC "quote" 50 $ do pure "Quoting a type constructor \{show !(toFullNames n)}"
+           args' <- quoteArgsWithFC q opts defs bound env args
            pure $ applyStackWithFC (Ref fc (TyCon ar) n) args'
   quoteGenNF q opts defs bound env (NAs fc s n pat)
-      = do n' <- quoteGenNF q opts defs bound env n
+      = do log "quote" 50 "Quoting an as pattern"
+           n' <- quoteGenNF q opts defs bound env n
            pat' <- quoteGenNF q opts defs bound env pat
            pure (As fc s n' pat')
   quoteGenNF q opts defs bound env (NDelayed fc r arg)
-      = do argQ <- quoteGenNF q opts defs bound env arg
+      = do log "quote" 50 "Quoting a delayed expression"
+           argQ <- quoteGenNF q opts defs bound env arg
            pure (TDelayed fc r argQ)
   quoteGenNF q opts defs bound env (NDelay fc r ty arg)
-      = do argNF <- evalClosure {evalAll = opts.evalAll} defs (toHolesOnly arg)
+      = do log "quote" 50 "Quoting a delay expression"
+           argNF <- evalClosure {evalAll = opts.evalAll} defs (toHolesOnly arg)
            argQ <- quoteGenNF q opts defs bound env argNF
            tyNF <- evalClosure {evalAll = opts.evalAll} defs (toHolesOnly ty)
            tyQ <- quoteGenNF q opts defs bound env tyNF
@@ -218,7 +226,8 @@ mutual
           = MkMClosure (MkClosure ({ holesOnly := True, argHolesOnly := True } opts) locs env tm) ref
       toHolesOnly c = c
   quoteGenNF q opts defs bound env (NForce fc r arg args)
-      = do args' <- quoteArgsWithFC q opts defs bound env args
+      = do log "quote" 50 "Quoting a force expression"
+           args' <- quoteArgsWithFC q opts defs bound env args
            case arg of
                 NDelay fc _ _ arg =>
                    do argNF <- evalClosure {evalAll = opts.evalAll} defs arg
@@ -227,7 +236,8 @@ mutual
                         pure $ applyStackWithFC (TForce fc r arg') args'
   quoteGenNF q opts defs bound env (NPrimVal fc c) = pure $ PrimVal fc c
   quoteGenNF q opts defs bound env (NErased fc t)
-    = Erased fc <$> traverse @{%search} @{CORE} (\ nf => quoteGenNF q opts defs bound env nf) t
+    = do log "quote" 50 "Quoting an erased expression"
+         Erased fc <$> traverse @{%search} @{CORE} (\ nf => quoteGenNF q opts defs bound env nf) t
   quoteGenNF q opts defs bound env (NType fc u) = pure $ TType fc u
 
 export
