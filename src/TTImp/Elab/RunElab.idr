@@ -229,8 +229,7 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
              (checktm, _) <- runDelays (const True) $
                      check rig (initElabInfo InExpr) nest env !(reify defs ttimp')
                            (Just (glueBack defs env exp'))
-             empty <- clearDefs defs
-             nf empty env checktm
+             nf defs env checktm
     elabCon defs "Quote" [exp, tm]
         = do tm' <- evalClosure defs tm
              defs <- get Ctxt
