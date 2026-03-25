@@ -123,6 +123,7 @@ knownTopics = [
     ("elab.unify", Nothing),
     ("elab.update", Nothing),
     ("elab.with", Nothing),
+    ("elab.script", Nothing),
     ("eval.casetree", Nothing),
     ("eval.closure", Nothing),
     ("eval.casetree.stuck", Nothing),

@@ -192,10 +192,15 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
                        pure res)
                    (elabScript rig fc nest env !(evalClosure defs elab2) exp)
     elabCon defs "LogMsg" [topic, verb, str]
-        = do topic' <- evalClosure defs topic
+        = do log "elab.script" 50 "LogMsg start"
+             topic' <- evalClosure defs topic
+             log "elab.script" 50 "LogMsg topic evaluated"
              verb' <- evalClosure defs verb
+             log "elab.script" 50 "LogMsg verb evaluated"
              unverifiedLogC !(reify defs topic') !(reify defs verb') $
-                  do str' <- evalClosure defs str
+                  do log "elab.script" 50 "LogMsg unverifiedLogC start"
+                     str' <- evalClosure defs str
+                     logNF "elab.script" 50 "LogMsg" env str'
                      reify defs str'
              scriptRet ()
     elabCon defs "LogTerm" [topic, verb, str, tm]
