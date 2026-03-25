@@ -238,7 +238,7 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
              defs <- get Ctxt
              empty <- clearDefs defs
              log "elab.script" 10 $ "before quoting"
-             qtm <- quoteOpts (MkQuoteOpts True False Nothing True) empty env tm'
+             qtm <- quoteOpts (MkQuoteOpts True False Nothing True) defs env tm'
              log "elab.script" 10 $ "after quoting: " ++ show qtm
              ttimp <- unelabUniqueBinders env qtm
              log "elab.script" 10 $ "unelabbed term: " ++ show ttimp
