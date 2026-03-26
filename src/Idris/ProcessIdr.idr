@@ -378,7 +378,7 @@ processMod sourceFileName ttcFileName msg sourcecode origin
                 -- (also that we only build child dependencies if rebuilding
                 -- changes the interface - will need to store a hash in .ttc!)
                 logTime 2 "Reading imports" $
-                   traverse_ (readImport False) allImports
+                   traverse_ (readImport True) allImports
 
                 -- Before we process the source, make sure the "hide_everywhere"
                 -- names are set to private (TODO, maybe if we want this?)

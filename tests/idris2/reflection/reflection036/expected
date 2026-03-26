@@ -1,0 +1,7 @@
+1/3: Building Issue2158.A (Issue2158/A.idr)
+2/3: Building Issue2158.B (Issue2158/B.idr)
+3/3: Building Issue2158.C (Issue2158/C.idr)
+1/1: Building Issue2439 (Issue2439.idr)
+LOG debug:0: length: 3
+Warning: Deprecation warning: Data.SortedSet.toList is deprecated and will be removed in a future version.
+  Use `Prelude.toList` instead
