@@ -194,7 +194,7 @@ stMain cgs opts
                result <- case fname of
                     Nothing => logTime 1 "Loading prelude" $ do
                                  when (not $ noprelude session) $
-                                   readPrelude True
+                                   readPrelude
                                  pure Done
                     Just f => logTime 1 "Loading main file" $ do
                                 res <- loadMainFile f

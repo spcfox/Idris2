@@ -95,13 +95,12 @@ processDecls decls
 readModule : {auto c : Ref Ctxt Defs} ->
              {auto u : Ref UST UState} ->
              {auto s : Ref Syn SyntaxInfo} ->
-             (full : Bool) -> -- load everything transitively (needed for REPL and compiling)
              FC ->
              (visible : Bool) -> -- Is import visible to top level module?
              (imp : ModuleIdent) -> -- Module name to import
              (as : Namespace) -> -- Namespace to import into
              Core ()
-readModule full loc vis imp as
+readModule loc vis imp as
     = do defs <- get Ctxt
          let False = (imp, vis, as) `elem` map snd (allImported defs)
              | True => when vis (setVisible (miAsNamespace imp))
@@ -119,15 +118,15 @@ readModule full loc vis imp as
                        do let m = fst mimp
                           let reexp = fst (snd mimp)
                           let as = snd (snd mimp)
-                          when (reexp || full) $ readModule full loc reexp m as) more
+                          readModule loc reexp m as) more
          setNS modNS
 
 readImport : {auto c : Ref Ctxt Defs} ->
              {auto u : Ref UST UState} ->
              {auto s : Ref Syn SyntaxInfo} ->
-             Bool -> Import -> Core ()
-readImport full imp
-    = do readModule full (loc imp) True (path imp) (nameAs imp)
+             Import -> Core ()
+readImport imp
+    = do readModule (loc imp) True (path imp) (nameAs imp)
          addImported (path imp, reexport imp, nameAs imp)
 
 ||| Adds new import to the namespace without changing the current top-level namespace
@@ -138,7 +137,7 @@ addImport : {auto c : Ref Ctxt Defs} ->
             Import -> Core ()
 addImport imp
     = do topNS <- getNS
-         readImport True imp
+         readImport imp
          setNS topNS
 
 readImportMeta : {auto c : Ref Ctxt Defs} ->
@@ -157,9 +156,9 @@ export
 readPrelude : {auto c : Ref Ctxt Defs} ->
               {auto u : Ref UST UState} ->
               {auto s : Ref Syn SyntaxInfo} ->
-              Bool -> Core ()
-readPrelude full
-    = do readImport full prelude
+              Core ()
+readPrelude
+    = do readImport prelude
          setNS mainNS
 
 -- Import a TTC for use as the main file (e.g. at the REPL)
@@ -183,13 +182,13 @@ readAsMain fname
          traverse_ (\ mimp =>
                        do let m = fst mimp
                           let as = snd (snd mimp)
-                          readModule True emptyFC True m as
+                          readModule emptyFC True m as
                           addImported (m, True, as)) more
 
          -- also load the prelude, if required, so that we have access to it
          -- at the REPL.
          when (not (noprelude !getSession)) $
-              readModule True emptyFC True (nsAsModuleIdent preludeNS) preludeNS
+              readModule emptyFC True (nsAsModuleIdent preludeNS) preludeNS
 
          -- We're in the namespace from the first TTC, so use the next name
          -- from that for the fresh metavariable name generation
@@ -378,7 +377,7 @@ processMod sourceFileName ttcFileName msg sourcecode origin
                 -- (also that we only build child dependencies if rebuilding
                 -- changes the interface - will need to store a hash in .ttc!)
                 logTime 2 "Reading imports" $
-                   traverse_ (readImport True) allImports
+                   traverse_ readImport allImports
 
                 -- Before we process the source, make sure the "hide_everywhere"
                 -- names are set to private (TODO, maybe if we want this?)
