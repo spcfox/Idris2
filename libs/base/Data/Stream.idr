@@ -157,7 +157,7 @@ namespace Pair
 -- using Cantor's zig-zag traversal:
 example :
      take 10 (plane Stream.nats (const Stream.nats))
-     === [ (0, 0)
+     === [ (the Nat 0, 0)
          , (1, 0), (0, 1)
          , (2, 0), (1, 1), (0, 2)
          , (3, 0), (2, 1), (1, 2), (0, 3)

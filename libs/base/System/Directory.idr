@@ -11,21 +11,6 @@ public export
 DirPtr : Type
 DirPtr = AnyPtr
 
-||| Shorthand for referring to the C support library
-|||
-||| @ fn the function name to refer to in the C support library
-supportC : (fn : String) -> String
-supportC fn = "C:\{fn}, libidris2_support, idris_directory.h"
-
-||| Shorthand for referring to the Node system support library
-|||
-||| @ fn the function name to refer to in the js/system_support.js file
-supportNode : (fn : String) -> String
-supportNode fn = "node:support:\{fn},support_system_directory"
-
-ok : HasIO io => a -> io (Either FileError a)
-ok x = pure (Right x)
-
 %foreign supportC "idris2_currentDirectory"
          "node:lambda:()=>process.cwd()"
 prim__currentDir : PrimIO (Ptr String)

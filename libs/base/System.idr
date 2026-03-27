@@ -8,18 +8,6 @@ import System.File
 
 %default total
 
-||| Shorthand for referring to the C support library
-|||
-||| @ fn the function name to refer to in the C support library
-supportC : (fn : String) -> String
-supportC fn = "C:\{fn}, libidris2_support, idris_support.h"
-
-||| Shorthand for referring to the Node system support library
-|||
-||| @ fn the function name to refer to in the js/system_support.js file
-supportNode : (fn : String) -> String
-supportNode fn = "node:support:\{fn},support_system"
-
 ||| Shorthand for referring to libc 6
 |||
 ||| @ fn the function name to refer to in libc 6

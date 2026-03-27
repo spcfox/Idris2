@@ -98,7 +98,7 @@ Show f => Show (HDec f) where
 ||| Half deciders are closed under product
 public export
 (&&) : (AnHDec l, AnHDec r) => l a -> r b -> HDec (a, b)
-p && q = [| (toHDec p, toHDec q) |]
+p && q = with Prelude.Interfaces.(<*>) MkPair <$> toHDec p <*> toHDec q
 
 ||| Half deciders are closed under sum
 public export

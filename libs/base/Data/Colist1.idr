@@ -293,7 +293,7 @@ namespace Pair
 example :
      let nats1 = fromStream Stream.nats in
      Colist1.take 10 (Pair.plane nats1 (const nats1))
-     === (0, 0) :::
+     === (the Nat 0, 0) :::
          [ (1, 0), (0, 1)
          , (2, 0), (1, 1), (0, 2)
          , (3, 0), (2, 1), (1, 2), (0, 3)
