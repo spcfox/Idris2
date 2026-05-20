@@ -564,7 +564,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
 evalWithOpts {vars} defs opts = eval {vars} defs opts
 
 evalClosure defs (MkMClosure clos ref)
-    = if isCallByNeed $ closureOptions clos
+    = if isCallByNeed (closureOptions clos) && not defs.gamma.inlineOnly
          then coreLift (readIORef ref) >>= \case
                 Just nf => do case clos of
                                 MkClosure opts locs env' tm' =>
