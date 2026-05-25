@@ -217,15 +217,22 @@ parameters (defs : Defs) (topopts : EvalOpts)
                      Stack free ->
                      Closure free ->
                      Core (NF free)
-    evalLocClosure env fc mrig [] clos
-        = do log "eval.closure" 50 "Using cached normal form for local closure"
-             evalClosure defs clos
-    evalLocClosure env fc mrig stk (MkMClosure clos ref) = coreLift (readIORef ref) >>= \case
-      Just nf => applyToStack env nf stk
-      Nothing => case clos of
-        MkClosure opts locs env' tm' => do log "eval.closure" 10 $ "Evaluating local closure: " ++ show tm'
-                                           evalWithOpts defs opts env' locs tm' stk
-        MkNFClosure opts env' nf => applyToStack env' nf stk
+    evalLocClosure env fc mrig [] clos = evalClosure defs clos
+    evalLocClosure env fc mrig stk (MkMClosure clos ref)
+        = if isCallByNeed (closureOptions clos) && not defs.gamma.inlineOnly
+             then coreLift (readIORef ref) >>= \case
+                    Just nf => do case clos of
+                                    MkClosure opts locs env' tm' =>
+                                      do logTerm "eval.closure.local" 10 "Find cached normal form for closure" tm'
+                                    _ => pure ()
+                                  log "eval.closure.local" 50 $ "Using cached normal form for closure: " ++ show nf
+                                  applyToStack env nf stk
+                    Nothing => evalClosure' clos
+             else evalClosure' clos
+      where
+        evalClosure' : Closure' free -> Core (NF free)
+        evalClosure' (MkClosure opts locs env' tm') = evalWithOpts defs opts env' locs tm' stk
+        evalClosure' (MkNFClosure opts env' nf) = applyToStack env' nf stk
 
     evalLocal : {auto c : Ref Ctxt Defs} ->
                 {free : _} ->
