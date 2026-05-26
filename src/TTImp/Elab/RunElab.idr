@@ -192,15 +192,10 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
                        pure res)
                    (elabScript rig fc nest env !(evalClosure defs elab2) exp)
     elabCon defs "LogMsg" [topic, verb, str]
-        = do log "elab.script" 50 "LogMsg start"
-             topic' <- evalClosure defs topic
-             log "elab.script" 50 "LogMsg topic evaluated"
+        = do topic' <- evalClosure defs topic
              verb' <- evalClosure defs verb
-             log "elab.script" 50 "LogMsg verb evaluated"
              unverifiedLogC !(reify defs topic') !(reify defs verb') $
-                  do log "elab.script" 50 "LogMsg unverifiedLogC start"
-                     str' <- evalClosure defs str
-                     logNF "elab.script" 50 "LogMsg" env str'
+                  do str' <- evalClosure defs str
                      reify defs str'
              scriptRet ()
     elabCon defs "LogTerm" [topic, verb, str, tm]
@@ -241,7 +236,9 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
              scriptRet $ map rawName !(unelabUniqueBinders env !(quote defs env tm'))
     elabCon defs "NormaliseAs" [exp', ttimp]
         = do act <- elabCon defs "Check" [exp', ttimp]
+             logNF "elab.script" 50 "Checked term: " env act
              act <- quote defs env act
+             logTerm "elab.script" 50 "Quoted term: " act
              let k = NDCon emptyFC (NS reflectionNS (UN (Basic "Quote"))) 0 2 [(emptyFC, exp')]
              r <- applyToStack defs ({ strategy := CBNeed } withAll) env k [(getLoc act, !(toClosure withAll env act))]
              elabScript rig fc nest env r exp
