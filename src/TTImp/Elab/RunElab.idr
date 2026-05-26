@@ -243,7 +243,7 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
         = do act <- elabCon defs "Check" [exp', ttimp]
              act <- quote defs env act
              let k = NDCon emptyFC (NS reflectionNS (UN (Basic "Quote"))) 0 2 [(emptyFC, exp')]
-             r <- applyToStack defs ({ strategy := CBNeed } withAll) env k [(getLoc act, !(toClosure defaultOpts env act))]
+             r <- applyToStack defs ({ strategy := CBNeed } withAll) env k [(getLoc act, !(toClosure withAll env act))]
              elabScript rig fc nest env r exp
     elabCon defs "Lambda" [x, _, scope]
         = do empty <- clearDefs defs
