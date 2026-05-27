@@ -233,7 +233,8 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
     elabCon defs "Quote" [exp, tm]
         = do tm' <- evalClosure defs tm
              defs <- get Ctxt
-             scriptRet $ map rawName !(unelabUniqueBinders env !(quote defs env tm'))
+             empty <- clearDefs defs
+             scriptRet $ map rawName !(unelabUniqueBinders env !(quote empty env tm'))
     elabCon defs "NormaliseAs" [exp', ttimp]
         = do act <- elabCon defs "Check" [exp', ttimp]
              logNF "elab.script" 50 "Checked term: " env act
