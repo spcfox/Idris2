@@ -100,6 +100,8 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
         = do defs <- get Ctxt
              nfOpts ({ strategy := CBNeed } withAll) defs env !(reflect fc defs False env tm)
 
+-- f (...)
+
     reifyFC : Defs -> Closure vars -> Core FC
     reifyFC defs mbfc = pure $ case !(evalClosure defs mbfc >>= reify defs) of
       EmptyFC => fc
@@ -240,9 +242,12 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
              logNF "elab.script" 50 "Checked term: " env act
              act <- quote defs env act
              logTerm "elab.script" 50 "Quoted term: " act
-             let k = NDCon emptyFC (NS reflectionNS (UN (Basic "Quote"))) 0 2 [(emptyFC, exp')]
-             r <- applyToStack defs ({ strategy := CBNeed } withAll) env k [(getLoc act, !(toClosure withAll env act))]
-             elabScript rig fc nest env r exp
+            --  let k = NDCon emptyFC (NS reflectionNS (UN (Basic "Quote"))) 0 2 [(emptyFC, exp')]
+            --  r <- applyToStack defs ({ strategy := CBNeed } withAll) env k [(getLoc act, !(toClosure withAll env act))]
+            --  elabScript rig fc nest env r exp
+             tm <- toClosure withAll env act
+             tm' <- evalClosure defs tm
+             scriptRet $ map rawName !(unelabUniqueBinders env !(quote defs env tm'))
     elabCon defs "Lambda" [x, _, scope]
         = do empty <- clearDefs defs
              NBind bfc x (Lam fc' c p ty) sc <- evalClosure defs scope
