@@ -1455,6 +1455,7 @@ retryGuess mode smode (hid, (loc, hname))
                          do logTermNF "unify.retry" 5
                                       ("Search failed at " ++ show rig ++ " for " ++ show hname)
                                       Env.empty (type def)
+                            log "unify.retry" 5 $ "Error: " ++ show err
                             case smode of
                                  LastChance => throw err
                                  _ => if recoverable err
