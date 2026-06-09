@@ -100,8 +100,6 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
         = do defs <- get Ctxt
              nfOpts ({ strategy := CBNeed } withAll) defs env !(reflect fc defs False env tm)
 
--- f (...)
-
     reifyFC : Defs -> Closure vars -> Core FC
     reifyFC defs mbfc = pure $ case !(evalClosure defs mbfc >>= reify defs) of
       EmptyFC => fc

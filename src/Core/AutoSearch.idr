@@ -394,9 +394,15 @@ searchName fc rigc defaults trying depth def top env target (n, ndef)
          nty <- nf defs env (embed ty)
          logNF "auto" 10 ("Searching Name " ++ show n) env nty
          (args, appTy) <- mkArgs fc rigc env nty
+         log "auto" 10 $ "Unifying " ++ show appTy ++ " with target " ++ show target
+         logNF "auto" 10 " term" env appTy
+         logNF "auto" 10 " target" env target
          ures <- unify inTerm fc env target appTy
+         log "auto" 10 $ "After unification"
          let [] = constraints ures
-             | _ => throw (CantSolveGoal fc (gamma defs) Env.empty top Nothing)
+             | cs => do log "auto" 10 $ "Non-empty constraints: " ++ show (length cs)
+                        dumpConstraints "auto" 10 False
+                        throw (CantSolveGoal fc (gamma defs) Env.empty top Nothing)
          ispair <- isPairNF env nty defs
          let candidate = apply fc (Ref fc (getDefNameType ndef) n) (map metaApp args)
          logTermNF "auto" 10 "Candidate " env candidate
