@@ -138,6 +138,8 @@ elabTermSub {vars} defining mode opts nest env env' sub tm ty
          -- As long as we're not in the RHS of a case block,
          -- finish off constraint solving
          -- On the LHS the constraint solving is used to handle overloading
+         log "elab" 50 "in case: \{show incase}"
+         log "elab" 50 "mode: \{show mode}"
          when (not incase || isJust (isLHS mode)) $
            -- resolve any default hints
            do log "elab" 5 "Resolving default hints"
