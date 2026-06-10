@@ -377,22 +377,31 @@ checkRunElab rig elabinfo nest env fc reqExt script exp
          elabtt <- appCon fc defs n [expected]
          constart <- getNextEntry
          (stm, sty) <- runDelays (const True) $
-                           check rig elabinfo nest env script (Just (gnf env elabtt))
+                         do log "elab.script" 5 "Checking script"
+                            res <- check rig elabinfo nest env script (Just (gnf env elabtt))
+                            log "elab.script" 5 "Finished checking script"
+                            pure res
+         log "elab.script" 5 "Solving constraints after script check"
          solveConstraintsAfter constart inTerm Normal
          -- resolve any default hints
-         log "elab" 5 "Resolving default hints"
+         log "elab.script" 5 "Resolving default hints"
          solveConstraintsAfter constart inTerm Defaults
+         log "elab.script" 5 "Solving constraints after resolving defaults"
          -- perhaps resolving defaults helps...
          -- otherwise, this last go is most likely just to give us more
          -- helpful errors.
          solveConstraintsAfter constart inTerm LastChance
+         log "elab.script" 5 "Solving constraints after last chance"
          defs <- get Ctxt -- checking might have resolved some holes
          nfstm <- nfOpts ({ strategy := CBNeed } withAll) defs env stm
          ntm <- logTime 2 "Elaboration script" $
                   elabScript rig fc nest env nfstm $ Just (gnf env expected)
          defs <- get Ctxt -- might have updated as part of the script
          empty <- clearDefs defs
-         pure (!(quote empty env ntm), gnf env expected)
+         log "elab.script" 5 "Checked script"
+         qtm <- quote empty env ntm
+         log "elab.script" 5 "Quoted script"
+         pure (qtm, gnf env expected)
   where
     mkExpected : Maybe (Glued vars) -> Core (Term vars)
     mkExpected (Just ty) = pure !(getTerm ty)
