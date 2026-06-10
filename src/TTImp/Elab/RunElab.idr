@@ -375,9 +375,17 @@ checkRunElab rig elabinfo nest env fc reqExt script exp
              throw (GenericMsg fc "%language ElabReflection not enabled")
          let n = NS reflectionNS (UN $ Basic "Elab")
          elabtt <- appCon fc defs n [expected]
+         constart <- getNextEntry
          (stm, sty) <- runDelays (const True) $
                            check rig elabinfo nest env script (Just (gnf env elabtt))
-         solveConstraints inTerm Normal
+         solveConstraintsAfter constart inTerm Normal
+         -- resolve any default hints
+         log "elab" 5 "Resolving default hints"
+         solveConstraintsAfter constart inTerm Defaults
+         -- perhaps resolving defaults helps...
+         -- otherwise, this last go is most likely just to give us more
+         -- helpful errors.
+         solveConstraintsAfter constart inTerm LastChance
          defs <- get Ctxt -- checking might have resolved some holes
          nfstm <- nfOpts ({ strategy := CBNeed } withAll) defs env stm
          ntm <- logTime 2 "Elaboration script" $
