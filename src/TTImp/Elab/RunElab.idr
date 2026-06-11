@@ -399,7 +399,7 @@ checkRunElab rig elabinfo nest env fc reqExt script exp
          defs <- get Ctxt -- might have updated as part of the script
          empty <- clearDefs defs
          log "elab.script" 5 "Checked script"
-         qtm <- quote empty env ntm
+         qtm <- quote defs env ntm
          log "elab.script" 5 "Quoted script"
          pure (qtm, gnf env expected)
   where

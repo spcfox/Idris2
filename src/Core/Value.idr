@@ -118,7 +118,7 @@ mutual
 
   public export
   data Closure : Scoped where
-    MkMClosure : Closure' free -> IORef (Maybe (NF free)) -> Closure free
+    MkMClosure : Closure' free -> (d, e : IORef (Maybe (NF free))) -> Closure free
 
   -- The head of a value: things you can apply arguments to
   public export

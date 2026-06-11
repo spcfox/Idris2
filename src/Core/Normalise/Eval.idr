@@ -59,12 +59,12 @@ export
 mkClosure : {vars : _} -> EvalOpts -> LocalEnv free vars ->
             Env Term free -> Term (Scope.addInner free vars) -> Core (Closure free)
 mkClosure opts locs env tm
-  = MkMClosure (MkClosure opts locs env tm) <$> coreLift (newIORef Nothing)
+  = MkMClosure (MkClosure opts locs env tm) <$> coreLift (newIORef Nothing) <*> coreLift (newIORef Nothing)
 
 export
 mkNFClosure : EvalOpts -> Env Term free -> NF free -> Core (Closure free)
 mkNFClosure opts env nf
-  = MkMClosure (MkNFClosure opts env nf) <$> coreLift (newIORef Nothing)
+  = MkMClosure (MkNFClosure opts env nf) <$> coreLift (newIORef Nothing) <*> coreLift (newIORef Nothing)
 
 export
 toClosure : EvalOpts -> Env Term outer -> Term outer -> Core (Closure outer)
@@ -218,8 +218,8 @@ parameters (defs : Defs) (topopts : EvalOpts)
                      Closure free ->
                      Core (NF free)
     evalLocClosure env fc mrig [] clos = evalClosure defs clos
-    evalLocClosure env fc mrig stk (MkMClosure clos ref)
-        = if isCallByNeed (closureOptions clos) && not defs.gamma.inlineOnly
+    evalLocClosure env fc mrig stk (MkMClosure clos refDefs refEmpty)
+        = if isCallByNeed $ closureOptions clos
              then coreLift (readIORef ref) >>= \case
                     Just nf => do case clos of
                                     MkClosure opts locs env' tm' =>
@@ -230,6 +230,9 @@ parameters (defs : Defs) (topopts : EvalOpts)
                     Nothing => evalClosure' clos
              else evalClosure' clos
       where
+        ref : IORef (Maybe (NF free))
+        ref = if defs.gamma.inlineOnly then refEmpty else refDefs
+
         evalClosure' : Closure' free -> Core (NF free)
         evalClosure' (MkClosure opts locs env' tm') = evalWithOpts defs opts env' locs tm' stk
         evalClosure' (MkNFClosure opts env' nf) = applyToStack env' nf stk
@@ -570,8 +573,8 @@ parameters (defs : Defs) (topopts : EvalOpts)
 -- write it explicitly, but it does appear after the parameters in 'eval'!
 evalWithOpts {vars} defs opts = eval {vars} defs opts
 
-evalClosure defs (MkMClosure clos ref)
-    = if isCallByNeed (closureOptions clos) && not defs.gamma.inlineOnly
+evalClosure defs (MkMClosure clos refDefs refEmpty)
+    = if isCallByNeed $ closureOptions clos
          then coreLift (readIORef ref) >>= \case
                 Just nf => do case clos of
                                 MkClosure opts locs env' tm' =>
@@ -584,6 +587,9 @@ evalClosure defs (MkMClosure clos ref)
                               pure res
          else evalClosure' clos
   where
+    ref : IORef (Maybe (NF free))
+    ref = if defs.gamma.inlineOnly then refEmpty else refDefs
+
     evalClosure' : Closure' free -> Core (NF free)
     evalClosure' (MkClosure opts locs env tm) = do
       logTerm "eval.closure" 50 "Evaluating closure" tm

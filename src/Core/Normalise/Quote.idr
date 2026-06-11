@@ -213,8 +213,8 @@ mutual
            pure (TDelay fc r tyQ argQ)
     where
       toHolesOnly : Closure vs -> Closure vs
-      toHolesOnly (MkMClosure (MkClosure opts locs env tm) ref)
-          = MkMClosure (MkClosure ({ holesOnly := True, argHolesOnly := True } opts) locs env tm) ref
+      toHolesOnly (MkMClosure (MkClosure opts locs env tm) refDefs refEmpty)
+          = MkMClosure (MkClosure ({ holesOnly := True, argHolesOnly := True } opts) locs env tm) refDefs refEmpty
       toHolesOnly c = c
   quoteGenNF q opts defs bound env (NForce fc r arg args)
       = do args' <- quoteArgsWithFC q opts defs bound env args
