@@ -174,7 +174,7 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
         -- 4) Run elabScript on the result stripping off Elab
         = do act <- elabScript rig fc nest env
                                 !(evalClosure defs act) exp
-             act <- applyToStack defs withAll env act []
+             act <- applyToStack defs ({ reduceClosure := True } withAll) env act []
             --  act <- applyToStack defs ({ strategy = CBV } withAll) env act []
              k <- evalClosure defs k
              r <- applyToStack defs withAll env k [(getLoc act, MkNFClosure withAll env act)]

@@ -22,6 +22,7 @@ record EvalOpts where
   reduceLimit : List (Name, Nat) -- reduction limits for given names. If not
                      -- present, no limit
   strategy : EvalOrder
+  reduceClosure : Bool
 
 export
 defaultOpts : EvalOpts
@@ -34,6 +35,7 @@ defaultOpts = MkEvalOpts
     , fuel = Nothing
     , reduceLimit = []
     , strategy = CBN
+    , reduceClosure = False
     }
 
 export
@@ -47,6 +49,7 @@ withHoles = MkEvalOpts
     , fuel = Nothing
     , reduceLimit = []
     , strategy = CBN
+    , reduceClosure = False
     }
 
 export
@@ -60,6 +63,7 @@ withAll = MkEvalOpts
     , fuel = Nothing
     , reduceLimit = []
     , strategy = CBN
+    , reduceClosure = False
     }
 
 export
@@ -73,6 +77,7 @@ withArgHoles = MkEvalOpts
     , fuel = Nothing
     , reduceLimit = []
     , strategy = CBN
+    , reduceClosure = False
     }
 
 export

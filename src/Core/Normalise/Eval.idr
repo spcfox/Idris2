@@ -161,6 +161,16 @@ parameters (defs : Defs) (topopts : EvalOpts)
       = NErased fc <$> traverse @{%search} @{CORE} (\ t => eval env locs t stk) a
     eval env locs (TType fc u) stk = pure $ NType fc u
 
+    continueArgs : {auto c : Ref Ctxt Defs} ->
+                   {free : _} ->
+                   Env Term free ->
+                   Stack free ->
+                   Core (Stack free)
+    continueArgs env args
+      = if reduceClosure topopts
+           then for args $ traversePair $ map (MkNFClosure topopts env) . evalClosure defs
+           else pure args
+
     -- Apply an evaluated argument (perhaps cached from an earlier evaluation)
     -- to a stack
     export
@@ -180,16 +190,21 @@ parameters (defs : Defs) (topopts : EvalOpts)
         = pure (NBind fc x b
                       (\defs', arg => applyToStack env !(sc defs' arg) stk))
     applyToStack env (NApp fc (NRef nt fn) args) stk
-        = evalRef env False fc nt fn (args ++ stk)
-                  (NApp fc (NRef nt fn) (args ++ stk))
+        = do let args' = !(continueArgs env args) ++ stk
+             evalRef env False fc nt fn args'
+                    (NApp fc (NRef nt fn) args')
     applyToStack env (NApp fc (NLocal mrig idx p) args) stk
-        = evalLocal env fc mrig _ p (args ++ stk) LocalEnv.empty
+        = do let args' = !(continueArgs env args) ++ stk
+             evalLocal env fc mrig _ p args' LocalEnv.empty
     applyToStack env (NApp fc (NMeta n i args) args') stk
-        = evalMeta env fc n i args (args' ++ stk)
+        = do let args'' = !(continueArgs env args') ++ stk
+             evalMeta env fc n i args args''
     applyToStack env (NDCon fc n t a args) stk
-        = pure $ NDCon fc n t a (args ++ stk)
+        = do let args' = !(continueArgs env args) ++ stk
+             pure $ NDCon fc n t a args'
     applyToStack env (NTCon fc n a args) stk
-        = pure $ NTCon fc n a (args ++ stk)
+        = do let args' = !(continueArgs env args) ++ stk
+             pure $ NTCon fc n a args'
     applyToStack env (NAs fc s p t) stk
        = if removeAs topopts
             then applyToStack env t stk
@@ -206,7 +221,8 @@ parameters (defs : Defs) (topopts : EvalOpts)
             case tm' of
                  NDelay fc r _ arg =>
                     eval env [arg] (Local {name = UN (Basic "fvar")} fc Nothing _ First) stk
-                 _ => pure (NForce fc r tm' (args ++ stk))
+                 _ => do let args' = !(continueArgs env args) ++ stk
+                         pure (NForce fc r tm' args')
     applyToStack env nf@(NPrimVal fc _) _ = pure nf
     applyToStack env (NErased fc a) stk
       = NErased fc <$> traverse @{%search} @{CORE} (\ t => applyToStack env t stk) a
