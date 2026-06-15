@@ -177,8 +177,17 @@ parameters (defs : Defs) (topopts : EvalOpts)
     evalBinder env (Lam fc r e ty)
         = Lam fc r e . MkNFClosure topopts env <$> evalClosure defs ty
     evalBinder env (Let r e val ty)
-        = Let r e val . MkNFClosure topopts env <$> evalClosure defs ty
-    evalBinder _ b = pure b
+        = do val <- evalClosure defs val
+             ty <- evalClosure defs ty
+             pure $ Let r e (MkNFClosure topopts env val) (MkNFClosure topopts env ty)
+    evalBinder env (PVar fc r e ty)
+        = PVar fc r e . MkNFClosure topopts env <$> evalClosure defs ty
+    evalBinder env (PLet fc r val ty)
+        = do val <- evalClosure defs val
+             ty <- evalClosure defs ty
+             pure $ PLet fc r (MkNFClosure topopts env val) (MkNFClosure topopts env ty)
+    evalBinder env (PVTy fc r ty)
+        = PVTy fc r . MkNFClosure topopts env <$> evalClosure defs ty
 
     -- Apply an evaluated argument (perhaps cached from an earlier evaluation)
     -- to a stack
