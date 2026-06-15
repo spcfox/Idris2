@@ -192,8 +192,11 @@ parameters (defs : Defs) (topopts : EvalOpts)
              applyToStack env arg' stk
     applyToStack env (NBind fc x b@(Let _ r val ty) sc) stk
         = if (holesOnly topopts || argHolesOnly topopts) && not (tcInline topopts)
-             then pure (NBind fc x b
-                              (\defs', arg => applyToStack env !(sc defs' arg) stk))
+             then do b' <- if reduceClosure topopts
+                              then evalBinder env b
+                              else pure b
+                     pure (NBind fc x b'
+                                 (\defs', arg => applyToStack env !(sc defs' arg) stk))
              else applyToStack env !(sc defs val) stk
     applyToStack env (NBind fc x b sc) stk
         = do b' <- if reduceClosure topopts
