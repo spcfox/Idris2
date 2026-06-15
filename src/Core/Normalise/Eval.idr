@@ -171,6 +171,15 @@ parameters (defs : Defs) (topopts : EvalOpts)
            then for args $ traversePair $ map (MkNFClosure topopts env) . evalClosure defs
            else pure args
 
+    evalBinder : {free : _} -> Ref Ctxt Defs => Env Term free -> Binder (Closure free) -> Core (Binder (Closure free))
+    evalBinder env (Pi fc r e ty)
+        = Pi fc r e . MkNFClosure topopts env <$> evalClosure defs ty
+    evalBinder env (Lam fc r e ty)
+        = Lam fc r e . MkNFClosure topopts env <$> evalClosure defs ty
+    evalBinder env (Let r e val ty)
+        = Let r e val . MkNFClosure topopts env <$> evalClosure defs ty
+    evalBinder _ b = pure b
+
     -- Apply an evaluated argument (perhaps cached from an earlier evaluation)
     -- to a stack
     export
@@ -187,8 +196,11 @@ parameters (defs : Defs) (topopts : EvalOpts)
                               (\defs', arg => applyToStack env !(sc defs' arg) stk))
              else applyToStack env !(sc defs val) stk
     applyToStack env (NBind fc x b sc) stk
-        = pure (NBind fc x b
-                      (\defs', arg => applyToStack env !(sc defs' arg) stk))
+        = do b' <- if reduceClosure topopts
+                      then evalBinder env b
+                      else pure b
+             pure (NBind fc x b'
+                         (\defs', arg => applyToStack env !(sc defs' arg) stk))
     applyToStack env (NApp fc (NRef nt fn) args) stk
         = do let args' = !(continueArgs env args) ++ stk
              evalRef env False fc nt fn args'
