@@ -161,6 +161,12 @@ parameters (defs : Defs) (topopts : EvalOpts)
       = NErased fc <$> traverse @{%search} @{CORE} (\ t => eval env locs t stk) a
     eval env locs (TType fc u) stk = pure $ NType fc u
 
+    continueArg : {auto c : Ref Ctxt Defs} ->
+                  {free : _} ->
+                  Env Term free ->
+                  Closure free -> Core (NF free)
+    continueArg env arg = applyToStack env !(evalClosure defs arg) []
+
     continueArgs : {auto c : Ref Ctxt Defs} ->
                    {free : _} ->
                    Env Term free ->
@@ -168,7 +174,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
                    Core (Stack free)
     continueArgs env args
       = if reduceClosure topopts
-           then for args $ traversePair $ map (MkNFClosure topopts env) . evalClosure defs
+           then for args $ traversePair $ map (MkNFClosure topopts env) . continueArg env
            else pure args
 
     evalBinder : {free : _} -> Ref Ctxt Defs => Env Term free -> Binder (Closure free) -> Core (Binder (Closure free))
