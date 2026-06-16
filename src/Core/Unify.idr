@@ -1380,8 +1380,8 @@ retry mode c
               Just Resolved => pure success
               Just (MkConstraint loc withLazy env xold yold)
                => do defs <- get Ctxt
-                     x <- continueNF defs env xold
-                     y <- continueNF defs env yold
+                     x <- continueNF defs defaultOpts env xold
+                     y <- continueNF defs defaultOpts env yold
                      catch
                        (do logNF "unify.retry" 5 ("Retrying " ++ show c ++ " " ++ show (umode mode)) env x
                            logNF "unify.retry" 5 "....with" env y
@@ -1603,8 +1603,8 @@ checkDots
     checkConstraint : (Name, DotReason, Constraint) -> Core ()
     checkConstraint (n, reason, MkConstraint fc wl env xold yold)
         = do defs <- get Ctxt
-             x <- continueNF defs env xold
-             y <- continueNF defs env yold
+             x <- continueNF defs defaultOpts env xold
+             y <- continueNF defs defaultOpts env yold
              logNF "unify.constraint" 10 "Dot" env y
              logNF "unify.constraint" 10 "  =" env x
              -- A dot is okay if the constraint is solvable *without solving

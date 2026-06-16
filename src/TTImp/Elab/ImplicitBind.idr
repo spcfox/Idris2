@@ -498,10 +498,10 @@ checkPolyConstraint (MkPolyConstraint fc env arg x y)
          -- If 'x' is a metavariable and 'y' is concrete, that means we've
          -- ended up putting something too concrete in for a polymorphic
          -- argument
-         xnf <- continueNF defs env x
+         xnf <- continueNF defs defaultOpts env x
          case xnf of
               NApp _ (NMeta {}) _ =>
-                   do ynf <- continueNF defs env y
+                   do ynf <- continueNF defs defaultOpts env y
                       if !(concrete defs env ynf)
                          then do empty <- clearDefs defs
                                  throw (MatchTooSpecific fc env arg)
@@ -516,9 +516,9 @@ solvePolyConstraint (MkPolyConstraint fc env arg x y)
     = do defs <- get Ctxt
          -- If the LHS of the constraint isn't a metavariable, we can solve
          -- the constraint
-         case !(continueNF defs env x) of
+         case !(continueNF defs defaultOpts env x) of
               xnf@(NApp _ (NMeta {}) _) => pure ()
-              t => do res <- unify inLHS fc env t !(continueNF defs env y)
+              t => do res <- unify inLHS fc env t !(continueNF defs defaultOpts env y)
                       -- If there's any constraints, it just means we didn't
                       -- solve anything and it won't help the check
                       pure ()

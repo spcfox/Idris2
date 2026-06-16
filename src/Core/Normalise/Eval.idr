@@ -48,6 +48,13 @@ evalClosure : {auto c : Ref Ctxt Defs} ->
               {free : _} -> Defs -> Closure free -> Core (NF free)
 
 export
+-- Resume a previously blocked normalisation with a new environment
+continueNF : {auto c : Ref Ctxt Defs} ->
+             {vars : _} ->
+             Defs -> EvalOpts ->
+             Env Term vars -> NF vars -> Core (NF vars)
+
+export
 evalArg : {auto c : Ref Ctxt Defs} -> {free : _} -> Defs -> Closure free -> Core (NF free)
 evalArg defs c = evalClosure defs c
 
@@ -165,7 +172,11 @@ parameters (defs : Defs) (topopts : EvalOpts)
                   {free : _} ->
                   Env Term free ->
                   Closure free -> Core (NF free)
-    continueArg env arg = applyToStack env !(evalClosure defs arg) []
+    continueArg env arg = do
+      arg' <- evalClosure defs arg
+      -- log "eval.stuck" 1 "Evaluating argument: \{show !(toFullNames arg')}"
+      continueNF defs ({ reduceClosure := False } topopts) env arg'
+      -- pure arg'
 
     continueArgs : {auto c : Ref Ctxt Defs} ->
                    {free : _} ->
@@ -174,7 +185,8 @@ parameters (defs : Defs) (topopts : EvalOpts)
                    Core (Stack free)
     continueArgs env args
       = if reduceClosure topopts
-           then for args $ traversePair $ map (MkNFClosure topopts env) . continueArg env
+           then do -- log "eval.stuck" 1 "Continuing with arguments length: \{show (length args)}"
+                   for args $ traversePair $ map (MkNFClosure topopts env) . continueArg env
            else pure args
 
     evalBinder : {free : _} -> Ref Ctxt Defs => Env Term free -> Binder (Closure free) -> Core (Binder (Closure free))
@@ -220,20 +232,27 @@ parameters (defs : Defs) (topopts : EvalOpts)
              pure (NBind fc x b'
                          (\defs', arg => applyToStack env !(sc defs' arg) stk))
     applyToStack env (NApp fc (NRef nt fn) args) stk
-        = do let args' = !(continueArgs env args) ++ stk
+        = do -- log "eval.stuck" 1 "Evaluating function: \{show !(toFullNames fn)} (\{show fn})}"
+             let args' = !(continueArgs env args) ++ stk
              evalRef env False fc nt fn args'
                     (NApp fc (NRef nt fn) args')
     applyToStack env (NApp fc (NLocal mrig idx p) args) stk
-        = do let args' = !(continueArgs env args) ++ stk
+        = do -- log "eval.stuck" 1 "Evaluating local variable: \{show idx}"
+             let args' = !(continueArgs env args) ++ stk
              evalLocal env fc mrig _ p args' LocalEnv.empty
     applyToStack env (NApp fc (NMeta n i args) args') stk
-        = do let args'' = !(continueArgs env args') ++ stk
+        = do -- log "eval.stuck" 1 "Evaluating metavariable: \{show n}"
+             let args'' = !(continueArgs env args') ++ stk
              evalMeta env fc n i args args''
     applyToStack env (NDCon fc n t a args) stk
-        = do let args' = !(continueArgs env args) ++ stk
+        = do -- log "eval.stuck" 1 "Evaluating data constructor: \{show !(toFullNames n)} (\{show n})"
+             args' <- continueArgs env args
+             -- log "eval.stuck" 1 "Args evaluated"
+             let args' = args' ++ stk
              pure $ NDCon fc n t a args'
     applyToStack env (NTCon fc n a args) stk
-        = do let args' = !(continueArgs env args) ++ stk
+        = do -- log "eval.stuck" 1 "Evaluating type constructor: \{show !(toFullNames n)} (\{show n})"
+             let args' = !(continueArgs env args) ++ stk
              pure $ NTCon fc n a args'
     applyToStack env (NAs fc s p t) stk
        = if removeAs topopts
@@ -251,7 +270,8 @@ parameters (defs : Defs) (topopts : EvalOpts)
             case tm' of
                  NDelay fc r _ arg =>
                     eval env [arg] (Local {name = UN (Basic "fvar")} fc Nothing _ First) stk
-                 _ => do let args' = !(continueArgs env args) ++ stk
+                 _ => do -- log "eval.stuck" 1 "Evaluating forced term: \{show !(toFullNames tm')}"
+                         let args' = !(continueArgs env args) ++ stk
                          pure (NForce fc r tm' args')
     applyToStack env nf@(NPrimVal fc _) _ = pure nf
     applyToStack env (NErased fc a) stk
@@ -657,10 +677,5 @@ export
 gErased : FC -> Glued vars
 gErased fc = MkGlue True (pure (Erased fc Placeholder)) (const (pure (NErased fc Placeholder)))
 
--- Resume a previously blocked normalisation with a new environment
-export
-continueNF : {auto c : Ref Ctxt Defs} ->
-             {vars : _} ->
-             Defs -> Env Term vars -> NF vars -> Core (NF vars)
-continueNF defs env stuck
-   = applyToStack defs defaultOpts env stuck []
+continueNF defs opts env stuck
+   = applyToStack defs opts env stuck []
