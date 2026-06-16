@@ -175,7 +175,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
     continueArg env arg = do
       arg' <- evalClosure defs arg
       -- log "eval.stuck" 1 "Evaluating argument: \{show !(toFullNames arg')}"
-      continueNF defs ({ reduceClosure := False } topopts) env arg'
+      continueNF defs topopts env arg'
       -- pure arg'
 
     continueArgs : {auto c : Ref Ctxt Defs} ->
@@ -186,26 +186,26 @@ parameters (defs : Defs) (topopts : EvalOpts)
     continueArgs env args
       = if reduceClosure topopts
            then do -- log "eval.stuck" 1 "Continuing with arguments length: \{show (length args)}"
-                   for args $ traversePair $ map (MkNFClosure topopts env) . continueArg env
+                   for args $ traversePair $ map (MkNFClosure ({ reduceClosure := False } topopts) env) . continueArg env
            else pure args
 
     evalBinder : {free : _} -> Ref Ctxt Defs => Env Term free -> Binder (Closure free) -> Core (Binder (Closure free))
     evalBinder env (Pi fc r e ty)
-        = Pi fc r e . MkNFClosure topopts env <$> evalClosure defs ty
+        = Pi fc r e . MkNFClosure ({ reduceClosure := False } topopts) env <$> evalClosure defs ty
     evalBinder env (Lam fc r e ty)
-        = Lam fc r e . MkNFClosure topopts env <$> evalClosure defs ty
+        = Lam fc r e . MkNFClosure ({ reduceClosure := False } topopts) env <$> evalClosure defs ty
     evalBinder env (Let r e val ty)
         = do val <- evalClosure defs val
              ty <- evalClosure defs ty
-             pure $ Let r e (MkNFClosure topopts env val) (MkNFClosure topopts env ty)
+             pure $ Let r e (MkNFClosure ({ reduceClosure := False } topopts) env val) (MkNFClosure ({ reduceClosure := False } topopts) env ty)
     evalBinder env (PVar fc r e ty)
-        = PVar fc r e . MkNFClosure topopts env <$> evalClosure defs ty
+        = PVar fc r e . MkNFClosure ({ reduceClosure := False } topopts) env <$> evalClosure defs ty
     evalBinder env (PLet fc r val ty)
         = do val <- evalClosure defs val
              ty <- evalClosure defs ty
-             pure $ PLet fc r (MkNFClosure topopts env val) (MkNFClosure topopts env ty)
+             pure $ PLet fc r (MkNFClosure ({ reduceClosure := False } topopts) env val) (MkNFClosure ({ reduceClosure := False } topopts) env ty)
     evalBinder env (PVTy fc r ty)
-        = PVTy fc r . MkNFClosure topopts env <$> evalClosure defs ty
+        = PVTy fc r . MkNFClosure ({ reduceClosure := False } topopts) env <$> evalClosure defs ty
 
     -- Apply an evaluated argument (perhaps cached from an earlier evaluation)
     -- to a stack
