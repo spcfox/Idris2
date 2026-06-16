@@ -155,16 +155,16 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
         -- fm : A -> B
         -- elab : A
         = do act <- elabScript rig fc nest env !(evalClosure defs act) exp
-             act <- quote defs env act
+             act <- applyToStack defs ({ reduceClosure := True } withAll) env act []
              fm <- evalClosure defs fm
-             applyToStack defs withHoles env fm [(getLoc act, toClosure withAll env act)]
+             applyToStack defs withHoles env fm [(getLoc act, MkNFClosure withAll env act)]
     elabCon defs "Ap" [_,_,actF,actX]
         -- actF : Elab (A -> B)
         -- actX : Elab A
         = do actF <- elabScript rig fc nest env !(evalClosure defs actF) exp
              actX <- elabScript rig fc nest env !(evalClosure defs actX) exp
-             actX <- quote defs env actX
-             applyToStack defs withHoles env actF [(getLoc actX, toClosure withAll env actX)]
+             actX <- applyToStack defs ({ reduceClosure := True } withAll) env actX []
+             applyToStack defs withHoles env actF [(getLoc actX, MkNFClosure withAll env actX)]
     elabCon defs "Bind" [_,_,act,k]
         -- act : Elab A
         -- k : A -> Elab B
@@ -175,7 +175,6 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
         = do act <- elabScript rig fc nest env
                                 !(evalClosure defs act) exp
              act <- applyToStack defs ({ reduceClosure := True } withAll) env act []
-            --  act <- applyToStack defs ({ strategy = CBV } withAll) env act []
              k <- evalClosure defs k
              r <- applyToStack defs withAll env k [(getLoc act, MkNFClosure withAll env act)]
              elabScript rig fc nest env r exp
