@@ -1,0 +1,9 @@
+1/1: Building Test (Test.idr)
+Main> Main.p0 : Nat -> Nat
+p0 = const 1
+Main> Main.p1 : Nat -> Nat
+p1 = \x => mult (const 1 x) x
+Main> Main.p2 : Nat -> Nat
+p2 = \x => mult (mult (const 1 x) x) x
+Main> 
+Bye for now!
