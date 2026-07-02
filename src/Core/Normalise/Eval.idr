@@ -53,14 +53,15 @@ evalArg defs c = evalClosure defs c
 
 export
 toClosure : EvalOpts -> Env Term outer -> Term outer -> Closure outer
-toClosure opts env tm = MkClosure opts LocalEnv.empty env tm
+toClosure opts env tm = MkClosure True opts LocalEnv.empty env tm
 
 mkClosure : {vars : _} ->
+            (inlineOnly : Bool) ->
             EvalOpts ->
             LocalEnv free vars -> Env Term free ->
             Term (vars ++ free) -> Closure free
-mkClosure opts locs env tm@(Local _ _ idx prf)
-    = fromMaybe (MkClosure opts locs env tm) (getLocal idx prf locs)
+mkClosure inlineOnly opts locs env tm@(Local _ _ idx prf)
+    = fromMaybe (MkClosure inlineOnly opts locs env tm) (getLocal idx prf locs)
   where
     getLocal : {vars : _} ->
                (idx : Nat) -> (0 p : IsVar nm idx (vars ++ free)) ->
@@ -69,7 +70,7 @@ mkClosure opts locs env tm@(Local _ _ idx prf)
     getLocal idx prf [] = Nothing
     getLocal Z First (x :: locs) = Just x
     getLocal (S idx) (Later p) (_ :: locs) = getLocal idx p locs
-mkClosure opts locs env tm = MkClosure opts locs env tm
+mkClosure inlineOnly opts locs env tm = MkClosure inlineOnly opts locs env tm
 
 updateLimit : NameType -> Name -> EvalOpts -> Core (Maybe EvalOpts)
 updateLimit Func n opts
@@ -100,6 +101,13 @@ record TermWithEnv (free : Scope) where
     locEnv : LocalEnv free varsEnv
     term : Term $ Scope.addInner free varsEnv
 
+
+applyToStack' : Defs -> EvalOpts ->
+                {auto c : Ref Ctxt Defs} ->
+                {free : _} ->
+                Env Term free ->
+                NF free -> Stack free -> Core (NF free)
+
 parameters (defs : Defs) (topopts : EvalOpts)
   mutual
     eval : {auto c : Ref Ctxt Defs} ->
@@ -118,26 +126,26 @@ parameters (defs : Defs) (topopts : EvalOpts)
         -- a closure and calling APPLY.
         closeArgs : List (Term (Scope.addInner free vars)) -> List (Closure free)
         closeArgs [] = []
-        closeArgs (t :: ts) = mkClosure topopts locs env t :: closeArgs ts
+        closeArgs (t :: ts) = mkClosure (not topopts.useInlineOnly) topopts locs env t :: closeArgs ts
     eval env locs (Bind fc x (Lam _ r _ ty) scope) (thunk :: stk)
         = eval env (snd thunk :: locs) scope stk
     eval env locs (Bind fc x b@(Let _ r val ty) scope) stk
         = if (holesOnly topopts || argHolesOnly topopts) && not (tcInline topopts)
-             then do let b' = map (mkClosure topopts locs env) b
+             then do let b' = map (mkClosure (not topopts.useInlineOnly) topopts locs env) b
                      pure $ NBind fc x b'
                         (\defs', arg => evalWithOpts defs' topopts
                                                 env (arg :: locs) scope stk)
-             else eval env (mkClosure topopts locs env val :: locs) scope stk
+             else eval env (mkClosure (not topopts.useInlineOnly) topopts locs env val :: locs) scope stk
     eval env locs (Bind fc x b scope) stk
-        = do let b' = map (mkClosure topopts locs env) b
+        = do let b' = map (mkClosure (not topopts.useInlineOnly) topopts locs env) b
              pure $ NBind fc x b'
                       (\defs', arg => evalWithOpts defs' topopts
                                               env (arg :: locs) scope stk)
     eval env locs (App fc fn arg) stk
         = case strategy topopts of
                CBV => do arg' <- eval env locs arg []
-                         eval env locs fn ((fc, MkNFClosure topopts env arg') :: stk)
-               CBN => eval env locs fn ((fc, mkClosure topopts locs env arg) :: stk)
+                         eval env locs fn ((fc, MkNFClosure defs.gamma.inlineOnly topopts env arg') :: stk)
+               CBN => eval env locs fn ((fc, mkClosure (not topopts.useInlineOnly) topopts locs env arg) :: stk)
     eval env locs (As fc s n tm) stk
         = if removeAs topopts
              then eval env locs tm stk
@@ -148,8 +156,8 @@ parameters (defs : Defs) (topopts : EvalOpts)
         = do ty' <- eval env locs ty stk
              pure (NDelayed fc r ty')
     eval env locs (TDelay fc r ty tm) stk
-        = pure (NDelay fc r (mkClosure topopts locs env ty)
-                            (mkClosure topopts locs env tm))
+        = pure (NDelay fc r (mkClosure (not topopts.useInlineOnly) topopts locs env ty)
+                            (mkClosure (not topopts.useInlineOnly) topopts locs env tm))
     eval env locs (TForce fc r tm) stk
         = do tm' <- eval env locs tm []
              case tm' of
@@ -160,6 +168,17 @@ parameters (defs : Defs) (topopts : EvalOpts)
     eval env locs (Erased fc a) stk
       = NErased fc <$> traverse @{%search} @{CORE} (\ t => eval env locs t stk) a
     eval env locs (TType fc u) stk = pure $ NType fc u
+
+    updateInlineOnly : {free : _} -> Closure free -> Closure free
+    updateInlineOnly (MkClosure inlineOnly opts loc env tm)
+      = MkClosure (inlineOnly && not topopts.useInlineOnly) ({ useInlineOnly $= (|| topopts.useInlineOnly) } opts) loc env tm
+    updateInlineOnly (MkNFClosure inlineOnly opts env' nf)
+      = MkNFClosure (inlineOnly && not topopts.useInlineOnly) ({ useInlineOnly $= (|| topopts.useInlineOnly) } opts) env' nf
+
+    updateArgs : {free :_} -> Stack free -> Stack free
+    updateArgs stk = if not topopts.useInlineOnly
+                        then stk
+                        else map (map updateInlineOnly) stk
 
     -- Apply an evaluated argument (perhaps cached from an earlier evaluation)
     -- to a stack
@@ -173,23 +192,26 @@ parameters (defs : Defs) (topopts : EvalOpts)
              applyToStack env arg' stk
     applyToStack env (NBind fc x b@(Let _ r val ty) sc) stk
         = if (holesOnly topopts || argHolesOnly topopts) && not (tcInline topopts)
-             then pure (NBind fc x b
+             then pure (NBind fc x (map updateInlineOnly b)
                               (\defs', arg => applyToStack env !(sc defs' arg) stk))
              else applyToStack env !(sc defs val) stk
     applyToStack env (NBind fc x b sc) stk
-        = pure (NBind fc x b
+        = pure (NBind fc x (map updateInlineOnly b)
                       (\defs', arg => applyToStack env !(sc defs' arg) stk))
     applyToStack env (NApp fc (NRef nt fn) args) stk
-        = evalRef env False fc nt fn (args ++ stk)
-                  (NApp fc (NRef nt fn) (args ++ stk))
+        = evalRef env False fc nt fn (args' ++ stk)
+                  (NApp fc (NRef nt fn) (args' ++ stk))
+      where
+        args' : Stack free
+        args' = map (map updateInlineOnly) args
     applyToStack env (NApp fc (NLocal mrig idx p) args) stk
-        = evalLocal env fc mrig _ p (args ++ stk) LocalEnv.empty
+        = evalLocal env fc mrig _ p (updateArgs args ++ stk) LocalEnv.empty
     applyToStack env (NApp fc (NMeta n i args) args') stk
-        = evalMeta env fc n i args (args' ++ stk)
+        = evalMeta env fc n i (map updateInlineOnly args) (updateArgs args' ++ stk)
     applyToStack env (NDCon fc n t a args) stk
-        = pure $ NDCon fc n t a (args ++ stk)
+        = pure $ NDCon fc n t a (updateArgs args ++ stk)
     applyToStack env (NTCon fc n a args) stk
-        = pure $ NTCon fc n a (args ++ stk)
+        = pure $ NTCon fc n a (updateArgs args ++ stk)
     applyToStack env (NAs fc s p t) stk
        = if removeAs topopts
             then applyToStack env t stk
@@ -206,7 +228,8 @@ parameters (defs : Defs) (topopts : EvalOpts)
             case tm' of
                  NDelay fc r _ arg =>
                     eval env [arg] (Local {name = UN (Basic "fvar")} fc Nothing _ First) stk
-                 _ => pure (NForce fc r tm' (args ++ stk))
+                 _ => do let args' = map (map updateInlineOnly) args
+                         pure (NForce fc r tm' (args' ++ stk))
     applyToStack env nf@(NPrimVal fc _) _ = pure nf
     applyToStack env (NErased fc a) stk
       = NErased fc <$> traverse @{%search} @{CORE} (\ t => applyToStack env t stk) a
@@ -219,10 +242,12 @@ parameters (defs : Defs) (topopts : EvalOpts)
                      Stack free ->
                      Closure free ->
                      Core (NF free)
-    evalLocClosure env fc mrig stk (MkClosure opts locs' env' tm')
-        = evalWithOpts defs opts env' locs' tm' stk
-    evalLocClosure {free} env fc mrig stk (MkNFClosure opts env' nf)
-        = applyToStack env' nf stk
+    evalLocClosure env fc mrig stk (MkClosure inlineOnly opts locs' env' tm')
+        = do let defs' = { gamma->inlineOnly $= (&& inlineOnly)} defs
+             evalWithOpts defs' opts env' locs' tm' stk
+    evalLocClosure {free} env fc mrig stk (MkNFClosure inlineOnly opts env' nf)
+        = do let defs' = { gamma->inlineOnly $= (&& inlineOnly)} defs
+             applyToStack' defs' opts env' nf stk
 
     evalLocal : {auto c : Ref Ctxt Defs} ->
                 {free : _} ->
@@ -253,7 +278,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
                   LocalEnv free vars -> NF free ->
                   LocalEnv free vars
     updateLocal opts env Z First (x :: locs) nf
-        = MkNFClosure opts env nf :: locs
+        = MkNFClosure defs.gamma.inlineOnly opts env nf :: locs
     updateLocal opts env (S idx) (Later p) (x :: locs) nf
         = x :: updateLocal opts env idx p locs nf
     updateLocal _ _ _ _ locs nf = locs
@@ -384,7 +409,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
            env loc opts fc stk (NBind pfc x (Pi fc' r e aty) scty) (ConCase (UN (Basic "->")) tag [s,t] sc)
        = evalConAlt {more} env loc opts fc stk [s,t]
                   [aty,
-                   MkNFClosure opts env (NBind pfc x (Lam fc' r e aty) scty)]
+                   MkNFClosure defs.gamma.inlineOnly opts env (NBind pfc x (Lam fc' r e aty) scty)]
                   sc
     tryAlt {more}
            env loc opts fc stk (NBind pfc x (Pi fc' r e aty) scty) (ConCase nm tag args sc)
@@ -559,19 +584,25 @@ parameters (defs : Defs) (topopts : EvalOpts)
 -- write it explicitly, but it does appear after the parameters in 'eval'!
 evalWithOpts {vars} defs opts = eval {vars} defs opts
 
-evalClosure defs (MkClosure opts locs env tm)
-    = eval defs opts env locs tm []
-evalClosure defs (MkNFClosure opts env nf)
-    = applyToStack defs opts env nf []
+applyToStack' = applyToStack
+
+evalClosure defs (MkClosure inlineOnly opts locs env tm)
+    = do let defs' = { gamma->inlineOnly $= (&& inlineOnly)} defs
+         eval defs' opts env locs tm []
+evalClosure defs (MkNFClosure inlineOnly opts env nf)
+    = do let defs' = { gamma->inlineOnly $= (&& inlineOnly)} defs
+         applyToStack defs' opts env nf []
 
 export
 evalClosureWithOpts : {auto c : Ref Ctxt Defs} ->
                       {free : _} ->
                       Defs -> EvalOpts -> Closure free -> Core (NF free)
-evalClosureWithOpts defs opts (MkClosure _ locs env tm)
-    = eval defs opts env locs tm []
-evalClosureWithOpts defs opts (MkNFClosure _ env nf)
-    = applyToStack defs opts env nf []
+evalClosureWithOpts defs opts (MkClosure inlineOnly _ locs env tm)
+    = do let defs' = { gamma->inlineOnly $= (&& inlineOnly)} defs
+         eval defs' opts env locs tm []
+evalClosureWithOpts defs opts (MkNFClosure inlineOnly _ env nf)
+    = do let defs' = { gamma->inlineOnly $= (&& inlineOnly)} defs
+         applyToStack defs' opts env nf []
 
 export
 nf : {auto c : Ref Ctxt Defs} ->

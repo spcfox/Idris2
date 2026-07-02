@@ -213,8 +213,9 @@ mutual
            pure (TDelay fc r tyQ argQ)
     where
       toHolesOnly : Closure vs -> Closure vs
-      toHolesOnly (MkClosure opts locs env tm)
-          = MkClosure ({ holesOnly := True,
+      toHolesOnly (MkClosure inlineOnly opts locs env tm)
+          = MkClosure inlineOnly
+                      ({ holesOnly := True,
                          argHolesOnly := True } opts)
                       locs env tm
       toHolesOnly c = c

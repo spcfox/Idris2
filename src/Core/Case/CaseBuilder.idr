@@ -513,8 +513,8 @@ groupCons fc fn pvars (x :: xs) {isCons = p :: ps}
     -- the same name in each of the clauses
     addConG n tag pargs pats pid rhs []
         = do cty <- if n == UN (Basic "->")
-                      then pure $ NBind fc (MN "_" 0) (Pi fc top Explicit (MkNFClosure defaultOpts (mkEnv fc vars') (NType fc (MN "top" 0)))) $
-                              (\d, a => pure $ NBind fc (MN "_" 1) (Pi fc top Explicit (MkNFClosure defaultOpts (mkEnv fc vars') (NErased fc Placeholder)))
+                      then pure $ NBind fc (MN "_" 0) (Pi fc top Explicit (MkNFClosure True defaultOpts (mkEnv fc vars') (NType fc (MN "top" 0)))) $
+                              (\d, a => pure $ NBind fc (MN "_" 1) (Pi fc top Explicit (MkNFClosure True defaultOpts (mkEnv fc vars') (NErased fc Placeholder)))
                                 (\d, a => pure $ NType fc (MN "top" 0)))
                       else do defs <- get Ctxt
                               Just t <- lookupTyExact n (gamma defs)
@@ -551,7 +551,7 @@ groupCons fc fn pvars (x :: xs) {isCons = p :: ps}
                 (acc : List01 ne (Group todo' vars')) ->
                 Core (List01 True (Group todo' vars'))
     addDelayG pty parg pats pid rhs []
-        = do let dty = NBind fc (MN "a" 0) (Pi fc erased Explicit (MkNFClosure defaultOpts (mkEnv fc vars') (NType fc (MN "top" 0)))) $
+        = do let dty = NBind fc (MN "a" 0) (Pi fc erased Explicit (MkNFClosure True defaultOpts (mkEnv fc vars') (NType fc (MN "top" 0)))) $
                         (\d, a =>
                             do a' <- evalClosure d a
                                pure (NBind fc (MN "x" 0) (Pi fc top Explicit a)

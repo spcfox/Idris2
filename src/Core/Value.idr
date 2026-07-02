@@ -22,6 +22,7 @@ record EvalOpts where
   reduceLimit : List (Name, Nat) -- reduction limits for given names. If not
                      -- present, no limit
   strategy : EvalOrder
+  useInlineOnly : Bool
 
 export
 defaultOpts : EvalOpts
@@ -34,6 +35,7 @@ defaultOpts = MkEvalOpts
     , fuel = Nothing
     , reduceLimit = []
     , strategy = CBN
+    , useInlineOnly = False
     }
 
 export
@@ -47,6 +49,7 @@ withHoles = MkEvalOpts
     , fuel = Nothing
     , reduceLimit = []
     , strategy = CBN
+    , useInlineOnly = False
     }
 
 export
@@ -60,6 +63,7 @@ withAll = MkEvalOpts
     , fuel = Nothing
     , reduceLimit = []
     , strategy = CBN
+    , useInlineOnly = False
     }
 
 export
@@ -73,6 +77,7 @@ withArgHoles = MkEvalOpts
     , fuel = Nothing
     , reduceLimit = []
     , strategy = CBN
+    , useInlineOnly = False
     }
 
 export
@@ -91,6 +96,10 @@ export
 cbv : EvalOpts
 cbv = { strategy := CBV } defaultOpts
 
+export
+withInlineOnly : EvalOpts
+withInlineOnly = { useInlineOnly := True } defaultOpts
+
 mutual
   -- TODO swap arguments and type as `Scope -> Scoped`
   public export
@@ -100,11 +109,13 @@ mutual
   public export
   data Closure : Scoped where
        MkClosure : {vars : _} ->
+                   (inlineOnly : Bool) ->
                    (opts : EvalOpts) ->
                    LocalEnv free vars ->
                    Env Term free ->
                    Term (Scope.addInner free vars) -> Closure free
-       MkNFClosure : EvalOpts -> Env Term free -> NF free -> Closure free
+       MkNFClosure : (inlineOnly : Bool) -> EvalOpts ->
+                     Env Term free -> NF free -> Closure free
 
   -- The head of a value: things you can apply arguments to
   public export

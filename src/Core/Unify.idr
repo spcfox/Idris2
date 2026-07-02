@@ -1126,11 +1126,11 @@ mutual
   dumpArg : {vars : _} ->
             {auto c : Ref Ctxt Defs} ->
             Env Term vars -> Closure vars -> Core ()
-  dumpArg env (MkClosure opts loc lenv tm)
+  dumpArg env closure@(MkClosure _ _ _ _ tm)
       = do defs <- get Ctxt
            empty <- clearDefs defs
            logTerm "unify" 20 "Term: " tm
-           nf <- evalClosure empty (MkClosure opts loc lenv tm)
+           nf <- evalClosure empty closure
            logNF "unify" 20 "  " env nf
   dumpArg env cl
       = do defs <- get Ctxt
