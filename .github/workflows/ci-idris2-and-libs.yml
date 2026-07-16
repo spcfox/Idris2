@@ -3,7 +3,7 @@ name: Idris2 and External Libs
 on:
   push:
     branches:
-      - '*'
+      - '**'
     tags:
       - '*'
     paths-ignore:
