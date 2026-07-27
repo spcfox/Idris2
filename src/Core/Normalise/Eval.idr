@@ -207,7 +207,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
     applyToStack env (NApp fc (NLocal mrig idx p) args) stk
         = evalLocal env fc mrig _ p (updateArgs args ++ stk) LocalEnv.empty
     applyToStack env (NApp fc (NMeta n i args) args') stk
-        = evalMeta env fc n i (map updateInlineOnly args) (updateArgs args' ++ stk)
+        = evalMeta env fc n i (map updateInlineOnly args) (args' ++ stk)
     applyToStack env (NDCon fc n t a args) stk
         = pure $ NDCon fc n t a (updateArgs args ++ stk)
     applyToStack env (NTCon fc n a args) stk
