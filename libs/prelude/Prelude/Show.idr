@@ -100,6 +100,7 @@ firstCharIs : (Char -> Bool) -> String -> Bool
 firstCharIs p "" = False
 firstCharIs p str = p (assert_total (prim__strHead str))
 
+export
 primNumShow : (a -> String) -> Prec -> a -> String
 primNumShow f d x = let str = f x in showParens (d >= PrefixMinus && firstCharIs (== '-') str) str
 
@@ -175,6 +176,7 @@ showLitChar c
            "DLE", "DC1", "DC2", "DC3", "DC4", "NAK", "SYN", "ETB",
            "CAN", "EM",  "SUB", "ESC", "FS",  "GS",  "RS",  "US"]
 
+export
 showLitString : List Char -> String -> String
 showLitString []        = id
 showLitString ('"'::cs) = ("\\\"" ++) . showLitString cs
