@@ -382,9 +382,9 @@ checkRunElab rig elabinfo nest env fc reqExt script exp
                   elabScript rig fc nest env nfstm $ Just (gnf env expected)
          defs <- get Ctxt -- might have updated as part of the script
          empty <- clearDefs defs
-         log "elab" 10 "Script result: \{show ntm}"
+         log "elab" 1 "Script result: \{show ntm}"
          tm <- quote empty env ntm
-         log "elab" 10 "Quote ended"
+         logTerm "elab" 1 "Quoted result" tm
          pure (tm, gnf env expected)
   where
     mkExpected : Maybe (Glued vars) -> Core (Term vars)
