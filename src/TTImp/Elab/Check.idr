@@ -359,10 +359,11 @@ export
 metaVar : {vars : _} ->
           {auto c : Ref Ctxt Defs} ->
           {auto u : Ref UST UState} ->
+          {default True lets : Bool} ->
           FC -> RigCount ->
           Env Term vars -> Name -> Term vars -> Core (Term vars)
 metaVar fc rig env n ty
-    = do (_, tm) <- newMeta fc rig env n ty (Hole (length env) (holeInit False)) True
+    = do (_, tm) <- newMeta fc rig env n ty (Hole (length env) (holeInit False)) lets
          pure tm
 
 export

@@ -182,7 +182,7 @@ mutual
            nm <- genMVName x
            empty <- clearDefs defs
            metaty <- quote empty env aty
-           metaval <- metaVar fc argRig env nm metaty
+           metaval <- metaVar {lets = False} fc argRig env nm metaty
            let fntm = App fc tm metaval
            fnty <- sc defs (toClosure defaultOpts env metaval)
            when (bindingVars elabinfo) $ update EST $
