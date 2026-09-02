@@ -61,6 +61,10 @@ record Lemma vars where
   pred : Term vars
   ||| The type ((v : ?) -> Type) of the predicate
   predTy : Term vars
+  lhs : Term vars
+  rhs : Term vars
+  type : Term vars
+  returnType : Glued vars
 
 elabRewrite : {vars : _} ->
               {auto c : Ref Ctxt Defs} ->
@@ -80,8 +84,10 @@ elabRewrite loc env expected rulety
          -- the metavariables might have been updated
          expnf <- nf defs env expected
 
-         logNF "elab.rewrite" 5 "Rewriting" env lt
-         logNF "elab.rewrite" 5 "Rewriting in" env expnf
+         logNF "elab.rewrite" 5 "Rewriting, lt" env lt
+         logNF "elab.rewrite" 5 "Rewriting, rt" env rt
+         logNF "elab.rewrite" 5 "Rewriting, lty" env lty
+         logNF "elab.rewrite" 5 "Rewriting, expected" env expnf
          rwexp_sc <- replace defs env lt (Ref loc Bound parg) expnf
          logTerm "elab.rewrite" 5 "Rewritten to" rwexp_sc
 
@@ -93,11 +99,15 @@ elabRewrite loc env expected rulety
          predty <- getTerm gpredty
          exptm <- quote defs env expected
 
+         logTerm "elab.rewrite" 5 "Predicate" pred
+
+         rwexp <- replace defs env lt !(quote empty env rt) expnf
+
          -- if the rewritten expected type converts with the original,
          -- then the rewrite did nothing, which is an error
-         when !(convert defs env rwexp_sc exptm) $
-             throw (RewriteNoChange loc env rulety exptm)
-         pure (MkLemma lemn pred predty)
+        --  when !(convert defs env rwexp_sc exptm) $
+        --      throw (RewriteNoChange loc env rulety exptm)
+         pure $ MkLemma lemn pred predty !(quote defs env lt) !(quote defs env rt) !(quote defs env lty) (gnf env rwexp)
 
 export
 checkRewrite : {vars : _} ->
@@ -126,29 +136,51 @@ checkRewrite {vars} rigc elabinfo nest env ifc rule tm (Just expected)
            when delayed $ log "elab.rewrite" 5 "Retrying rewrite"
            lemma <- elabRewrite vfc env expTy rulet
 
-           rname <- genVarName "_"
-           pname <- genVarName "_"
+          --  rname <- genVarName "_"
+          --  pname <- genVarName "_"
 
-           let pbind = Let vfc erased lemma.pred lemma.predTy
-           let rbind = Let vfc erased (weaken rulev) (weaken rulet)
+          --  let pbind = Let vfc erased lemma.pred lemma.predTy
+          --  let rbind = Let vfc erased (weaken rulev) (weaken rulet)
 
-           let env' = rbind :: pbind :: env
+          --  let env' = rbind :: pbind :: env
+
+           log "elab.rewrite" 5 $ "Check term " ++ show tm
+           logTerm "elab.rewrite" 5 "  as type" !(getTerm lemma.returnType)
+          --  (tmval, _) <- check erased elabinfo nest env tm Nothing
+           (tmval, _) <- check erased elabinfo nest env tm $ Just lemma.returnType
+           log "elab.rewrite" 5 "Term checked"
+
+           let rtm = apply vfc (Ref vfc Func lemma.name)
+                        [ lemma.type
+                        , lemma.lhs
+                        , lemma.rhs
+                        , lemma.pred
+                        , rulev
+                        , tmval
+                        ]
+          --  let rtm = Ref vfc Func lemma.name
+
+           logTerm "elab.rewrite" 5 "Rewriting with" rtm
+           logTerm "elab.rewrite" 5 "Return type" !(getTerm lemma.returnType)
+           logTerm "elab.rewrite" 5 "Expected type" !(getTerm expected)
+
+           pure (rtm, expected)
 
            -- Nothing we do in this last part will affect the EState,
            -- we're only doing the application this way to make sure the
            -- implicits for the rewriting lemma are in the right place. But,
            -- we still need the right type for the EState, so weaken it once
            -- for each of the let bindings above.
-           (rwtm, grwty) <-
-              inScope vfc (pbind :: env) $ \e' =>
-                inScope {e=e'} vfc env' $ \e'' =>
-                  let offset = mkSizeOf [rname, pname] in
-                  check {e = e''} rigc elabinfo (weakenNs offset nest) env'
-                    (apply (IVar vfc lemma.name)
-                      [ IVar vfc pname
-                      , IVar vfc rname
-                      , tm ])
-                    (Just (gnf env' (weakenNs offset expTy)))
-           rwty <- getTerm grwty
-           let binding = Bind vfc pname pbind . Bind vfc rname rbind
-           pure (binding rwtm, gnf env (binding rwty))
+          --  (rwtm, grwty) <-
+          --     inScope vfc (pbind :: env) $ \e' =>
+          --       inScope {e=e'} vfc env' $ \e'' =>
+          --         let offset = mkSizeOf [rname, pname] in
+          --         check {e = e''} rigc elabinfo (weakenNs offset nest) env'
+          --           (apply (IVar vfc lemma.name)
+          --             [ IVar vfc pname
+          --             , IVar vfc rname
+          --             , tm ])
+          --           (Just (gnf env' (weakenNs offset expTy)))
+          --  rwty <- getTerm grwty
+          --  let binding = Bind vfc pname pbind . Bind vfc rname rbind
+          --  pure (binding rwtm, gnf env (binding rwty))

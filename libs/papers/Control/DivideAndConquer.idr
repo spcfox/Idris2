@@ -11,7 +11,7 @@
 module Control.DivideAndConquer
 
 %default total
-
+{-
 namespace Section4Sub1
 
   public export
