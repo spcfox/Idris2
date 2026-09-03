@@ -514,8 +514,7 @@ parameters (defs : Defs) (topopts : EvalOpts)
        --   + It's inlinable and we're in 'tcInline'
         = if alwaysReduce r
              || (not (holesOnly opts || argHolesOnly opts || tcInline opts))
-             || (meta && not (isErased rigd))
-             || (meta && holesOnly opts)
+             || meta
              || (tcInline opts && elem TCInline flags)
              then case argsFromStack args stk of
                        Nothing => do logC "eval.def.underapplied" 50 $ do
