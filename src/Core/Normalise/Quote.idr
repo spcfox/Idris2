@@ -178,11 +178,12 @@ mutual
            pure (Bind fc n b' sc')
   quoteGenNF q opts defs bound env (NApp fc f args)
       = do f' <- quoteHead q opts defs fc bound env f
+           let rw = isRewrite !(toFullNames f')
            opts' <- case sizeLimit opts of
                          Nothing => pure opts
                          Just Z => throw (InternalError "Size limit exceeded")
                          Just (S k) => pure ({ sizeLimit := Just k } opts)
-           args' <- if patterns opts && not (topLevel opts) && isRef f
+           args' <- if rw || patterns opts && not (topLevel opts) && isRef f
                        then do empty <- clearDefs defs
                                quoteArgsWithFC q opts' empty bound env args
                                else quoteArgsWithFC q ({ topLevel := False } opts')
@@ -192,6 +193,10 @@ mutual
       isRef : NHead vars -> Bool
       isRef (NRef {}) = True
       isRef _ = False
+
+      isRewrite : Term vs -> Bool
+      isRewrite (Ref _ _ n) = n == NS (mkNamespace "Builtin") (UN $ Basic "rewrite__impl")
+      isRewrite _ = False
   quoteGenNF q opts defs bound env (NDCon fc n t ar args)
       = do args' <- quoteArgsWithFC q opts defs bound env args
            pure $ applyStackWithFC (Ref fc (DataCon t ar) n) args'
