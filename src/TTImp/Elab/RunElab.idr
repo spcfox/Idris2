@@ -149,8 +149,8 @@ elabScript rig fc nest env script@(NDCon nfc nm t ar args) exp
 
     elabCon : Defs -> String -> List (Closure vars) -> Core (NF vars)
     elabCon defs "Pure" [_,val]
-        = do empty <- clearDefs defs
-             evalClosure empty val
+        = do -- empty <- clearDefs defs
+             evalClosure defs val
     elabCon defs "Map" [_,_,fm,act]
         -- fm : A -> B
         -- elab : A
