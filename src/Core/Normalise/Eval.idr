@@ -114,10 +114,12 @@ parameters (defs : Defs) (topopts : EvalOpts)
            {free, vars : _} ->
            Env Term free -> LocalEnv free vars ->
            Term (vars ++ free) -> Stack free -> Core (NF free)
-    eval env locs (Local fc mrig idx prf) stk
-        = evalLocal env fc mrig idx prf stk locs
-    eval env locs (Ref fc nt fn) stk
-        = evalRef env False fc nt fn stk (NApp fc (NRef nt fn) stk)
+    eval env locs tm@(Local fc mrig idx prf) stk
+        = do --logTerm "elab" 1 "eval Local" tm
+             evalLocal env fc mrig idx prf stk locs
+    eval env locs tm@(Ref fc nt fn) stk
+        = do -- logTerm "elab" 1 "eval Ref" tm
+             evalRef env False fc nt fn stk (NApp fc (NRef nt fn) stk)
     eval {vars} {free} env locs (Meta fc name idx args) stk
         = evalMeta env fc name idx (closeArgs args) stk
       where
@@ -135,7 +137,8 @@ parameters (defs : Defs) (topopts : EvalOpts)
                      pure $ NBind fc x b'
                         (\defs', arg => evalWithOpts defs' topopts
                                                 env (arg :: locs) scope stk)
-             else eval env (mkClosure (not topopts.useInlineOnly) topopts locs env val :: locs) scope stk
+             else do --logTerm "elab" 1 "eval: Inline let (inlineOnly: \{show defs.gamma.inlineOnly})" val
+                     eval env (mkClosure (not topopts.useInlineOnly) topopts locs env val :: locs) scope stk
     eval env locs (Bind fc x b scope) stk
         = do let b' = map (mkClosure (not topopts.useInlineOnly) topopts locs env) b
              pure $ NBind fc x b'
@@ -192,9 +195,13 @@ parameters (defs : Defs) (topopts : EvalOpts)
              applyToStack env arg' stk
     applyToStack env (NBind fc x b@(Let _ r val ty) sc) stk
         = if (holesOnly topopts || argHolesOnly topopts) && not (tcInline topopts)
-             then pure (NBind fc x (map updateInlineOnly b)
+             then do -- log "elab" 1 "Preserve let"
+                     pure (NBind fc x (map updateInlineOnly b)
                               (\defs', arg => applyToStack env !(sc defs' arg) stk))
-             else applyToStack env !(sc defs val) stk
+             else do -- log "elab" 1 "Inline let"
+                     applyToStack env !(sc defs $ updateInlineOnly val) stk -- TODO: is this right?
+        -- = pure (NBind fc x (map updateInlineOnly b)
+        --                       (\defs', arg => applyToStack env !(sc defs' arg) stk))
     applyToStack env (NBind fc x b sc) stk
         = pure (NBind fc x (map updateInlineOnly b)
                       (\defs', arg => applyToStack env !(sc defs' arg) stk))
@@ -209,7 +216,8 @@ parameters (defs : Defs) (topopts : EvalOpts)
     applyToStack env (NApp fc (NMeta n i args) args') stk
         = evalMeta env fc n i (map updateInlineOnly args) (args' ++ stk)
     applyToStack env (NDCon fc n t a args) stk
-        = pure $ NDCon fc n t a (updateArgs args ++ stk)
+        = do -- log "elab" 1 "NDCon, args: \{show $ length args}, stk: \{show $ length stk}"
+             pure $ NDCon fc n t a (updateArgs args ++ stk)
     applyToStack env (NTCon fc n a args) stk
         = pure $ NTCon fc n a (updateArgs args ++ stk)
     applyToStack env (NAs fc s p t) stk
@@ -244,10 +252,12 @@ parameters (defs : Defs) (topopts : EvalOpts)
                      Core (NF free)
     evalLocClosure env fc mrig stk (MkClosure inlineOnly opts locs' env' tm')
         = do let defs' = { gamma->inlineOnly $= (&& inlineOnly)} defs
-             evalWithOpts defs' opts env' locs' tm' stk
+             let opts' = { useInlineOnly $= (|| topopts.useInlineOnly) } opts
+             evalWithOpts defs' opts' env' locs' tm' stk
     evalLocClosure {free} env fc mrig stk (MkNFClosure inlineOnly opts env' nf)
         = do let defs' = { gamma->inlineOnly $= (&& inlineOnly)} defs
-             applyToStack' defs' opts env' nf stk
+             let opts' = { useInlineOnly $= (|| topopts.useInlineOnly) } opts
+             applyToStack' defs' opts' env' nf stk
 
     evalLocal : {auto c : Ref Ctxt Defs} ->
                 {free : _} ->
