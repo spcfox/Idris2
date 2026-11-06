@@ -216,7 +216,7 @@ findLinear top bound rig tm
                let a = nameAt prf
                if idx < bound
                  then do sc' <- sc defs (toClosure defaultOpts Env.empty (Ref fc Bound x))
-                         pure $ (a, rigMult c rig) ::
+                         pure $ (a, c |*| rig) ::
                                     !(findLinArg rig sc' as)
                  else do sc' <- sc defs (toClosure defaultOpts Env.empty (Ref fc Bound x))
                          findLinArg rig sc' as

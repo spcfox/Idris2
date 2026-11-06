@@ -70,7 +70,7 @@ mkArgs fc rigc env (NBind nfc x (Pi fc' c p ty) sc)
          empty <- clearDefs defs
          nm <- genName "sa"
          argTy <- quote empty env ty
-         let argRig = rigMult rigc c
+         let argRig = rigc |*| c
          (idx, arg) <- newMeta fc' argRig env nm argTy
                                (Hole (length env) (holeInit False)) False
          setInvertible fc (Resolved idx)
