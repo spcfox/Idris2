@@ -3,6 +3,7 @@ version = 0.8.0
 
 modules =
     Algebra,
+    Algebra.Parametric,
     Algebra.Preorder,
     Algebra.Semiring,
     Algebra.SizeChange,
