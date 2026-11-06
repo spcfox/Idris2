@@ -122,6 +122,7 @@ TTC Name where
              9 => pure (UN Underscore)
              _ => corrupt "Name"
 
+-- TODO: add parametric
 export
 TTC RigCount where
   toBuf = elimSemi

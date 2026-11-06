@@ -55,3 +55,7 @@ Top a => Top (Parametric a) where
   top = Rig top
   topAbs {x = Param} = Refl
   topAbs {x = Rig x} = topAbs
+
+export
+parametric : Parametric a
+parametric = Param

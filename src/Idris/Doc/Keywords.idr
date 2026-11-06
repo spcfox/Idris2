@@ -758,6 +758,7 @@ symbolsDoc
              as a pattern or type variable.
              """
   :: "`" ::= ""
+  :: "#" ::= "Parametric quantity"
   :: "%" ::= "Start of a pragma"
   :: "\\" ::= lambdaAbstraction
   :: ":" ::= """

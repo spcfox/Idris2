@@ -212,7 +212,7 @@ special = ["%lam", "%pi", "%imppi", "%let"]
 
 public export
 symbols : List String
-symbols = [",", ";", "_", "`"]
+symbols = [",", ";", "_", "`", "#"]
 
 export
 groupSymbols : List String
