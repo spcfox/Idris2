@@ -13,7 +13,7 @@ RigCount = Parametric ZeroOneOmega
 
 export
 showCount : RigCount -> String
-showCount  Param     = "# "
+showCount  Param     = "## "
 showCount (Rig Rig0) = "0 "
 showCount (Rig Rig1) = "1 "
 showCount (Rig RigW) = ""

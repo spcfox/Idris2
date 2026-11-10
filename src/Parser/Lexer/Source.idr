@@ -212,7 +212,7 @@ special = ["%lam", "%pi", "%imppi", "%let"]
 
 public export
 symbols : List String
-symbols = [",", ";", "_", "`", "#"]
+symbols = [",", ";", "_", "`"]
 
 export
 groupSymbols : List String
@@ -244,7 +244,7 @@ public export
 reservedInfixSymbols : List String
 reservedInfixSymbols
     = ["%", "\\", ":", "=", ":=", "$=", "|", "|||", "<-", "->", "=>", "?", "!",
-       "&", "**", "..", "~", "@"]
+       "&", "**", "..", "~", "@", "##"]
 
 -- Valid symbols which have a special meaning so can't be operators
 public export

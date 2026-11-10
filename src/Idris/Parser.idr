@@ -651,7 +651,7 @@ mutual
 
   multiplicity : OriginDesc -> EmptyRule RigCount
   multiplicity fname
-      = decoratedSymbol fname "#" $> parametric
+      = decoratedSymbol fname "##" $> parametric
     <|> (decorate fname Keyword intLit >>= getMult)
     <|> pure top
 

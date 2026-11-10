@@ -36,7 +36,7 @@ prettyImpBracket True = braces
 
 export
 prettyRigHole : RigCount -> Doc IdrisSyntax
-prettyRigHole  Param     = keyword (pretty0 '#') <+> space
+prettyRigHole  Param     = keyword "##" <+> space
 prettyRigHole (Rig Rig0) = keyword (pretty0 '0') <+> space
 prettyRigHole (Rig Rig1) = keyword (pretty0 '1') <+> space
 prettyRigHole (Rig RigW) = space <+> space

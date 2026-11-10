@@ -233,7 +233,7 @@ mutual
 
   multiplicity : EmptyRule RigCount
   multiplicity
-      = symbol "#" $> parametric
+      = symbol "##" $> parametric
     <|> (intLit >>= getMult)
     <|> pure top
 
