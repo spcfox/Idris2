@@ -5,7 +5,7 @@ import Algebra.Preorder
 
 %default total
 
-export
+public export
 data Parametric a = Param | Rig a
 
 %name Parametric rig

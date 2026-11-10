@@ -5,7 +5,7 @@ import Algebra.Preorder
 
 %default total
 
-export
+public export
 data ZeroOneOmega = Rig0 | Rig1 | RigW
 
 %name ZeroOneOmega rig

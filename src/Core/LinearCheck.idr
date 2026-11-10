@@ -264,7 +264,7 @@ mutual
       rig = case b of
                  Pi {} =>
                       if isErased rig_in
-                         then erased
+                         then parametric
                          else top -- checking as if an inspectable run-time type
                  Let {} => rig_in
                  _ => if isErased rig_in

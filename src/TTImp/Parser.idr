@@ -302,7 +302,7 @@ mutual
            ns <- sepBy1 (symbol ",") (withFC userName)
            nend <- location
            let nfc = MkFC fname nstart nend
-           let binders = map (\n => Mk [erased {a=RigCount}, Just n]
+           let binders = map (\n => Mk [erased, Just n]
                                        (Implicit nfc False))
                              (forget ns)
            symbol "."

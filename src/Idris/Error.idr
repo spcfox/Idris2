@@ -412,14 +412,16 @@ perrorRaw (LinearMisuse fc n exp ctx)
                 <+> line <+> !(ploc fc)
   where
     prettyRig : RigCount -> Doc ann
-    prettyRig = elimSemi "irrelevant"
-                         "linear"
-                         (const "unrestricted")
+    prettyRig  Param     = "parametric"
+    prettyRig (Rig Rig0) = "irrelevant"
+    prettyRig (Rig Rig1) = "linear"
+    prettyRig (Rig RigW) = "unrestricted"
 
     prettyRel : RigCount -> Doc ann
-    prettyRel = elimSemi "irrelevant"
-                         "relevant"
-                         (const "non-linear")
+    prettyRel  Param     = "parametric"
+    prettyRel (Rig Rig0) = "irrelevant"
+    prettyRel (Rig Rig1) = "linear"
+    prettyRel (Rig RigW) = "non-linear"
 perrorRaw (BorrowPartial fc env tm arg)
     = pure $ errorDesc (code !(pshow env tm) <++> reflow "borrows argument" <++> code !(pshow env arg)
         <++> reflow "so must be fully applied.")

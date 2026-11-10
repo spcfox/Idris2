@@ -42,7 +42,7 @@ checkIfGuarded fc n
                   | Nothing => pure False
              case definition gdef of
                   DCon {} => pure True
-                  _ => pure (multiplicity gdef == erased
+                  _ => pure (isErased (multiplicity gdef)
                               || (AllGuarded `elem` flags gdef))
 
     guarded : {vars : _} -> Env Term vars -> Term vars -> Core Bool

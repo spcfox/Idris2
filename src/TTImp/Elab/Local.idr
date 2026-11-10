@@ -44,7 +44,7 @@ localHelper {vars} nest env nestdecls_in func
          -- If the parent function is erased, then the nested definitions
          -- will be erased too
          let nestdeclsMult =
-           if mult == erased
+           if isErased mult
               then map setErased nestdeclsVis
               else nestdeclsVis
 

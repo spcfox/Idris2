@@ -722,11 +722,15 @@ Reify RigCount where
 
 export
 Reflect RigCount where
-  reflect fc defs lhs env r
-      = elimSemi (getCon fc defs (reflectiontt "M0"))
-                 (getCon fc defs (reflectiontt "M1"))
-                 (const (getCon fc defs (reflectiontt "MW")))
-                 r
+  -- reflect fc defs lhs env r
+      -- = elimSemi (getCon fc defs (reflectiontt "M0"))
+      --            (getCon fc defs (reflectiontt "M1"))
+      --            (const (getCon fc defs (reflectiontt "MW")))
+      --            r
+  reflect fc defs lhs env  Param     = getCon fc defs (reflectiontt "M0")
+  reflect fc defs lhs env (Rig Rig0) = getCon fc defs (reflectiontt "M0")
+  reflect fc defs lhs env (Rig Rig1) = getCon fc defs (reflectiontt "M1")
+  reflect fc defs lhs env (Rig RigW) = getCon fc defs (reflectiontt "MW")
 
 export
 Reify t => Reify (PiInfo t) where

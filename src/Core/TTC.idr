@@ -125,16 +125,17 @@ TTC Name where
 -- TODO: add parametric
 export
 TTC RigCount where
-  toBuf = elimSemi
-              (tag 0)
-              (tag 1)
-              (const $ tag 2)
+  toBuf Param = tag 0
+  toBuf (Rig Rig0) = tag 1
+  toBuf (Rig Rig1) = tag 2
+  toBuf (Rig RigW) = tag 3
 
   fromBuf
       = case !getTag of
-             0 => pure erased
-             1 => pure linear
-             2 => pure top
+             0 => pure parametric
+             1 => pure erased
+             2 => pure linear
+             3 => pure top
              _ => corrupt "RigCount"
 
 export

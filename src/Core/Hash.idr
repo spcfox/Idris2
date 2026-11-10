@@ -123,10 +123,10 @@ Hashable Name where
 
 export
 Hashable RigCount where
-  hashWithSalt h = elimSemi
-                     (hashWithSalt h 0)
-                     (hashWithSalt h 1)
-                     (const $ hashWithSalt h 2)
+  hashWithSalt h Param = hashWithSalt h 0
+  hashWithSalt h (Rig Rig0) = hashWithSalt h 1
+  hashWithSalt h (Rig Rig1) = hashWithSalt h 2
+  hashWithSalt h (Rig RigW) = hashWithSalt h 3
 
 export
 Hashable t => Hashable (PiInfo t) where

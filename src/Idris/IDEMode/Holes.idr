@@ -36,9 +36,10 @@ prettyImpBracket True = braces
 
 export
 prettyRigHole : RigCount -> Doc IdrisSyntax
-prettyRigHole = elimSemi (keyword (pretty0 '0') <+> space)
-                         (keyword (pretty0 '1') <+> space)
-                         (const $ space <+> space)
+prettyRigHole  Param     = keyword (pretty0 '#') <+> space
+prettyRigHole (Rig Rig0) = keyword (pretty0 '0') <+> space
+prettyRigHole (Rig Rig1) = keyword (pretty0 '1') <+> space
+prettyRigHole (Rig RigW) = space <+> space
 
 export
 Pretty IdrisSyntax Holes.Premise where

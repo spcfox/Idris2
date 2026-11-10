@@ -81,7 +81,7 @@ checkPi rig elabinfo nest env fc rigf info n argTy retTy expTy
     -- it's always erased
     getRig : ElabMode -> RigCount
     getRig (InLHS _) = rig
-    getRig _ = erased
+    getRig _ = parametric
 
 findLamRig : {auto c : Ref Ctxt Defs} ->
              Maybe (Glued vars) -> Core RigCount
