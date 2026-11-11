@@ -645,12 +645,7 @@ mutual
         (lam fname indents)
 
   multiplicity : OriginDesc -> EmptyRule RigCount
-  multiplicity fname
-      = case !(optional $ decorate fname Keyword intLit) of
-          (Just 0) => pure erased
-          (Just 1) => pure linear
-          Nothing => pure top
-          _ => fail "Invalid multiplicity (must be 0 or 1)"
+  multiplicity fname = option top $ decorate fname Keyword multiplicityLit
 
   bindList : OriginDesc -> IndentInfo ->
              Rule (List (RigCount, WithBounds PTerm, PTerm, PiInfo PTerm))

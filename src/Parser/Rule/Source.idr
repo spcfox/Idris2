@@ -89,13 +89,13 @@ export
 constant : Rule Constant
 constant
     = terminal "Expected constant" $ \case
-        CharLit c    => Ch <$> getCharLit c
-        DoubleLit d  => Just (Db d)
-        IntegerLit i => Just (BI i)
-        Ident s      => isConstantType (UN $ Basic s) >>=
+        CharLit c      => Ch <$> getCharLit c
+        DoubleLit d    => Just (Db d)
+        IntegerLit _ i => Just (BI i)
+        Ident s        => isConstantType (UN $ Basic s) >>=
                              \case WorldType => Nothing
                                    c         => Just $ PrT c
-        _            => Nothing
+        _              => Nothing
 
 documentation' : Rule String
 documentation' = terminal "Expected documentation comment" $
@@ -125,8 +125,17 @@ intLit : Rule Integer
 intLit
     = terminal "Expected integer literal" $
                \case
-                 IntegerLit i => Just i
+                 IntegerLit _ i => Just i
                  _ => Nothing
+
+export
+multiplicityLit : Rule RigCount
+multiplicityLit
+    = terminal "Expected multiplicity" $
+                \case
+                  IntegerLit "0" _ => Just erased
+                  IntegerLit "1" _ => Just linear
+                  _ => Nothing
 
 export
 onOffLit : Rule Bool

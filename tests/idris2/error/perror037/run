@@ -1,0 +1,7 @@
+. ../../../testutils.sh
+
+check LeadingZero.idr
+check Underscore.idr
+check Bin.idr
+check Oct.idr
+check Hex.idr

@@ -1,0 +1,35 @@
+1/1: Building LeadingZero (LeadingZero.idr)
+Error: Expected a type declaration.
+
+LeadingZero:1:13--1:14
+ 1 | leadingZero : (00 _ : Type) -> Type
+                 ^
+
+1/1: Building Underscore (Underscore.idr)
+Error: Expected a type declaration.
+
+Underscore:1:11--1:12
+ 1 | undescore : (0_0 _ : Type) -> Type
+               ^
+
+1/1: Building Bin (Bin.idr)
+Error: Expected a type declaration.
+
+Bin:1:5--1:6
+ 1 | bin : (0b0 _ : Type) -> Type
+         ^
+
+1/1: Building Oct (Oct.idr)
+Error: Expected a type declaration.
+
+Oct:1:5--1:6
+ 1 | oct : (0o0 _ : Type) -> Type
+         ^
+
+1/1: Building Hex (Hex.idr)
+Error: Expected a type declaration.
+
+Hex:1:5--1:6
+ 1 | hex : (0x0 _ : Type) -> Type
+         ^
+

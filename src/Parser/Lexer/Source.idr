@@ -42,7 +42,8 @@ data Token
   -- Literals
   = CharLit String
   | DoubleLit Double
-  | IntegerLit Integer
+  | IntegerLit String Integer -- The string is the original literal;
+                              -- the integer is its value
   -- String
   | StringBegin Nat IsMultiline -- The escape depth and whether is multiline string
   | StringEnd
@@ -80,7 +81,7 @@ Show Token where
   -- Literals
   show (CharLit x) = "character " ++ show x
   show (DoubleLit x) = "double " ++ show x
-  show (IntegerLit x) = "literal " ++ show x
+  show (IntegerLit _ x) = "literal " ++ show x
   -- String
   show (StringBegin hashtag Single) = "string begin"
   show (StringBegin hashtag Multi) = "multiline string begin"
@@ -112,7 +113,7 @@ Pretty Void Token where
   -- Literals
   pretty (CharLit x) = pretty "character" <++> squotes (pretty x)
   pretty (DoubleLit x) = pretty "double" <++> pretty (show x)
-  pretty (IntegerLit x) = pretty "literal" <++> pretty (show x)
+  pretty (IntegerLit _ x) = pretty "literal" <++> pretty (show x)
   -- String
   pretty (StringBegin hashtag Single) = reflow "string begin"
   pretty (StringBegin hashtag Multi) = reflow "multiline string begin"
@@ -318,10 +319,10 @@ mutual
       <|> match (choice $ (exact . fst) <$> debugInfo) (MagicDebugInfo . fromMaybe DebugLoc . flip lookup debugInfo)
       <|> match (choice $ exact <$> symbols) Symbol
       <|> match doubleLit (DoubleLit . cast)
-      <|> match binUnderscoredLit (IntegerLit . fromBinLit . removeUnderscores)
-      <|> match hexUnderscoredLit (IntegerLit . fromHexLit . removeUnderscores)
-      <|> match octUnderscoredLit (IntegerLit . fromOctLit . removeUnderscores)
-      <|> match digitsUnderscoredLit (IntegerLit . cast . removeUnderscores)
+      <|> match binUnderscoredLit (\s => IntegerLit s $ fromBinLit $ removeUnderscores s)
+      <|> match hexUnderscoredLit (\s => IntegerLit s $ fromHexLit $ removeUnderscores s)
+      <|> match octUnderscoredLit (\s => IntegerLit s $ fromOctLit $ removeUnderscores s)
+      <|> match digitsUnderscoredLit (\s => IntegerLit s $ cast $ removeUnderscores s)
       <|> compose multilineBegin
                   (\begin => StringBegin (countHashtag begin) Multi)
                   countHashtag
