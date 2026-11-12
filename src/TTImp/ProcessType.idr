@@ -132,6 +132,10 @@ checkForShadowing env (IPi fc _ _ nm argTy retTy)
          argShadowing `mergeLeft` retShadowing
 checkForShadowing env _ = empty
 
+allowedRigCount : RigCount -> Bool
+allowedRigCount Param = False
+allowedRigCount _ = True
+
 export
 processType : {vars : _} ->
               {auto c : Ref Ctxt Defs} ->
@@ -143,7 +147,9 @@ processType : {vars : _} ->
               FC -> RigCount -> Visibility ->
               List FnOpt -> ImpTy -> Core ()
 processType {vars} eopts nest env fc rig vis opts ty_raw
-    = do let typeName = ty_raw.tyName
+    = do let True = allowedRigCount rig
+           | False => throw (GenericMsg fc "Top-level declaration cannot have quantity \{show rig}")
+         let typeName = ty_raw.tyName
          n <- inCurrentNS typeName.val
          let tfc = ty_raw.fc
 
