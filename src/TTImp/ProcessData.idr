@@ -65,6 +65,62 @@ checkFamily loc cn tn env nf
                     else throw $ BadDataConType loc cn tn
            _ => throw $ BadDataConType loc cn tn
 
+findParametric : {auto c : Ref Ctxt Defs} -> ClosedNF -> Core NatSet
+findParametric = go 0 empty
+  where
+    go : Nat -> NatSet -> ClosedNF -> Core NatSet
+    go pos acc (NBind fc _ (Pi _ rig _ _) sc)
+        = do defs <- get Ctxt
+             go (S pos) (if isParametric rig then insert pos acc else acc)
+                !(sc defs (toClosure defaultOpts Env.empty (Erased fc Placeholder)))
+    go _ acc _ = pure acc
+
+checkParametric : {auto c : Ref Ctxt Defs} ->
+                  {auto u : Ref UST UState} ->
+                  FC -> Name -> Name -> NatSet -> ClosedNF -> Core ()
+checkParametric fc cn tn param nf
+    = if isEmpty param
+         then pure ()
+         else do (conParam, args) <- collectParametricArgs empty nf
+                 checkParametricLinearity 0 (map (const (False, False)) conParam) args
+  where
+    collectParametricArgs : NameMap () -> ClosedNF -> Core (NameMap (), List (FC, ClosedClosure))
+    collectParametricArgs conParam (NBind fc _ (Pi _ rig _ _) sc)
+        = do defs <- get Ctxt
+             nm <- UnifyState.genName "arg"
+             let conParam' = if isParametric rig
+                                then insert nm () conParam
+                                else conParam
+             collectParametricArgs conParam' !(sc defs (toClosure defaultOpts Env.empty (Ref fc Bound nm)))
+    collectParametricArgs conParam (NTCon _ _ _ args) = pure (conParam, args)
+    collectParametricArgs _ _ = throw $ BadDataConType fc cn tn
+
+    checkParametricLinearity : Nat -> NameMap (Bool, Bool) -> -- (parametric used, used anyway)
+                               List (FC, ClosedClosure) -> Core ()
+    checkParametricLinearity n conParam [] = pure ()
+    checkParametricLinearity n conParam ((fc, arg) :: args)
+        = do defs <- get Ctxt
+             tm <- evalClosure defs arg
+             case tm of
+               NApp _ (NRef Bound nm) [] =>
+                 case lookup nm conParam of
+                   Just (True, _) =>
+                     throw $ GenericMsg fc "Parametric argument is used more than once"
+                   Just (False, True) =>
+                     if n `elem` param
+                        then throw $ GenericMsg fc "Parametric argument is used more than once"
+                        else checkParametricLinearity (S n) conParam args
+                   Just (False, False) =>
+                     if n `elem` param
+                        then checkParametricLinearity (S n) (insert nm (True, False) conParam) args
+                        else checkParametricLinearity (S n) (insert nm (False, True) conParam) args
+                   Nothing => if n `elem` param
+                                then throw $ GenericMsg fc "Parametric argument is not a parametric variable"
+                                else checkParametricLinearity (S n) conParam args
+               _ => if n `elem` param
+                       then throw $ GenericMsg fc "Parametric argument is not a variable"
+                       else checkParametricLinearity (S n) conParam args
+
 updateNS : Name -> Name -> RawImp -> RawImp
 updateNS orig ns (IPi fc c p n ty sc) = IPi fc c p n ty (updateNS orig ns sc)
 updateNS orig ns tm = updateNSApp tm
@@ -87,8 +143,9 @@ checkCon : {vars : _} ->
            {auto o : Ref ROpts REPLOpts} ->
            List ElabOpt -> NestedNames vars ->
            Env Term vars -> Visibility -> (orig : Name) -> (resolved : Name) ->
+           (parametrics : NatSet) ->
            ImpTy -> Core Constructor
-checkCon {vars} opts nest env vis tn_in tn ty_raw
+checkCon {vars} opts nest env vis tn_in tn param ty_raw
     = do let cn_in = ty_raw.tyName
          let fc = ty_raw.fc
          cn <- inCurrentNS cn_in.val
@@ -111,6 +168,8 @@ checkCon {vars} opts nest env vis tn_in tn ty_raw
          checkFamily fc cn tn env !(nf defs env ty)
          let fullty = abstractEnvType fc env ty
          logTermNF "declare.data.constructor" 5 ("Constructor " ++ show cn) Env.empty fullty
+
+         checkParametric fc cn tn param !(nf defs Env.empty fullty)
 
          traverse_ addToSave (keys (getMetas ty))
          addToSave cn
@@ -521,10 +580,12 @@ processData {vars} eopts nest env fc def_vis mbtot (MkImpData dfc n_in mty_raw o
                       addHashWithNames fullty
                       log "module.hash" 15 "Adding hash for data declaration with name \{show n}"
 
+         param <- findParametric !(nf defs Env.empty fullty)
+
          -- Constructors are private if the data type as a whole is
          -- export
          let cvis = if vis == Export then Private else vis
-         cons <- traverse (checkCon eopts nest env cvis n_in (Resolved tidx)) cons_raw
+         cons <- traverse (checkCon eopts nest env cvis n_in (Resolved tidx) param) cons_raw
 
          let ddef = MkData (Mk [dfc, NoFC n, arity] fullty) cons
          ignore $ addData vars vis tidx ddef

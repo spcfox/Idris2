@@ -19,6 +19,11 @@ showCount (Rig Rig1) = "1 "
 showCount (Rig RigW) = ""
 
 export
+isParametric : RigCount -> Bool
+isParametric Param = True
+isParametric _     = False
+
+export
 isErased : RigCount -> Bool
 isErased  Param     = True
 isErased (Rig Rig0) = True
