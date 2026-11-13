@@ -104,7 +104,7 @@ natToInteger (S k) = 1 + natToInteger k
 
 ||| Counts the number of elements that satisfy a predicate.
 public export
-count : Foldable t => (predicate : a -> Bool) -> t a -> Nat
+count : {## t : _} -> Foldable t => (predicate : a -> Bool) -> t a -> Nat
 count predicate = foldMap @{%search} @{Additive} (\x => if predicate x then 1 else 0)
 
 -----------
@@ -130,30 +130,30 @@ Bitraversable Pair where
 
 %inline
 public export
-Functor (Pair a) where
+{## a : _} -> Functor (Pair a) where
   map = mapSnd
 
 %inline
 public export
-Foldable (Pair a) where
+{## a : _} -> Foldable (Pair a) where
   foldr op init (_, x) = x `op` init
   foldl op init (_, x) = init `op` x
   null _ = False
 
 %inline
 public export
-Traversable (Pair a) where
+{## a : _} -> Traversable (Pair a) where
   traverse f (l, r) = (l,) <$> f r
 
 %inline
 public export
-Monoid a => Applicative (Pair a) where
+{## a : _} -> Monoid a => Applicative (Pair a) where
   pure = (neutral,)
   (a1,f) <*> (a2,v) = (a1 <+> a2, f v)
 
 %inline
 public export
-Monoid a => Monad (Pair a) where
+{## a : _} -> Monoid a => Monad (Pair a) where
   (a1,a) >>= f = let (a2,b) = f a in (a1 <+> a2, b)
 
 -----------
@@ -163,53 +163,53 @@ Monoid a => Monad (Pair a) where
 ||| An optional value.  This can be used to represent the possibility of
 ||| failure, where a function may return a value, or not.
 public export
-data Maybe : (ty : Type) -> Type where
+data Maybe : (## ty : Type) -> Type where
   ||| No value stored
-  Nothing : Maybe ty
+  Nothing : {## ty : Type} -> Maybe ty
 
   ||| A value of type `ty` is stored
-  Just : (x : ty) -> Maybe ty
+  Just : {## ty : Type} -> (x : ty) -> Maybe ty
 
 public export
-Uninhabited (Nothing = Just x) where
+{## x : _} -> Uninhabited (Nothing = Just x) where
   uninhabited Refl impossible
 
 public export
-Uninhabited (Just x = Nothing) where
+{## x : _} -> Uninhabited (Just x = Nothing) where
   uninhabited Refl impossible
 
 public export
-maybe : Lazy b -> Lazy (a -> b) -> Maybe a -> b
+maybe : {## a, b : _} -> Lazy b -> Lazy (a -> b) -> Maybe a -> b
 maybe n j Nothing  = n
 maybe n j (Just x) = j x
 
 ||| Execute an applicative expression when the Maybe is Just
 %inline public export
-whenJust : Applicative f => Maybe a -> (a -> f ()) -> f ()
+whenJust : {## f, a : _} -> Applicative f => Maybe a -> (a -> f ()) -> f ()
 whenJust (Just a) k = k a
 whenJust Nothing k = pure ()
 
 public export
-Eq a => Eq (Maybe a) where
+{## a : _} -> Eq a => Eq (Maybe a) where
   Nothing  == Nothing  = True
   Nothing  == (Just _) = False
   (Just _) == Nothing  = False
   (Just a) == (Just b) = a == b
 
 public export
-Ord a => Ord (Maybe a) where
+{## a : _} -> Ord a => Ord (Maybe a) where
   compare Nothing  Nothing  = EQ
   compare Nothing  (Just _) = LT
   compare (Just _) Nothing  = GT
   compare (Just a) (Just b) = compare a b
 
 public export
-Semigroup (Maybe a) where
+{## a : _} -> Semigroup (Maybe a) where
   Nothing   <+> m = m
   (Just x)  <+> _ = Just x
 
 public export
-Monoid (Maybe a) where
+{## a : _} -> Monoid (Maybe a) where
   neutral = Nothing
 
 public export
@@ -253,10 +253,14 @@ Traversable Maybe where
 -----------------
 
 public export
-record (<=>) (a, b : Type) where
-  constructor MkEquivalence
-  leftToRight : a -> b
-  rightToLeft : b -> a
+data (<=>) : (## a, b : Type) -> Type where
+  MkEquivalence : {## a, b : Type} -> (leftToRight : a -> b) -> (rightToLeft : b -> a) -> a <=> b
+
+(.leftToRight) : {## a, b : Type} -> (f : a <=> b) -> a -> b
+(.leftToRight) (MkEquivalence f _) = f
+
+(.rightToLeft) : {## a, b : Type} -> (f : a <=> b) -> b -> a
+(.rightToLeft) (MkEquivalence _ g) = g
 
 ---------
 -- DEC --
@@ -264,20 +268,25 @@ record (<=>) (a, b : Type) where
 
 ||| Decidability.  A decidable property either holds or is a contradiction.
 public export
-data Dec : Type -> Type where
+data Dec : (## a : Type) -> Type where
   ||| The case where the property holds.
   ||| @ prf the proof
-  Yes : (prf : prop) -> Dec prop
+  Yes : {## prop : Type} -> (prf : prop) -> Dec prop
 
   ||| The case where the property holding would be a contradiction.
   ||| @ contra a demonstration that prop would be a contradiction
-  No  : (contra : Not prop) -> Dec prop
+  No  : {## prop : Type} -> (contra : Not prop) -> Dec prop
 
-export Uninhabited (Yes p === No q) where uninhabited eq impossible
-export Uninhabited (No p === Yes q) where uninhabited eq impossible
+export
+{## a : Type} -> {## p : a} -> {## q : Not a} ->
+Uninhabited (Yes p === No q) where uninhabited eq impossible
+
+export
+{## a : Type} -> {## q : a} -> {## p : Not a} ->
+Uninhabited (No p === Yes q) where uninhabited eq impossible
 
 public export
-viaEquivalence : a <=> b -> Dec a -> Dec b
+viaEquivalence : {## a, b : Type} -> a <=> b -> Dec a -> Dec b
 viaEquivalence f (Yes a) = Yes (f .leftToRight a)
 viaEquivalence f (No na) = No (na . f .rightToLeft)
 
@@ -287,23 +296,28 @@ viaEquivalence f (No na) = No (na . f .rightToLeft)
 
 ||| A sum type.
 public export
-data Either : (a : Type) -> (b : Type) -> Type where
+data Either : (## a : Type) -> (## b : Type) -> Type where
   ||| One possibility of the sum, conventionally used to represent errors.
-  Left : forall a, b. (x : a) -> Either a b
+  Left : {## a, b : Type} -> (x : a) -> Either a b
 
   ||| The other possibility, conventionally used to represent success.
-  Right : forall a, b. (x : b) -> Either a b
-
-export Uninhabited (Left p === Right q) where uninhabited eq impossible
-export Uninhabited (Right p === Left q) where uninhabited eq impossible
+  Right : {## a, b : Type} -> (x : b) -> Either a b
 
 export
-Either (Uninhabited a) (Uninhabited b) => Uninhabited (a, b) where
+{## a, b : Type} -> {## p : a} -> {## q : b} ->
+Uninhabited (Left p === Right q) where uninhabited eq impossible
+
+export
+{## a, b : Type} -> {## p : a} -> {## q : b} ->
+Uninhabited (Right p === Left q) where uninhabited eq impossible
+
+export
+{## a, b : Type} -> Either (Uninhabited a) (Uninhabited b) => Uninhabited (a, b) where
   uninhabited (x, _) @{Left  _} = uninhabited x
   uninhabited (_, y) @{Right _} = uninhabited y
 
 export
-Uninhabited a => Uninhabited b => Uninhabited (Either a b) where
+{## a, b : Type} -> Uninhabited a => Uninhabited b => Uninhabited (Either a b) where
   uninhabited (Left l)  = uninhabited l
   uninhabited (Right r) = uninhabited r
 
@@ -312,18 +326,18 @@ Uninhabited a => Uninhabited b => Uninhabited (Either a b) where
 ||| @ g the action to take on Right
 ||| @ e the sum to analyze
 public export
-either : (f : Lazy (a -> c)) -> (g : Lazy (b -> c)) -> (e : Either a b) -> c
+either : {## a, b, c : Type} -> (f : Lazy (a -> c)) -> (g : Lazy (b -> c)) -> (e : Either a b) -> c
 either l r (Left x) = l x
 either l r (Right x) = r x
 
 public export
-(Eq a, Eq b) => Eq (Either a b) where
+{## a, b : Type} -> (Eq a, Eq b) => Eq (Either a b) where
   Left x == Left x' = x == x'
   Right x == Right x' = x == x'
   _ == _ = False
 
 public export
-(Ord a, Ord b) => Ord (Either a b) where
+{## a, b : Type} -> (Ord a, Ord b) => Ord (Either a b) where
   compare (Left x) (Left x') = compare x x'
   compare (Left _) (Right _) = LT
   compare (Right _) (Left _) = GT
@@ -331,7 +345,7 @@ public export
 
 %inline
 public export
-Functor (Either e) where
+{## e : Type} -> Functor (Either e) where
   map f (Left x) = Left x
   map f (Right x) = Right (f x)
 
@@ -360,7 +374,7 @@ Bitraversable Either where
 
 %inline
 public export
-Applicative (Either e) where
+{## e : Type} -> Applicative (Either e) where
   pure = Right
 
   (Left a) <*> _          = Left a
@@ -368,19 +382,19 @@ Applicative (Either e) where
   (Right _) <*> (Left l)  = Left l
 
 public export
-Monad (Either e) where
+{## e : Type} -> Monad (Either e) where
   (Left n) >>= _ = Left n
   (Right r) >>= f = f r
 
 public export
-Foldable (Either e) where
+{## e : Type} -> Foldable (Either e) where
   foldr f acc (Left _) = acc
   foldr f acc (Right x) = f x acc
   null (Left _) = True
   null (Right _) = False
 
 public export
-Traversable (Either e) where
+{## e : Type} -> Traversable (Either e) where
   traverse f (Left x)  = pure (Left x)
   traverse f (Right x) = Right <$> f x
 
@@ -389,13 +403,13 @@ Traversable (Either e) where
 -----------
 
 public export
-Eq a => Eq (List a) where
+{## a : Type} -> Eq a => Eq (List a) where
   [] == [] = True
   x :: xs == y :: ys = x == y && xs == ys
   _ == _ = False
 
 public export
-Ord a => Ord (List a) where
+{## a : Type} -> Ord a => Ord (List a) where
   compare [] [] = EQ
   compare [] (x :: xs) = LT
   compare (x :: xs) [] = GT
@@ -411,36 +425,36 @@ namespace SnocList
 
   ||| 'fish': Action of lists on snoc-lists
   public export
-  (<><) : SnocList a -> List a -> SnocList a
+  (<><) : {## a : Type} -> SnocList a -> List a -> SnocList a
   sx <>< [] = sx
   sx <>< (x :: xs) = sx :< x <>< xs
 
   ||| 'chips': Action of snoc-lists on lists
   public export
-  (<>>) : SnocList a -> List a -> List a
+  (<>>) : {## a : Type} -> SnocList a -> List a -> List a
   Lin       <>> xs = xs
   (sx :< x) <>> xs = sx <>> x :: xs
 
   public export
-  (++) : (sx, sy : SnocList a) -> SnocList a
+  (++) : {## a : Type} -> (sx, sy : SnocList a) -> SnocList a
   (++) sx Lin = sx
   (++) sx (sy :< y) = (sx ++ sy) :< y
 
   public export
-  length : SnocList a -> Nat
+  length : {## a : Type} -> SnocList a -> Nat
   length Lin = Z
   length (sx :< x) = S $ length sx
 
   ||| Filters a snoc-list according to a simple classifying function
   public export
-  filter : (a -> Bool) -> SnocList a -> SnocList a
+  filter : {## a : Type} -> (a -> Bool) -> SnocList a -> SnocList a
   filter f [<]     = [<]
   filter f (xs:<x) = let rest = filter f xs in if f x then rest :< x else rest
 
   ||| Apply a partial function to the elements of a list, keeping the ones at which
   ||| it is defined.
   public export
-  mapMaybe : (a -> Maybe b) -> SnocList a -> SnocList b
+  mapMaybe : {## a, b : Type} -> (a -> Maybe b) -> SnocList a -> SnocList b
   mapMaybe f [<]       = [<]
   mapMaybe f (sx :< x) = case f x of
     Nothing => mapMaybe f sx
@@ -448,20 +462,20 @@ namespace SnocList
 
   ||| Reverse the second snoclist, prepending its elements to the first.
   public export
-  reverseOnto : SnocList a -> SnocList a -> SnocList a
+  reverseOnto : {## a : Type} -> SnocList a -> SnocList a -> SnocList a
   reverseOnto acc Lin       = acc
   reverseOnto acc (sx :< x) = reverseOnto (acc :< x) sx
 
   ||| Reverses the given list.
   public export
-  reverse : SnocList a -> SnocList a
+  reverse : {## a : Type} -> SnocList a -> SnocList a
   reverse = reverseOnto Lin
 
   ||| Tail-recursive append. Uses of (++) are automatically transformed to
   ||| this. The only reason this is exported is that the proof of equivalence
   ||| lives in a different module.
   public export
-  tailRecAppend : (sx, sy : SnocList a) -> SnocList a
+  tailRecAppend : {## a : Type} -> (sx, sy : SnocList a) -> SnocList a
   tailRecAppend sx sy = reverseOnto sx (reverse sy)
 
   -- Always use tailRecAppend at runtime. Data.SnocList.tailRecAppendIsAppend
@@ -470,14 +484,14 @@ namespace SnocList
 
   ||| Returns the first argument plus the length of the second.
   public export
-  lengthPlus : Nat -> SnocList a -> Nat
+  lengthPlus : {## a : Type} -> Nat -> SnocList a -> Nat
   lengthPlus n Lin       = n
   lengthPlus n (sx :< _) = lengthPlus (S n) sx
 
   ||| `length` implementation that uses tail recursion. Exported so
   ||| lengthTRIsLength can see it.
   public export
-  lengthTR : SnocList a -> Nat
+  lengthTR : {## a : Type} -> SnocList a -> Nat
   lengthTR = lengthPlus Z
 
   -- Data.List.lengthTRIsLength proves these are equivalent.
@@ -485,7 +499,7 @@ namespace SnocList
 
   ||| Utility for implementing `mapMaybeTR`
   public export
-  mapMaybeAppend : List b -> (a -> Maybe b) -> SnocList a -> SnocList b
+  mapMaybeAppend : {## a, b : Type} -> List b -> (a -> Maybe b) -> SnocList a -> SnocList b
   mapMaybeAppend xs f (sx :< x) = case f x of
     Just v  => mapMaybeAppend (v :: xs) f sx
     Nothing => mapMaybeAppend xs f sx
@@ -494,7 +508,7 @@ namespace SnocList
   ||| Tail recursive version of `mapMaybe`. This is automatically used
   ||| at runtime due to a `transform` rule.
   public export %inline
-  mapMaybeTR : (a -> Maybe b) -> SnocList a -> SnocList b
+  mapMaybeTR : {## a, b : Type} -> (a -> Maybe b) -> SnocList a -> SnocList b
   mapMaybeTR = mapMaybeAppend []
 
   -- Data.List.mapMaybeTRIsMapMaybe proves these are equivalent.
@@ -502,7 +516,7 @@ namespace SnocList
 
   ||| Utility for implementing `filterTR`
   public export
-  filterAppend : List a -> (a -> Bool) -> SnocList a -> SnocList a
+  filterAppend : {## a : Type} -> List a -> (a -> Bool) -> SnocList a -> SnocList a
   filterAppend xs f (sx :< x) = case f x of
     True  => filterAppend (x :: xs) f sx
     False => filterAppend xs f sx
@@ -511,7 +525,7 @@ namespace SnocList
   ||| Tail recursive version of `filter`. This is automatically used
   ||| at runtime due to a `transform` rule.
   public export %inline
-  filterTR : (a -> Bool) -> SnocList a -> SnocList a
+  filterTR : {## a : Type} -> (a -> Bool) -> SnocList a -> SnocList a
   filterTR = filterAppend []
 
   -- Data.List.listTRIsList proves these are equivalent.
@@ -521,20 +535,20 @@ namespace List
 
   ||| Concatenate one list with another.
   public export
-  (++) : (xs, ys : List a) -> List a
+  (++) : {## a : Type} -> (xs, ys : List a) -> List a
   [] ++ ys = ys
   (x :: xs) ++ ys = x :: xs ++ ys
 
   ||| Returns the length of the list.
   public export
-  length : List a -> Nat
+  length : {## a : Type} -> List a -> Nat
   length []        = Z
   length (x :: xs) = S (length xs)
 
   ||| Applied to a predicate and a list, returns the list of those elements that
   ||| satisfy the predicate.
   public export
-  filter : (p : a -> Bool) -> List a -> List a
+  filter : {## a : Type} -> (p : a -> Bool) -> List a -> List a
   filter p [] = []
   filter p (x :: xs)
      = if p x
@@ -543,7 +557,7 @@ namespace List
 
   ||| Apply a partial function to the elements of a list, keeping the ones at which it is defined.
   public export
-  mapMaybe : (a -> Maybe b) -> List a -> List b
+  mapMaybe : {## a, b : Type} -> (a -> Maybe b) -> List a -> List b
   mapMaybe f []      = []
   mapMaybe f (x::xs) =
     case f x of
@@ -552,20 +566,20 @@ namespace List
 
   ||| Reverse the second list, prepending its elements to the first.
   public export
-  reverseOnto : List a -> List a -> List a
+  reverseOnto : {## a : Type} -> List a -> List a -> List a
   reverseOnto acc [] = acc
   reverseOnto acc (x::xs) = reverseOnto (x::acc) xs
 
   ||| Reverses the given list.
   public export
-  reverse : List a -> List a
+  reverse : {## a : Type} -> List a -> List a
   reverse = reverseOnto []
 
   ||| Tail-recursive append. Uses of (++) are automatically transformed to
   ||| this. The only reason this is exported is that the proof of equivalence
   ||| lives in a different module.
   public export
-  tailRecAppend : (xs, ys : List a) -> List a
+  tailRecAppend : {## a : Type} -> (xs, ys : List a) -> List a
   tailRecAppend xs ys = reverseOnto ys (reverse xs)
 
   -- Always use tailRecAppend at runtime. Data.List.tailRecAppendIsAppend
@@ -574,34 +588,34 @@ namespace List
 
   ||| Returns the first argument plus the length of the second.
   public export
-  lengthPlus : Nat -> List a -> Nat
+  lengthPlus : {## a : Type} -> Nat -> List a -> Nat
   lengthPlus n [] = n
   lengthPlus n (x::xs) = lengthPlus (S n) xs
 
   ||| `length` implementation that uses tail recursion. Exported so
   ||| lengthTRIsLength can see it.
   public export
-  lengthTR : List a -> Nat
+  lengthTR : {## a : Type} -> List a -> Nat
   lengthTR = lengthPlus Z
 
   -- Data.List.lengthTRIsLength proves these are equivalent.
   %transform "tailRecLength" List.length = List.lengthTR
 
   public export
-  mapImpl : (a -> b) -> List a -> List b
+  mapImpl : {## a, b : Type} -> (a -> b) -> List a -> List b
   mapImpl f [] = []
   mapImpl f (x :: xs) = f x :: mapImpl f xs
 
   ||| Utility for implementing `mapTR`
   public export
-  mapAppend : SnocList b -> (a -> b) -> List a -> List b
+  mapAppend : {## a, b : Type} -> SnocList b -> (a -> b) -> List a -> List b
   mapAppend sx f (x :: xs) = mapAppend (sx :< f x) f xs
   mapAppend sx f []        = sx <>> []
 
   ||| Tail recursive version of `map`. This is automatically used
   ||| at runtime due to a `transform` rule.
   public export %inline
-  mapTR : (a -> b) -> List a -> List b
+  mapTR : {## a, b : Type} -> (a -> b) -> List a -> List b
   mapTR = mapAppend Lin
 
   -- Data.List.mapTRIsMap proves these are equivalent.
@@ -609,7 +623,7 @@ namespace List
 
   ||| Utility for implementing `mapMaybeTR`
   public export
-  mapMaybeAppend : SnocList b -> (a -> Maybe b) -> List a -> List b
+  mapMaybeAppend : {## a, b : Type} -> SnocList b -> (a -> Maybe b) -> List a -> List b
   mapMaybeAppend sx f (x :: xs) = case f x of
     Just v  => mapMaybeAppend (sx :< v) f xs
     Nothing => mapMaybeAppend sx f xs
@@ -618,7 +632,7 @@ namespace List
   ||| Tail recursive version of `mapMaybe`. This is automatically used
   ||| at runtime due to a `transform` rule.
   public export %inline
-  mapMaybeTR : (a -> Maybe b) -> List a -> List b
+  mapMaybeTR : {## a, b : Type} -> (a -> Maybe b) -> List a -> List b
   mapMaybeTR = mapMaybeAppend Lin
 
   -- Data.List.mapMaybeTRIsMapMaybe proves these are equivalent.
@@ -626,7 +640,7 @@ namespace List
 
   ||| Utility for implementing `filterTR`
   public export
-  filterAppend : SnocList a -> (a -> Bool) -> List a -> List a
+  filterAppend : {## a : Type} -> SnocList a -> (a -> Bool) -> List a -> List a
   filterAppend sx f (x :: xs) = case f x of
     True  => filterAppend (sx :< x) f xs
     False => filterAppend sx f xs
@@ -635,7 +649,7 @@ namespace List
   ||| Tail recursive version of `filter`. This is automatically used
   ||| at runtime due to a `transform` rule.
   public export %inline
-  filterTR : (a -> Bool) -> List a -> List a
+  filterTR : {## a : Type} -> (a -> Bool) -> List a -> List a
   filterTR = filterAppend Lin
 
   -- Data.List.listTRIsList proves these are equivalent.
@@ -646,11 +660,11 @@ Functor List where
   map = mapImpl
 
 public export
-Semigroup (List a) where
+{## a : Type} -> Semigroup (List a) where
   (<+>) = (++)
 
 public export
-Monoid (List a) where
+{## a : Type} -> Monoid (List a) where
   neutral = []
 
 public export
@@ -669,13 +683,13 @@ Foldable List where
   foldMap f = foldl (\acc, elem => acc <+> f elem) neutral
 
 public export
-listBindOnto : (a -> List b) -> List b -> List a -> List b
+listBindOnto : {## a, b : Type} -> (a -> List b) -> List b -> List a -> List b
 listBindOnto f xs []        = reverse xs
 listBindOnto f xs (y :: ys) = listBindOnto f (reverseOnto xs (f y)) ys
 
 -- tail recursive O(n) implementation of `(>>=)` for `List`
 public export
-listBind : List a -> (a -> List b) -> List b
+listBind : {## a, b : Type} -> List a -> (a -> List b) -> List b
 listBind as f = listBindOnto f Nil as
 
 public export
@@ -703,15 +717,16 @@ Eq a => Eq (SnocList a) where
   (==) (sx :< x) (sy :< y) = x == y && sx == sy
   (==) _ _ = False
 
-public export
-Ord a => Ord (SnocList a) where
-  compare Lin Lin = EQ
-  compare Lin (sx :< x) = LT
-  compare (sx :< x) Lin = GT
-  compare (sx :< x) (sy :< y)
-    = case compare sx sy of
-        EQ => compare x y
-        c  => c
+-- TODO: fix it
+-- public export
+-- {## a : Type} -> Ord a => Ord (SnocList a) where
+--   compare Lin Lin = EQ
+--   compare Lin (sx :< x) = LT
+--   compare (sx :< x) Lin = GT
+--   compare (sx :< x) (sy :< y)
+--     = case compare sx sy of
+--         EQ => compare x y
+--         c  => c
 
 -- This works quickly because when string-concat builds the result, it allocates
 -- enough room in advance so there's only one allocation, rather than lots!
@@ -734,17 +749,17 @@ fastConcat : List String -> String
 
 ||| Check if something is a member of a list using a custom comparison.
 public export
-elemBy : Foldable t => (a -> a -> Bool) -> a -> t a -> Bool
+elemBy : {## t, a : _} -> Foldable t => (a -> a -> Bool) -> a -> t a -> Bool
 elemBy p e = any (p e)
 
 ||| Check if something is a member of a list using the default Boolean equality.
 public export
-elem : Foldable t => Eq a => a -> t a -> Bool
+elem : {## t, a : _} -> Foldable t => Eq a => a -> t a -> Bool
 elem = elemBy (==)
 
 ||| Lookup a value at a given position
 export
-getAt : Nat -> List a -> Maybe a
+getAt : {## a : Type} -> Nat -> List a -> Maybe a
 getAt Z     (x :: xs) = Just x
 getAt (S k) (x :: xs) = getAt k xs
 getAt _     []        = Nothing
@@ -756,8 +771,8 @@ getAt _     []        = Nothing
 namespace Stream
   ||| An infinite stream.
   public export
-  data Stream : Type -> Type where
-       (::) : a -> Inf (Stream a) -> Stream a
+  data Stream : (## a : Type) -> Type where
+       (::) : {## a : Type} -> a -> Inf (Stream a) -> Stream a
 
 %name Stream xs, ys, zs
 
@@ -767,19 +782,19 @@ Functor Stream where
 
 ||| The first element of an infinite stream.
 public export
-head : Stream a -> a
+head : {## a : Type} -> Stream a -> a
 head (x :: xs) = x
 
 ||| All but the first element.
 public export
-tail : Stream a -> Stream a
+tail : {## a : Type} -> Stream a -> Stream a
 tail (x :: xs) = xs
 
 ||| Take precisely n elements from the stream.
 ||| @ n how many elements to take
 ||| @ xs the stream
 public export
-take : (n : Nat) -> (xs : Stream a) -> List a
+take : {## a : Type} -> (n : Nat) -> (xs : Stream a) -> List a
 take Z xs = []
 take (S k) (x :: xs) = x :: take k xs
 
@@ -1075,12 +1090,12 @@ ceiling x = prim__doubleCeiling x
 -- range expressions like `[a..b]` are desugared to `rangeFromXXX` calls.
 
 public export
-countFrom : n -> (n -> n) -> Stream n
+countFrom : {## n : Type} -> n -> (n -> n) -> Stream n
 countFrom start diff = start :: countFrom (diff start) diff
 
 public export
 covering
-takeUntil : (n -> Bool) -> Stream n -> List n
+takeUntil : {## n : Type} -> (n -> Bool) -> Stream n -> List n
 takeUntil p (x :: xs)
     = if p x
          then [x]
@@ -1088,14 +1103,14 @@ takeUntil p (x :: xs)
 
 public export
 covering
-takeBefore : (n -> Bool) -> Stream n -> List n
+takeBefore : {## n : Type} -> (n -> Bool) -> Stream n -> List n
 takeBefore p (x :: xs)
     = if p x
          then []
          else x :: takeBefore p xs
 
 public export
-interface Range a where
+interface Range (## a : Type) where
   constructor MkRange
   rangeFromTo : a -> a -> List a
   rangeFromThenTo : a -> a -> a -> List a
@@ -1124,7 +1139,7 @@ Range Nat where
            else countFrom x (\n => minus n (minus x y))
 
 public export
-(Integral a, Ord a, Neg a) => Range a where
+{## a : Type} -> (Integral a, Ord a, Neg a) => Range a where
   rangeFromTo x y = case compare x y of
     LT => assert_total $ takeUntil (>= y) (countFrom x (+1))
     EQ => pure x

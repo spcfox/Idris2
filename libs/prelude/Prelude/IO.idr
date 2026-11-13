@@ -31,42 +31,42 @@ Monad IO where
   b >>= k = io_bind b k
 
 public export
-interface Monad io => HasIO io where
+interface Monad io => HasIO (## io : (## _ : Type) -> Type) where
   constructor MkHasIO
-  liftIO : IO a -> io a
+  liftIO : {## a : Type} -> IO a -> io a
 
 public export
-interface Monad io => HasLinearIO io where
+interface Monad io => HasLinearIO (## io : (## _ : Type) -> Type) where
   constructor MkHasLinearIO
-  liftIO1 : (1 _ : IO a) -> io a
+  liftIO1 : {## a : Type} -> (1 _ : IO a) -> io a
 
 public export %inline
 HasLinearIO IO where
   liftIO1 x = x
 
 public export %inline
-HasLinearIO io => HasIO io where
+{## io : _} -> HasLinearIO io => HasIO io where
   liftIO x = liftIO1 x
 
 export %inline
-primIO : HasIO io => (fn : (1 x : %World) -> IORes a) -> io a
+primIO : {## io, a : _} -> HasIO io => (fn : (1 x : %World) -> IORes a) -> io a
 primIO op = liftIO (fromPrim op)
 
 export %inline
-primIO1 : HasLinearIO io => (1 fn : (1 x : %World) -> IORes a) -> io a
+primIO1 : {## io, a : _} -> HasLinearIO io => (1 fn : (1 x : %World) -> IORes a) -> io a
 primIO1 op = liftIO1 (fromPrim op)
 
 %extern
 prim__onCollectAny : AnyPtr -> (AnyPtr -> PrimIO ()) -> PrimIO GCAnyPtr
 %extern
-prim__onCollect : Ptr t -> (Ptr t -> PrimIO ()) -> PrimIO (GCPtr t)
+prim__onCollect : {## t : _} -> Ptr t -> (Ptr t -> PrimIO ()) -> PrimIO (GCPtr t)
 
 export
-onCollectAny : HasIO io => AnyPtr -> (AnyPtr -> IO ()) -> io GCAnyPtr
+onCollectAny : {## io : _} -> HasIO io => AnyPtr -> (AnyPtr -> IO ()) -> io GCAnyPtr
 onCollectAny ptr c = primIO (prim__onCollectAny ptr (\x => toPrim (c x)))
 
 export
-onCollect : HasIO io => Ptr t -> (Ptr t -> IO ()) -> io (GCPtr t)
+onCollect : {## io, t : _} -> HasIO io => Ptr t -> (Ptr t -> IO ()) -> io (GCPtr t)
 onCollect ptr c = primIO (prim__onCollect ptr (\x => toPrim (c x)))
 
 %foreign "C:idris2_getString, libidris2_support, idris_support.h"
@@ -94,32 +94,32 @@ prim__putStr : String -> PrimIO ()
 
 ||| Output a string to stdout without a trailing newline.
 %inline export
-putStr : HasIO io => String -> io ()
+putStr : {## io : _} -> HasIO io => String -> io ()
 putStr str = primIO (prim__putStr str)
 
 ||| Output a string to stdout with a trailing newline.
 export
-%inline putStrLn : HasIO io => String -> io ()
+%inline putStrLn : {## io : _} -> HasIO io => String -> io ()
 putStrLn str = putStr (prim__strAppend str "\n")
 
 ||| Read one line of input from stdin, without the trailing newline.
 %inline export
-getLine : HasIO io => io String
+getLine : {## io : _} -> HasIO io => io String
 getLine = primIO prim__getStr
 
 ||| Write one single-byte character to stdout.
 %inline export
-putChar : HasIO io => Char -> io ()
+putChar : {## io : _} -> HasIO io => Char -> io ()
 putChar c = primIO (prim__putChar c)
 
 ||| Write one multi-byte character to stdout, with a trailing newline.
 %inline export
-putCharLn : HasIO io => Char -> io ()
+putCharLn : {## io : _} -> HasIO io => Char -> io ()
 putCharLn c = putStrLn (prim__cast_CharString c)
 
 ||| Read one single-byte character from stdin.
 %inline export
-getChar : HasIO io => io Char
+getChar : {## io : _} -> HasIO io => io Char
 getChar = primIO prim__getChar
 
 %foreign "scheme:blodwen-thread"
@@ -141,10 +141,10 @@ threadWait threadID = fromPrim (prim__threadWait threadID)
 
 ||| Output something showable to stdout, without a trailing newline.
 %inline export
-print : HasIO io => Show a => a -> io ()
+print : {## io, a : _} -> HasIO io => Show a => a -> io ()
 print = putStr . show
 
 ||| Output something showable to stdout, with a trailing newline.
 %inline export
-printLn : HasIO io => Show a => a -> io ()
+printLn : {## io, a : _} -> HasIO io => Show a => a -> io ()
 printLn = putStrLn . show

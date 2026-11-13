@@ -12,7 +12,7 @@ import Builtin
 ||| This allows to customise the interpolation behaviour by providing
 ||| an instance of `Interpolation` for a type.
 public export
-interface Interpolation a where
+interface Interpolation (## a : Type) where
   constructor MkInterpolation
   interpolate : a -> String
 

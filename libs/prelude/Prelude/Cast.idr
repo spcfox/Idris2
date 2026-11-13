@@ -14,14 +14,14 @@ import Prelude.Types
 
 ||| Interface for transforming an instance of a data type to another type.
 public export
-interface Cast from to where
+interface Cast (## from, to : Type) where
   constructor MkCast
   ||| Perform a (potentially lossy!) cast operation.
   ||| @ orig The original type
   cast : (orig : from) -> to
 
 export %inline
-Cast a a where
+{## a : _} -> Cast a a where
   cast = id
 
 -- To String

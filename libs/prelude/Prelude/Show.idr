@@ -41,7 +41,7 @@ Ord Prec where
 ||| Things that have a canonical `String` representation.
 ||| A minimal implementation includes either `show` or `showPrec`.
 public export
-interface Show ty where
+interface Show (## ty : Type) where
   constructor MkShow
   ||| Convert a value to its `String` representation.
   ||| @ x the value to convert
@@ -93,14 +93,14 @@ showCon d conName shownArgs = showParens (d >= App) (conName ++ shownArgs)
 ||| This adds a space to the front so the results can be directly concatenated.
 ||| See `showCon` for details and an example.
 public export %tcinline
-showArg : Show a => (x : a) -> String
+showArg : {## a : _} -> Show a => (x : a) -> String
 showArg x = " " ++ showPrec App x
 
 firstCharIs : (Char -> Bool) -> String -> Bool
 firstCharIs p "" = False
 firstCharIs p str = p (assert_total (prim__strHead str))
 
-primNumShow : (a -> String) -> Prec -> a -> String
+primNumShow : {## a : _} -> (a -> String) -> Prec -> a -> String
 primNumShow f d x = let str = f x in showParens (d >= PrefixMinus && firstCharIs (== '-') str) str
 
 export
@@ -207,15 +207,15 @@ Show () where
   show () = "()"
 
 export
-(Show a, Show b) => Show (a, b) where
+{## a, b : _} -> (Show a, Show b) => Show (a, b) where
   show (x, y) = "(" ++ show x ++ ", " ++ show y ++ ")"
 
 export
-(Show a, {y : a} -> Show (p y)) => Show (DPair a p) where
+{## a, p : _} -> Show a => ({y : a} -> Show (p y)) => Show (DPair a p) where
     show (y ** prf) = "(" ++ show y ++ " ** " ++ show prf ++ ")"
 
 export
-Show a => Show (List a) where
+{## a : _} -> Show a => Show (List a) where
   show xs = "[" ++ show' "" xs ++ "]"
     where
       show' : String -> List a -> String
@@ -224,12 +224,12 @@ Show a => Show (List a) where
       show' acc (x :: xs) = show' (acc ++ show x ++ ", ") xs
 
 export
-Show a => Show (Maybe a) where
+{## a : _} -> Show a => Show (Maybe a) where
   showPrec d Nothing  = "Nothing"
   showPrec d (Just x) = showCon d "Just" (showArg x)
 
 export
-(Show a, Show b) => Show (Either a b) where
+{## a, b : _} -> (Show a, Show b) => Show (Either a b) where
   showPrec d (Left x)  = showCon d "Left" $ showArg x
   showPrec d (Right x) = showCon d "Right" $ showArg x
 

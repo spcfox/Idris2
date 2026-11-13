@@ -12,7 +12,7 @@ import Prelude.Basics
 ||| The Eq interface defines inequality and equality.
 ||| A minimal definition includes either `(==)` or `(/=)`.
 public export
-interface Eq ty where
+interface Eq (## ty : Type) where
   constructor MkEq
   total
   (==) : ty -> ty -> Bool
@@ -89,7 +89,7 @@ Eq String where
   x == y = intToBool (prim__eq_String x y)
 
 public export
-Eq a => Eq b => Eq (a, b) where
+{## a, b : _} -> Eq a => Eq b => Eq (a, b) where
   (x1, y1) == (x2, y2) = x1 == x2 && y1 == y2
 
 public export
@@ -111,7 +111,7 @@ Eq Ordering where
 ||| The Ord interface defines comparison operations on ordered data types.
 ||| A minimal definition includes either `compare` or `(<)`.
 public export
-interface Eq ty => Ord ty where
+interface Eq ty => Ord (## ty : Type) where
   constructor MkOrd
   total
   compare : ty -> ty -> Ordering
@@ -142,11 +142,11 @@ interface Eq ty => Ord ty where
   min x y = if (x < y) then x else y
 
 export
-comparing : Ord a => (b -> a) -> b -> b -> Ordering
+comparing : {## a, b : Type} -> Ord a => (b -> a) -> b -> b -> Ordering
 comparing p x y = compare (p x) (p y)
 
 public export
-[Reverse] (fwd : Ord a) => Ord a where
+[Reverse] {## a : _} -> (fwd : Ord a) => Ord a where
   compare x y = contra $ compare @{fwd} x y
 
 public export
@@ -261,7 +261,7 @@ Ord Char where
   (>=) x y = intToBool (prim__gte_Char x y)
 
 public export
-Ord a => Ord b => Ord (a, b) where
+{## a, b : _} -> Ord a => Ord b => Ord (a, b) where
   compare (x1, y1) (x2, y2)
       = if x1 /= x2 then compare x1 x2
                     else compare y1 y2

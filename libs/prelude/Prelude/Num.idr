@@ -13,7 +13,7 @@ import Prelude.EqOrd
 
 ||| The Num interface defines basic numerical arithmetic.
 public export
-interface Num ty where
+interface Num (## ty : Type) where
   constructor MkNum
   (+) : ty -> ty -> ty
   (*) : ty -> ty -> ty
@@ -24,7 +24,7 @@ interface Num ty where
 
 ||| The `Neg` interface defines operations on numbers which can be negative.
 public export
-interface Num ty => Neg ty where
+interface Num ty => Neg (## ty : Type) where
   constructor MkNeg
   ||| The underlying of unary minus. `-5` desugars to `negate (fromInteger 5)`.
   negate : ty -> ty
@@ -37,18 +37,18 @@ interface Num ty => Neg ty where
 ||| ```
 ||| This contrasts with `(- 1)`, which is parsed as `-1`.
 export
-subtract : Neg ty => ty -> ty -> ty
+subtract : {## ty : _} -> Neg ty => ty -> ty -> ty
 subtract = (-)
 
 ||| Numbers for which the absolute value is defined should implement `Abs`.
 public export
-interface Num ty => Abs ty where
+interface Num ty => Abs (## ty : Type) where
   constructor MkAbs
   ||| Absolute value.
   abs : ty -> ty
 
 public export
-interface Num ty => Fractional ty where
+interface Num ty => Fractional (## ty : Type) where
   constructor MkFractional
   partial
   (/) : ty -> ty -> ty
@@ -58,7 +58,7 @@ interface Num ty => Fractional ty where
   recip x = 1 / x
 
 public export
-interface Num ty => Integral ty where
+interface Num ty => Integral (## ty : Type) where
   constructor MkIntegral
   partial
   div : ty -> ty -> ty

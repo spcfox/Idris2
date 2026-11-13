@@ -18,7 +18,7 @@ module Builtin
 ||| it is best to use it around the smallest possible subexpression.
 %inline %unsafe
 public export
-assert_total : (1 _ : a) -> a
+assert_total : {## a : Type} -> (1 _ : a) -> a
 assert_total x = x
 
 ||| Assert to the totality checker that y is always structurally smaller than x
@@ -36,7 +36,7 @@ assert_total x = x
 ||| @ y the smaller value (typically an argument to a recursive call)
 %inline %unsafe
 public export
-assert_smaller : (0 x : a) -> (1 y : b) -> b
+assert_smaller : {## a, b : Type} -> (0 x : a) -> (1 y : b) -> b
 assert_smaller x y = y
 
 -- Unit type and pairs
@@ -50,25 +50,25 @@ data Unit =
 
 ||| The non-dependent pair type, also known as conjunction.
 public export
-data Pair : Type -> Type -> Type where
+data Pair : (## _ : Type) -> (## _ : Type) -> Type where
   ||| A pair of elements.
   ||| @ a the left element of the pair
   ||| @ b the right element of the pair
-  MkPair : {0 a, b : Type} -> (x : a) -> (y : b) -> Pair a b
+  MkPair : {## a, b : Type} -> (x : a) -> (y : b) -> Pair a b
 
 ||| Return the first element of a pair.
 public export
-fst : {0 a, b : Type} -> (a, b) -> a
+fst : {## a, b : Type} -> (a, b) -> a
 fst (x, y) = x
 
 ||| Return the second element of a pair.
 public export
-snd : {0 a, b : Type} -> (a, b) -> b
+snd : {## a, b : Type} -> (a, b) -> b
 snd (x, y) = y
 
 ||| Swap the elements in a pair
 public export
-swap : (a, b) -> (b, a)
+swap : {## a, b : Type} -> (a, b) -> (b, a)
 swap (x, y) = (y, x)
 
 -- This directive tells auto implicit search what to use to look inside pairs
@@ -78,13 +78,13 @@ export infixr 5 #
 
 ||| A pair type where each component is linear
 public export
-data LPair : Type -> Type -> Type where
+data LPair : (## _ : Type) -> (## _ : Type) -> Type where
   ||| A linear pair of elements.
   ||| If you take one copy of the linear pair apart
   ||| then you only get one copy of its left and right elements.
   ||| @ a the left element of the pair
   ||| @ b the right element of the pair
-  (#) : (1 _ : a) -> (1 _ : b) -> LPair a b
+  (#) : {## a, b : Type} -> (1 _ : a) -> (1 _ : b) -> LPair a b
 
 namespace DPair
   ||| Dependent pairs aid in the construction of dependent types by providing
@@ -152,8 +152,8 @@ public export
 ||| and term.
 %inline
 public export
-rewrite__impl : {0 x, y : a} -> (0 p : _) ->
-                (0 rule : x = y) -> (1 val : p y) -> p x
+rewrite__impl : {## a : Type} -> {## x, y : a} -> (## p : _) ->
+                (## rule : x = y) -> (1 val : p y) -> p x
 rewrite__impl p Refl prf = prf
 
 %rewrite Equal rewrite__impl
@@ -161,19 +161,21 @@ rewrite__impl p Refl prf = prf
 ||| Perform substitution in a term according to some equality.
 %inline
 public export
-replace : forall x, y, p . (0 rule : x = y) -> (1 _ : p x) -> p y
+replace : {## a : Type} -> {## x, y : a} -> {## p : _} ->
+          (## rule : x = y) -> (1 _ : p x) -> p y
 replace Refl prf = prf
 
 ||| Symmetry of propositional equality.
 %inline
 public export
-sym : (0 rule : x ~=~ y) -> y ~=~ x
+sym : (## rule : x ~=~ y) -> y ~=~ x
 sym Refl = Refl
 
 ||| Transitivity of propositional equality.
 %inline
 public export
-trans : forall a, b, c . (0 l : a = b) -> (0 r : b = c) -> a = c
+trans : {## t : Type} -> {## a, b, c : t} ->
+        (0 l : a = b) -> (0 r : b = c) -> a = c
 trans Refl Refl = Refl
 
 ||| Injectivity of MkDPair (first components)
@@ -190,34 +192,34 @@ mkDPairInjectiveSnd Refl = Refl
 ||| in the type checker.  Use it with care - it can result in segfaults or
 ||| worse!
 public export %inline %unsafe
-believe_me : a -> b -- TODO: make linear
+believe_me : {## a, b : Type} -> a -> b -- TODO: make linear
 believe_me v = prim__believe_me _ _ v
 
 ||| Assert to the usage checker that the given function uses its argument linearly.
 public export %unsafe
-assert_linear : (1 f : a -> b) -> (1 val : a) -> b
+assert_linear : {## a, b : Type} -> (1 f : a -> b) -> (1 val : a) -> b
 assert_linear = believe_me id
   where
     id : (1 f : a -> b) -> a -> b
     id f = f
 
 export partial %unsafe
-idris_crash : String -> a
+idris_crash : {## a : Type} -> String -> a
 idris_crash = prim__crash _
 
 public export %inline
-delay : a -> Lazy a
+delay : {## a : Type} -> a -> Lazy a
 delay x = Delay x
 
 public export %inline
-force : Lazy a -> a
+force : {## a : Type} -> Lazy a -> a
 force x = Force x
 
 %stringLit fromString
 
 ||| Interface for types that can be constructed from string literals.
 public export
-interface FromString ty where
+interface FromString (## ty : Type) where
   constructor MkFromString
   ||| Conversion from String.
   fromString : String -> ty
@@ -261,7 +263,7 @@ defaultChar = %search
 
 ||| Interface for types that can be constructed from double literals.
 public export
-interface FromDouble ty where
+interface FromDouble (## ty : Type) where
   constructor MkFromDouble
   ||| Conversion from Double.
   fromDouble : Double -> ty

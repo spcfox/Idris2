@@ -7,7 +7,7 @@ import Prelude.Basics
 
 ||| A canonical proof that some type is empty.
 public export
-interface Uninhabited t where
+interface Uninhabited (## t : Type) where
   constructor MkUninhabited
   ||| If I have a t, I've had a contradiction.
   ||| @ t the uninhabited type
@@ -15,7 +15,7 @@ interface Uninhabited t where
 
 ||| The eliminator for the `Void` type.
 public export
-void : (0 x : Void) -> a
+void : (## x : Void) -> a
 void _ impossible
 
 export
@@ -27,7 +27,7 @@ Uninhabited Void where
 ||| @ a the goal type
 ||| @ h the contradictory hypothesis
 public export
-absurd : Uninhabited t => (h : t) -> a
+absurd : {## t : _} -> Uninhabited t => (h : t) -> a
 absurd h = void (uninhabited h)
 
 public export

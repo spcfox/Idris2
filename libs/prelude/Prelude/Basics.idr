@@ -22,34 +22,34 @@ Not x = x -> Void
 ||| @ a the type to assign
 ||| @ x the element to get the type
 public export %inline
-the : (0 a : Type) -> (1 x : a) -> a
+the : (## a : Type) -> (1 x : a) -> a
 the _ x = x
 
 ||| Identity function.
 public export %inline
-id : (x : a) -> a
+id : {## a : Type} -> (x : a) -> a
 id x = x
 
 ||| Function that duplicates its input
 public export
-dup : a -> (a, a)
+dup : {## a : Type} -> a -> (a, a)
 dup x = (x, x)
 
 ||| Constant function.  Ignores its second argument.
 public export %inline
-const : a -> b -> a
+const : {## a, b : Type} -> a -> b -> a
 const x = \value => x
 
 ||| Function composition.
 public export %inline %tcinline
-(.) : (b -> c) -> (a -> b) -> a -> c
+(.) : {## a, b, c : Type} -> (b -> c) -> (a -> b) -> a -> c
 (.) f g = \x => f (g x)
 
 ||| Composition of a two-argument function with a single-argument one.
 ||| `(.:)` is like `(.)` but the second argument and the result are two-argument functions.
 ||| This operator is also known as "blackbird operator".
 public export %inline %tcinline
-(.:) : (c -> d) -> (a -> b -> c) -> a -> b -> d
+(.:) : {## a, b, c, d : Type} -> (c -> d) -> (a -> b -> c) -> a -> b -> d
 (.:) = (.) . (.)
 
 ||| `on b u x y` runs the binary function b on the results of applying
@@ -66,7 +66,7 @@ public export %inline %tcinline
 ||| sortBy (compare `on` fst).
 ||| ```
 public export %tcinline
-on : (b -> b -> c) -> (a -> b) -> a -> a -> c
+on : {## a, b, c : Type} -> (b -> b -> c) -> (a -> b) -> a -> a -> c
 on f g = \x, y => g x `f` g y
 
 export infixl 0 `on`
@@ -74,12 +74,12 @@ export infixl 0 `on`
 ||| Takes in the first two arguments in reverse order.
 ||| @ f the function to flip
 public export %tcinline
-flip : (f : a -> b -> c) -> b -> a -> c
+flip : {## a, b, c : Type} -> (f : a -> b -> c) -> b -> a -> c
 flip f = \x, y => f y x
 
 ||| Function application.
 public export %tcinline
-apply : (a -> b) -> a -> b
+apply : {## a, b : Type} -> (a -> b) -> a -> b
 apply f = \a => f a
 
 ||| Convert a function on pairs to a curried function that takes arguments separately.
@@ -90,7 +90,7 @@ apply f = \a => f a
 ||| (curry swap) 1 0 = swap (1, 0)
 ||| ```
 public export
-curry : (f : (a, b) -> c) -> a -> b -> c
+curry : {## a, b, c : Type} -> (f : (a, b) -> c) -> a -> b -> c
 curry f a b = f (a, b)
 
 ||| Convert a curried function that takes arguments separately to a function on pairs.
@@ -100,14 +100,14 @@ curry f a b = f (a, b)
 ||| (uncurry min) (1, 0) = min 1 0
 ||| ```
 public export
-uncurry : (f : a -> b -> c) -> (a, b) -> c
+uncurry : {## a, b, c : Type} -> (f : a -> b -> c) -> (a, b) -> c
 uncurry f (a, b) = f a b
 
 ||| ($) is compiled specially to shortcut any tricky unification issues, but if
 ||| it did have a type this is what it would be, and it might be useful to
 ||| use directly sometimes (e.g. in higher order functions)
 public export
-($) : forall a, b . ((x : a) -> b x) -> (x : a) -> b x
+($) : {## a, b : _} -> ((x : a) -> b x) -> (x : a) -> b x
 ($) f a = f a
 
 ||| Pipeline style function application, useful for chaining
@@ -118,7 +118,7 @@ public export
 ||| [[1], [2], [3]] |> join |> map (* 2)
 ||| ```
 public export
-(|>) : a -> (a -> b) -> b
+(|>) : {## a, b : Type} -> a -> (a -> b) -> b
 a |> f = f a
 
 ||| Backwards pipeline style function application, similar to $.
@@ -127,7 +127,7 @@ a |> f = f a
 ||| unpack <| "hello" ++ "world"
 ||| ```
 public export
-(<|) : (a -> b) -> a -> b
+(<|) : {## a, b : Type} -> (a -> b) -> a -> b
 f <| a = f a
 
 -------------------
@@ -136,13 +136,13 @@ f <| a = f a
 
 ||| Equality is a congruence.
 public export
-cong : (0 f : t -> u) -> (0 p : a = b) -> f a = f b
+cong : (0 f : t -> u) -> (## p : a = b) -> f a = f b
 cong f Refl = Refl
 
 ||| Two-holed congruence.
 export
 -- These are natural in equational reasoning.
-cong2 : (0 f : t1 -> t2 -> u) -> (0 p1 : a = b) -> (0 p2 : c = d) -> f a c = f b d
+cong2 : (0 f : t1 -> t2 -> u) -> (## p1 : a = b) -> (## p2 : c = d) -> f a c = f b d
 cong2 f Refl Refl = Refl
 
 ||| Dependent version of `cong`.
@@ -150,7 +150,7 @@ public export
 depCong : {0 p : a -> Type} ->
           (0 f : (x : a) -> p x) ->
           {0 x1, x2 : a} ->
-          (prf : x1 = x2) ->
+          (## prf : x1 = x2) ->
           f x1 = f x2
 depCong f Refl = Refl
 
@@ -159,14 +159,14 @@ public export
 depCong2 : {0 p : a -> Type} ->
            {0 q : (x : a) -> (y : p x) -> Type} ->
            (0 f : (x : a) -> (y : p x) -> q x y) ->
-           {0 x1, x2 : a} -> (prfX : x1 = x2) ->
+           {0 x1, x2 : a} -> (## prfX : x1 = x2) ->
            {0 y1 : p x1} -> {y2 : p x2} ->
-           (prfY : y1 = y2) -> f x1 y1 = f x2 y2
+           (## prfY : y1 = y2) -> f x1 y1 = f x2 y2
 depCong2 f Refl Refl = Refl
 
 ||| Irrelevant equalities can always be made relevant
 export
-irrelevantEq : (0 _ : a ~=~ b) -> a ~=~ b
+irrelevantEq : (## _ : a ~=~ b) -> a ~=~ b
 irrelevantEq Refl = Refl
 
 --------------
@@ -217,22 +217,19 @@ intToBool x = True
 
 ||| Generic lists.
 public export
-data List a =
+data List : (## a : Type) -> Type where
   ||| Empty list
-  Nil
-
-  | ||| A non-empty list, consisting of a head element and the rest of the list.
-  (::) a (List a)
+  Nil : {## a : Type} -> List a
+  ||| A non-empty list, consisting of a head element and the rest of the list.
+  (::) : {## a : Type} -> (x : a) -> List a -> List a
 
 %name List xs, ys, zs
 
-||| Snoc lists.
 public export
-data SnocList a =
+data SnocList : (## a : Type) -> Type where
   ||| Empty snoc-list
-  Lin
-
-  | ||| A non-empty snoc-list, consisting of the rest of the snoc-list and the final element.
-  (:<) (SnocList a) a
+  Lin : {## a : Type} -> SnocList a
+  ||| A non-empty snoc-list, consisting of the rest of the snoc-list and the final element.
+  (:<) : {## a : Type} -> (xs : SnocList a) -> (x : a) -> SnocList a
 
 %name SnocList sx, sy, sz
