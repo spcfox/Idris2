@@ -536,14 +536,14 @@ pi x rig plic ty sc = Bind emptyFC (UN (Basic x)) (Pi emptyFC rig plic ty) sc
 
 believeMeTy : ClosedTerm
 believeMeTy
-    = pi "a" erased Explicit (TType emptyFC (MN "top" 0)) $
-      pi "b" erased Explicit (TType emptyFC (MN "top" 0)) $
+    = pi "a" parametric Explicit (TType emptyFC (MN "top" 0)) $
+      pi "b" parametric Explicit (TType emptyFC (MN "top" 0)) $
       pi "x" linear Explicit (Local emptyFC Nothing _ (Later First)) $
       Local emptyFC Nothing _ (Later First)
 
 crashTy : ClosedTerm
 crashTy
-    = pi "a" erased Explicit (TType emptyFC (MN "top" 0)) $
+    = pi "a" parametric Explicit (TType emptyFC (MN "top" 0)) $
       pi "msg" top Explicit (PrimVal emptyFC $ PrT StringType) $
       Local emptyFC Nothing _ (Later First)
 

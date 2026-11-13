@@ -216,8 +216,8 @@ mutual
                       lcheckMeta rig erase env fc n idx args [] nty
     where
       unusedHoleArgs : List a -> Term vs -> Term vs
-      unusedHoleArgs (_ :: args) (Bind bfc n (Pi fc _ e ty) sc)
-          = Bind bfc n (Pi fc erased e ty) (unusedHoleArgs args sc)
+      unusedHoleArgs (_ :: args) (Bind bfc n (Pi fc rig e ty) sc)
+          = Bind bfc n (Pi fc (if isErased rig then rig else erased) e ty) (unusedHoleArgs args sc)
       unusedHoleArgs args (Bind bfc n (Let fc c e ty) sc)
           = Bind bfc n (Let fc c e ty) (unusedHoleArgs args sc)
       unusedHoleArgs _ ty = ty
@@ -338,7 +338,7 @@ mutual
            (ty', _, u) <- lcheck rig erase env ty
            pure (TDelayed fc r ty', gType fc (MN "top" 0), u)
   lcheck rig erase env (TDelay fc r ty val)
-      = do (ty', _, _) <- lcheck erased erase env ty
+      = do (ty', _, _) <- lcheck parametric erase env ty
            (val', gty, u) <- lcheck rig erase env val
            ty <- getTerm gty
            pure (TDelay fc r ty' val', gnf env (TDelayed fc r ty), u)
@@ -369,24 +369,24 @@ mutual
                  Binder (Term vars) ->
                  Core (Binder (Term vars), Glued vars, Usage vars)
   lcheckBinder rig erase env (Lam fc c x ty)
-      = do (tyv, tyt, _) <- lcheck erased erase env ty
+      = do (tyv, tyt, _) <- lcheck parametric erase env ty
            pure (Lam fc c x tyv, tyt, [])
   lcheckBinder rig erase env (Let fc rigc val ty)
-      = do (tyv, tyt, _) <- lcheck erased erase env ty
+      = do (tyv, tyt, _) <- lcheck parametric erase env ty
            (valv, valt, vs) <- lcheck (rig |*| rigc) erase env val
            pure (Let fc rigc valv tyv, tyt, vs)
   lcheckBinder rig erase env (Pi fc c x ty)
       = do (tyv, tyt, _) <- lcheck (rig |*| c) erase env ty
            pure (Pi fc c x tyv, tyt, [])
   lcheckBinder rig erase env (PVar fc c p ty)
-      = do (tyv, tyt, _) <- lcheck erased erase env ty
+      = do (tyv, tyt, _) <- lcheck parametric erase env ty
            pure (PVar fc c p tyv, tyt, [])
   lcheckBinder rig erase env (PLet fc rigc val ty)
-      = do (tyv, tyt, _) <- lcheck erased erase env ty
+      = do (tyv, tyt, _) <- lcheck parametric erase env ty
            (valv, valt, vs) <- lcheck (rig |*| rigc) erase env val
            pure (PLet fc rigc valv tyv, tyt, vs)
   lcheckBinder rig erase env (PVTy fc c ty)
-      = do (tyv, tyt, _) <- lcheck erased erase env ty
+      = do (tyv, tyt, _) <- lcheck parametric erase env ty
            pure (PVTy fc c tyv, tyt, [])
 
   discharge : {vars : _} ->
@@ -593,7 +593,7 @@ mutual
       updateUsage (u :: us) (Bind bfc n (Pi fc c e ty) sc)
           = let sc' = updateUsage us sc
                 c' = case u of
-                          Use0 => erased
+                          Use0 => if isErased c then c else erased
                           Use1 => linear -- ignore usage elsewhere, we checked here
                           UseUnknown => c -- don't know, assumed unchanged and update hole types
                           UseKeep => c -- matched here, so count usage elsewhere
