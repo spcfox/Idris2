@@ -38,7 +38,7 @@ rigSafe fc nm rig ctx
 
 checkUsageOK : FC -> Name -> RigCount -> RigCount -> Core ()
 checkUsageOK fc nm used expected
-    = unless (used <= expected) $ throw (LinearUsed fc used nm)
+    = unless (used <= expected) $ throw (LinearMisuse fc nm expected used)
 
 mutual
   updateHoleUsageArgs : {0 vars : _} ->
@@ -228,13 +228,7 @@ mutual
 
   lcheck rig_in erase env (Bind fc nm b sc)
       = do log "quantity" 15 "lcheck Bind"
-           (b', bt, usedb) <- handleUnify (lcheckBinder rig erase env b)
-                                 (\err =>
-                                     case err of
-                                          LinearMisuse _ _ r _ =>
-                                             lcheckBinder rig erase env
-                                                (setMultiplicity b linear)
-                                          _ => throw err)
+           (b', bt, usedb) <- lcheckBinder rig erase env b
            -- Anything linear can't be used in the scope of a lambda, if we're
            -- checking in general context
            let env' = if rig_in == top
@@ -370,25 +364,25 @@ mutual
                  Binder (Term vars) ->
                  Core (Binder (Term vars), Glued vars, Usage vars)
   lcheckBinder rig erase env (Lam fc c x ty)
-      = do (tyv, tyt, _) <- lcheck erased erase env ty
-           pure (Lam fc c x tyv, tyt, empty)
+      = do (tyv, tyt, vs) <- lcheck erased erase env ty
+           pure (Lam fc c x tyv, tyt, vs)
   lcheckBinder rig erase env (Let fc rigc val ty)
-      = do (tyv, tyt, _) <- lcheck erased erase env ty
-           (valv, valt, vs) <- lcheck (rig |*| rigc) erase env val
-           pure (Let fc rigc valv tyv, tyt, vs)
+      = do (tyv, tyt, vsty) <- lcheck erased erase env ty
+           (valv, valt, vsval) <- lcheck (rig |*| rigc) erase env val
+           pure (Let fc rigc valv tyv, tyt, vsty `mergeUsage` vsval)
   lcheckBinder rig erase env (Pi fc c x ty)
       = do (tyv, tyt, vs) <- lcheck (rig |*| c) erase env ty
            pure (Pi fc c x tyv, tyt, vs)
   lcheckBinder rig erase env (PVar fc c p ty)
-      = do (tyv, tyt, _) <- lcheck erased erase env ty
-           pure (PVar fc c p tyv, tyt, empty)
+      = do (tyv, tyt, vs) <- lcheck erased erase env ty
+           pure (PVar fc c p tyv, tyt, vs)
   lcheckBinder rig erase env (PLet fc rigc val ty)
-      = do (tyv, tyt, _) <- lcheck erased erase env ty
-           (valv, valt, vs) <- lcheck (rig |*| rigc) erase env val
-           pure (PLet fc rigc valv tyv, tyt, vs)
+      = do (tyv, tyt, vsty) <- lcheck erased erase env ty
+           (valv, valt, vsval) <- lcheck (rig |*| rigc) erase env val
+           pure (PLet fc rigc valv tyv, tyt, vsty `mergeUsage` vsval)
   lcheckBinder rig erase env (PVTy fc c ty)
-      = do (tyv, tyt, _) <- lcheck erased erase env ty
-           pure (PVTy fc c tyv, tyt, empty)
+      = do (tyv, tyt, vs) <- lcheck erased erase env ty
+           pure (PVTy fc c tyv, tyt, vs)
 
   discharge : {vars : _} ->
               Defs -> Env Term vars ->

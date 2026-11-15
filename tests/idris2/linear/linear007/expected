@@ -1,9 +1,8 @@
 1/1: Building LCase (LCase.idr)
-Error: While processing right hand side of foo. Linear name y is not used.
+Error: While processing right hand side of foo. Trying to use linear name y in irrelevant context.
 
 LCase:11:11--13:41
  11 |     = let 1 test = the MyNat $ case z of
  12 |                         MyZ => MyZ
  13 |                         (MyS k) => MyS z
 
-Suggestion: linearly bounded variables must be used exactly once.
