@@ -229,20 +229,13 @@ mutual
   lcheck rig erase env (Bind fc nm b sc)
       = do log "quantity" 15 "lcheck Bind"
            (b', bt, usedb) <- lcheckBinder rig erase env b
-           -- Anything linear can't be used in the scope of a lambda, if we're
-           -- checking in general context
-           let env' = if rig == top
-                         then case b of
-                              Lam {} => eraseLinear env
-                              _ => env
-                         else env
-           (sc', sct, usedsc) <- lcheck rig erase (b' :: env') sc
+           (sc', sct, usedsc) <- lcheck rig erase (b' :: env) sc
 
            let used_in = getUsage first usedsc
            holeFound <- if not erase && isLinear (multiplicity b)
                            then updateHoleUsage (isErased used_in)
                                          first
-                                         (map weaken (getErased env'))
+                                         (map weaken (getErased env))
                                          sc'
                            else pure False
 
