@@ -4,6 +4,7 @@ import Core.Env
 import Core.Metadata
 import Core.Unify
 import Core.Value
+import Core.LinearCheck
 
 import Idris.REPL.Opts
 import Idris.Syntax
@@ -50,7 +51,7 @@ getNameType : {vars : _} ->
 getNameType elabMode rigc env fc x
     = case defined x env of
            Just (MkIsDefined rigb lv) =>
-              do rigSafe rigb rigc
+              do rigSafe fc x rigb rigc -- Early check to infer the multiplicity of case-blocks
                  let binder = getBinder lv env
                  let bty = binderType binder
 
@@ -74,7 +75,7 @@ getNameType elabMode rigc env fc x
                  checkVisibleNS fc (fullname def) (collapseDefault $ visibility def)
                  when (not $ onLHS elabMode) $
                    checkDeprecation fc def
-                 rigSafe (multiplicity def) rigc
+                 rigSafe fc x (multiplicity def) rigc -- Early check to infer the multiplicity of case-blocks
                  let nt = getDefNameType def
 
                  log "ide-mode.highlight" 8
@@ -90,10 +91,6 @@ getNameType elabMode rigc env fc x
 
                  pure (Ref fc nt (Resolved i), gnf env (embed (type def)))
   where
-    rigSafe : RigCount -> RigCount -> Core ()
-    rigSafe lhs rhs = when (lhs < rhs)
-                           (throw (LinearMisuse fc !(getFullName x) lhs rhs))
-
     checkDeprecation : FC -> GlobalDef -> Core ()
     checkDeprecation fc gdef =
       do when (Deprecate `elem` gdef.flags) $
