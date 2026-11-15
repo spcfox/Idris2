@@ -177,9 +177,6 @@ mutual
            let rigb = multiplicity b
            let ty = binderType b
            log "quantity" 15 "lcheck Local"
-           when (not erase) $ rigSafe fc (nameAt prf) rigb rig
-           -- We could record only linear usages with the current
-           -- semiring, but record all usages to keep this general.
            pure (Local fc x idx prf, gnf env ty, use (MkVar prf) rig)
 
   lcheck rig erase env (Ref fc nt fn)
