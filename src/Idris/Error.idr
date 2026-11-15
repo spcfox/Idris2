@@ -399,10 +399,14 @@ perrorRaw (NotTotal fc n r)
 perrorRaw ImpossibleCase
     = pure $ errorDesc (reflow "<ImpossibleCase: this should never be displayed>")
 perrorRaw (LinearUsed fc count n)
-    = pure $ errorDesc (reflow "There are" <++> byShow count <++> reflow "uses of linear name"
-        <++> code (pretty0 (sugarName n)) <+> dot)
-        <++> line <+> !(ploc fc)
-        <+> line <+> reflow "Suggestion: linearly bounded variables must be used exactly once."
+    = pure $ branchZero
+        (errorDesc (reflow "Linear name " <++> code (pretty0 !(prettyName n)) <++> reflow " is not used.")
+            <+> line <+> !(ploc fc)
+            <+> line <+> reflow "Suggestion: linearly bounded variables must be used exactly once.")
+        (errorDesc (reflow "Non-linear use of linear name " <++> code (pretty0 !(prettyName n)) <+> dot)
+            <+> line <+> !(ploc fc)
+            <+> line <+> reflow "Suggestion: linearly bounded variables must be used exactly once.")
+        count
 perrorRaw (LinearMisuse fc n exp ctx)
     = if isErased exp
          then pure $ errorDesc (code (pretty0 n) <++> reflow "is not accessible in this context.")

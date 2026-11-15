@@ -10,7 +10,7 @@ filter p (x :: xs) with (p x)
   filter p (x :: xs) | False = filter p xs
   filter p (x :: xs) | True = x :: filter p xs
 
-failing "While processing right hand side of with block in filterSquared. There are 0 uses of linear name eq"
+failing "While processing right hand side of with block in filterSquared. Linear name eq is not used."
   filterSquared : (p : a -> Bool) -> (xs : List a) ->
                   filter p (filter p xs) === filter p xs
   filterSquared p [] = Refl

@@ -488,7 +488,7 @@ checkBindVar rig elabinfo nest env fc nm topexp
 
     combine : Name -> RigCount -> RigCount -> Core ()
     combine n l r = when (isIncompatible l r)
-                         (throw (LinearUsed fc 2 n))
+                         (throw (LinearUsed fc (l |+| r) n))
 
 checkPolyConstraint :
             {auto c : Ref Ctxt Defs} ->

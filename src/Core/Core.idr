@@ -115,7 +115,7 @@ data Error : Type where
         -- ^ Not a true error.
         -- Thrown deliberately to signal the coverage checker that a case is impossible
         -- (e.g. pattern match against an empty type).
-     LinearUsed : FC -> Nat -> Name -> Error
+     LinearUsed : FC -> RigCount -> Name -> Error
      LinearMisuse : FC -> Name -> RigCount -> RigCount -> Error
      BorrowPartial : {vars : _} ->
                      FC -> Env Term vars -> Term vars -> Term vars -> Error
@@ -276,7 +276,10 @@ Show Error where
   show ImpossibleCase
        = "Case is impossible (not an error)"
   show (LinearUsed fc count n)
-      = show fc ++ ":There are " ++ show count ++ " uses of linear name " ++ show n
+      = branchZero
+          (show fc ++ ":Linear name " ++ show n ++ " is not used")
+          (show fc ++ ":Non-linear use of linear name " ++ show n)
+          count
   show (LinearMisuse fc n exp ctx)
       = show fc ++ ":Trying to use " ++ showRig exp ++ " name " ++ show n ++
                    " in " ++ showRel ctx ++ " context"

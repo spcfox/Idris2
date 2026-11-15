@@ -1,5 +1,5 @@
 1/1: Building LCase (LCase.idr)
-Error: While processing right hand side of foo. There are 0 uses of linear name y. 
+Error: While processing right hand side of foo. Linear name y is not used.
 
 LCase:11:11--13:41
  11 |     = let 1 test = the MyNat $ case z of

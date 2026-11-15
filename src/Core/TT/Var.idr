@@ -183,6 +183,10 @@ Eq (Var xs) where
   v == w = varIdx v == varIdx w
 
 export
+Ord (Var xs) where
+  compare v w = compare (varIdx v) (varIdx w)
+
+export
 Show (Var ns) where
   show v = show (varIdx v)
 
