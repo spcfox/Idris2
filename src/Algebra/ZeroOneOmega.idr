@@ -12,22 +12,43 @@ data ZeroOneOmega = Rig0 | Rig1 | RigW
 
 export
 Preorder ZeroOneOmega where
-  Rig0 <=    _ = True
+  Rig0 <= Rig0 = True
   Rig1 <= Rig1 = True
   _    <= RigW = True
   _    <=    _ = False
   preorderRefl {x = Rig0} = Refl
   preorderRefl {x = Rig1} = Refl
   preorderRefl {x = RigW} = Refl
-  preorderTrans {x = Rig0} _ _ = Refl
-  preorderTrans {x = Rig1} {y = Rig0} _ _ impossible
+  preorderTrans {x = Rig0} {y = Rig0} _ yz = yz
+  preorderTrans {x = Rig0} {y = RigW} {z = RigW} _ _ = Refl
   preorderTrans {x = Rig1} {y = Rig1} _ yz = yz
-  preorderTrans {x = Rig1} {y = RigW} {z = Rig0} _ _ impossible
-  preorderTrans {x = Rig1} {y = RigW} {z = Rig1} _ _ = Refl
   preorderTrans {x = Rig1} {y = RigW} {z = RigW} _ _ = Refl
-  preorderTrans {x = RigW} {y = Rig0} _ _ impossible
-  preorderTrans {x = RigW} {y = Rig1} _ _ impossible
   preorderTrans {x = RigW} {y = RigW} _ yz = yz
+
+||| Least Upper Bound
+export
+lub : ZeroOneOmega -> ZeroOneOmega -> ZeroOneOmega
+lub Rig0 y = y
+lub x Rig0 = x
+lub Rig1 x = x
+lub x Rig1 = x
+lub _ _ = RigW
+
+||| Greatest Lower Bound
+export
+glb : ZeroOneOmega -> ZeroOneOmega -> ZeroOneOmega
+glb RigW y = y
+glb x RigW = x
+glb Rig1 x = x
+glb x Rig1 = x
+glb _ _ = Rig0
+
+public export
+(<) : ZeroOneOmega -> ZeroOneOmega -> Bool
+Rig0 < Rig1 = True
+Rig0 < RigW = True
+Rig1 < RigW = True
+_    < _    = False
 
 public export
 Eq ZeroOneOmega where
