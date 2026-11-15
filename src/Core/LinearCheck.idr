@@ -362,6 +362,7 @@ mutual
       = do log "quantity" 15 "lcheck TType"
            pure (TType fc u, gType fc (MN "top" 0), empty)
 
+  -- TODO: don't return empty
   lcheckBinder : {vars : _} ->
                  {auto c : Ref Ctxt Defs} ->
                  {auto u : Ref UST UState} ->
@@ -376,8 +377,8 @@ mutual
            (valv, valt, vs) <- lcheck (rig |*| rigc) erase env val
            pure (Let fc rigc valv tyv, tyt, vs)
   lcheckBinder rig erase env (Pi fc c x ty)
-      = do (tyv, tyt, _) <- lcheck (rig |*| c) erase env ty
-           pure (Pi fc c x tyv, tyt, empty)
+      = do (tyv, tyt, vs) <- lcheck (rig |*| c) erase env ty
+           pure (Pi fc c x tyv, tyt, vs)
   lcheckBinder rig erase env (PVar fc c p ty)
       = do (tyv, tyt, _) <- lcheck erased erase env ty
            pure (PVar fc c p tyv, tyt, empty)

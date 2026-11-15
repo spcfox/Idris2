@@ -1,13 +1,14 @@
 1/1: Building Test1 (Test1.idr)
-Error: While processing right hand side of G. yv is not accessible in this context.
+Error: While processing right hand side of G. Non-linear use of linear name yv.
 
-Test1:4:12--4:14
+Test1:4:8--4:22
  1 | data Foo : Nat -> Type where
  2 |
  3 | G : (0 yv : Nat) -> Type
  4 | G yv = Foo yv -> Bool
-                ^^
+            ^^^^^^^^^^^^^^
 
+Suggestion: linearly bounded variables must be used exactly once.
 1/1: Building Test2 (Test2.idr)
 Error: While processing right hand side of f. Main.G is not accessible in this context.
 
