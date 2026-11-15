@@ -1,6 +1,7 @@
 module TTImp.Elab.Case
 
 import Core.Env
+import Core.LinearCheck
 import Core.Metadata
 import Core.Unify
 import Core.Value
@@ -18,8 +19,10 @@ import TTImp.Utils
 
 import Data.Maybe
 import Data.String
+import Data.SnocList.HasLength
 import Libraries.Data.NameMap
 import Libraries.Data.NatSet
+import Libraries.Data.SnocList.SizeOf
 import Libraries.Data.VarSet
 import Libraries.Data.WithDefault
 
@@ -61,19 +64,16 @@ allow (Just (MkVar p)) env = toRig1 p env
 
 -- If the name is used elsewhere, update its multiplicity so it's
 -- not required to be used in the case block
-updateMults : VarSet vs -> Env Term vs -> Env Term vs
-updateMults vars env
-  = -- shortcircuiting the call if the set of vars to erase is now empty
-    if VarSet.isEmpty vars then env else go vars env
+updateMults : {vs : _} -> Usage vs -> Env Term vs -> Env Term vs
+updateMults = go zero
   where
-
-  go : {0 vs : Scope} -> VarSet vs -> Env Term vs -> Env Term vs
-  go vars [] = []
-  go vars (b :: env)
-    = (if first `VarSet.elem` vars
-        then setMultiplicity b erased
-        else b)
-    :: updateMults (VarSet.dropFirst vars) env
+    go : {vs : Scope} -> {seen : SnocList Name} ->
+         SizeOf seen -> Usage (seen <>> vs) ->
+         Env Term vs -> Env Term vs
+    go s usage [] = []
+    go s usage (b :: env)
+      = setMultiplicity b (fromMaybe plusNeutral $ multiplicity b |-| getUsage (mkVarChiply s) usage) :: go (s :< _) usage env
+      -- TODO: throw error on Nothing?
 
 findImpsIn : {vars : _} ->
              FC -> Env Term vars -> List (Name, Term vars) -> Term vars ->

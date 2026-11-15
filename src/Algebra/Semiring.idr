@@ -2,7 +2,7 @@ module Algebra.Semiring
 
 %default total
 
-export infixl 8 |+|
+export infixl 8 |+|, |-|
 export infixl 9 |*|
 
 ||| A Semiring has two binary operations and an identity for each
@@ -12,6 +12,10 @@ interface Semiring a where
   plusNeutral : a
   (|*|) : a -> a -> a
   timesNeutral : a
+
+public export
+interface Semiring a => SubtractiveSemiring a where
+  (|-|) : a -> a -> Maybe a
 
 ||| Erased linearity corresponds to the neutral for |+|
 public export

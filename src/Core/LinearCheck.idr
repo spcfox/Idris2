@@ -16,20 +16,31 @@ import Libraries.Data.SnocList.SizeOf
 
 -- List of variable usages - we'll count the contents of specific variables
 -- when discharging binders, to ensure that linear names are only used once
+public export
 Usage : Scoped
 Usage vars = SortedMap (Var vars) RigCount
 
+export
 getUsage : Var vars -> Usage vars -> RigCount
 getUsage = fromMaybe plusNeutral .: lookup
+
+export
+addUsage : Var vars -> RigCount -> Usage vars -> Usage vars
+addUsage = insertWith (|+|)
+
+export
+strengthen : Usage (n :: vars) -> Usage vars
+strengthen = fromList . mapMaybe (\(v, c) => (,c) <$> isLater v) . kvList
+
+export
+weaken : Usage vars -> Usage (n :: vars)
+weaken = fromList . map (mapFst weaken) . kvList
 
 use : Var vars -> RigCount -> Usage vars
 use = singleton
 
 mergeUsage : Usage vars -> Usage vars -> Usage vars
 mergeUsage = mergeWith (|+|)
-
-doneScope : Usage (n :: vars) -> Usage vars
-doneScope = fromList . mapMaybe (\(v, c) => (,c) <$> isLater v) . kvList
 
 export
 rigSafe : {auto c : Ref Ctxt Defs} -> FC -> Name -> RigCount -> RigCount -> Core ()
@@ -249,7 +260,7 @@ mutual
            when (not erase && not isPi) $
                checkUsageOK fc nm used (multiplicity b |*| rig)
            defs <- get Ctxt
-           discharge defs env fc nm b' bt sc' sct (usedb `mergeUsage` doneScope usedsc)
+           discharge defs env fc nm b' bt sc' sct (usedb `mergeUsage` strengthen usedsc)
     where
       isPi : Bool
       isPi = case b of

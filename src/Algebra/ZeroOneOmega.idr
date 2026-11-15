@@ -85,6 +85,14 @@ Semiring ZeroOneOmega where
   plusNeutral = Rig0
   timesNeutral = Rig1
 
+public export
+SubtractiveSemiring ZeroOneOmega where
+  x    |-| Rig0 = Just x
+  Rig0 |-| _    = Nothing
+  Rig1 |-| Rig1 = Just Rig0
+  Rig1 |-| RigW = Nothing
+  RigW |-| _    = Just RigW
+
 ||| The top value of a lattice
 export
 Top ZeroOneOmega where

@@ -58,7 +58,7 @@ getNameType elabMode rigc env fc x
                  log "metadata.names" 7 $ "getNameType is adding ↓"
                  addNameType fc x env bty
 
-                 when (isLinear rigb) $ update EST { linearUsed $= VarSet.insert (MkVar lv) }
+                 update EST { linearUsed $= addUsage (MkVar lv) rigc }
                  log "ide-mode.highlight" 8
                      $ "getNameType is trying to add Bound: "
                       ++ show x ++ " (" ++ show fc ++ ")"

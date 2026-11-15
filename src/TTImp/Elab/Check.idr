@@ -5,6 +5,7 @@ module TTImp.Elab.Check
 
 import Core.Env
 import Core.Metadata
+import Core.LinearCheck
 import Core.Unify
 import Core.Value
 
@@ -14,14 +15,14 @@ import Idris.Syntax
 import TTImp.TTImp
 
 import Data.Either
+import Data.SortedMap
+
 import Libraries.Data.IntMap
 import Libraries.Data.NameMap
 import Libraries.Data.UserNameMap
 import Libraries.Data.WithDefault
 
 import Libraries.Data.List.SizeOf
-
-import Libraries.Data.VarSet
 
 %default covering
 
@@ -144,7 +145,7 @@ record EState (vars : Scope) where
                   -- of elaboration. If they aren't, it means we're trying to
                   -- pattern match on a type that we don't have available.
   delayDepth : Nat -- if it gets too deep, it gets slow, so fail quicker
-  linearUsed : VarSet vars
+  linearUsed : Usage vars
   saveHoles : NameMap () -- things we'll need to save to TTC, even if solved
 
   unambiguousNames : UserNameMap (Name, Int, GlobalDef)
@@ -169,7 +170,7 @@ initEStateSub n env sub = MkEState
     , allPatVars = []
     , polyMetavars = []
     , delayDepth = Z
-    , linearUsed = VarSet.empty
+    , linearUsed = empty
     , saveHoles = empty
     , unambiguousNames = empty
     }
@@ -193,7 +194,7 @@ weakenedEState {e}
                    { subEnv $= Drop
                    , boundNames $= map wknTms
                    , toBind $= map wknTms
-                   , linearUsed $= weaken {tm = VarSet}
+                   , linearUsed $= weaken
                    , polyMetavars := [] -- no binders on LHS
                    } est
          pure eref
@@ -219,7 +220,7 @@ strengthenedEState {n} {vars} c e fc env
          pure $ { subEnv := svs
                 , boundNames := bns
                 , toBind := todo
-                , linearUsed $= VarSet.dropFirst
+                , linearUsed $= strengthen
                 , polyMetavars := [] -- no binders on LHS
                 } est
 
