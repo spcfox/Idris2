@@ -226,12 +226,12 @@ mutual
           = Bind bfc n (Let fc c e ty) (unusedHoleArgs args sc)
       unusedHoleArgs _ ty = ty
 
-  lcheck rig_in erase env (Bind fc nm b sc)
+  lcheck rig erase env (Bind fc nm b sc)
       = do log "quantity" 15 "lcheck Bind"
            (b', bt, usedb) <- lcheckBinder rig erase env b
            -- Anything linear can't be used in the scope of a lambda, if we're
            -- checking in general context
-           let env' = if rig_in == top
+           let env' = if rig == top
                          then case b of
                               Lam {} => eraseLinear env
                               _ => env
@@ -253,21 +253,15 @@ mutual
                          then linear
                          else used_in
 
-           when (not erase) $
+           when (not erase && not isPi) $
                checkUsageOK fc nm used (multiplicity b |*| rig)
            defs <- get Ctxt
            discharge defs env fc nm b' bt sc' sct (usedb `mergeUsage` doneScope usedsc)
     where
-      rig : RigCount
-      rig = case b of
-                 Pi {} =>
-                      if isErased rig_in
-                         then erased
-                         else top -- checking as if an inspectable run-time type
-                 Let {} => rig_in
-                 _ => if isErased rig_in
-                         then erased
-                         else linear
+      isPi : Bool
+      isPi = case b of
+                 Pi {} => True
+                 _ => False
 
   lcheck rig erase env (App fc f a)
       = do logC "quantity" 15 $ do pure "lcheck App \{show !(toFullNames f)} \{show !(toFullNames a)}"
