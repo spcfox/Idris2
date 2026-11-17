@@ -52,7 +52,6 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y uuid-dev
 
       - name: Build and Install Chez Scheme
         run: |
