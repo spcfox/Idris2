@@ -662,14 +662,18 @@ checkEnvUsage fc s rig {vars = nm :: xs} (b :: env) usage tm
     = do let pos = mkVarChiply s
          let used_in = getUsage pos usage
 
-         holeFound <- if isLinear (multiplicity b)
-                         then updateHoleUsage (isErased used_in) pos [] tm
-                         else pure False
-         let used = if isLinear (multiplicity b |*| rig) &&
-                       holeFound && isErased (used_in)
-                       then linear
-                       else used_in
-         checkUsageOK fc nm used (multiplicity b |*| rig)
+         let expected = multiplicity b |*| rig
+         used <- case expected |-| used_in of
+                      -- Just r => if r == timesNeutral
+                      --              then pure used_in
+                      --              else do holeFound <- updateHoleUsage (isErased used_in) pos [] tm
+                      --                      pure $ if holeFound
+                      --                                then used_in |+| r
+                      --                                else used_in
+                      Just r => do holeFound <- updateHoleUsage (isErased used_in) pos [] tm
+                                   pure $ if holeFound then expected else used_in
+                      Nothing => throw (LinearMisuse fc nm expected used_in)
+         checkUsageOK fc nm used expected
          checkEnvUsage fc (s :< nm) rig env usage tm
 
 -- Linearity check an elaborated term. If 'erase' is set, erase anything that's in
