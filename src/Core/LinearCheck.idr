@@ -55,13 +55,13 @@ mutual
   updateHoleUsageArgs : {0 vars : _} ->
                         {auto c : Ref Ctxt Defs} ->
                         {auto u : Ref UST UState} ->
-                        (useInHole : Bool) ->
+                        RigCount ->
                         Var vars -> List (Var vars) ->
                         List (Term vars) -> Core Bool
-  updateHoleUsageArgs useInHole var zs [] = pure False
-  updateHoleUsageArgs useInHole var zs (a :: as)
-      = do h <- updateHoleUsage useInHole var zs a
-           h' <- updateHoleUsageArgs useInHole var zs as
+  updateHoleUsageArgs r var zs [] = pure False
+  updateHoleUsageArgs r var zs (a :: as)
+      = do h <- updateHoleUsage r var zs a
+           h' <- updateHoleUsageArgs r var zs as
            pure (h || h')
 
   -- The assumption here is that hole types are abstracted over the entire
@@ -70,108 +70,76 @@ mutual
   updateHoleType : {0 vars : _} ->
                    {auto c : Ref Ctxt Defs} ->
                    {auto u : Ref UST UState} ->
-                   (useInHole : Bool) ->
+                   RigCount ->
                    Var vars -> List (Var vars) ->
                    Term vs -> List (Term vars) ->
                    Core (Term vs)
-  updateHoleType useInHole var zs (Bind bfc nm (Pi fc' c e ty) sc) (Local _ r v _ :: as)
+  updateHoleType c' var zs (Bind bfc nm (Pi fc' c e ty) sc) (Local _ r v _ :: as)
       -- if the argument to the hole type is the variable of interest,
       -- and the variable should be used in the hole, set it to Rig1,
       -- otherwise set it to Rig0
       = if varIdx var == v
-           then do scty <- updateHoleType False var zs sc as
-                   let c' = if useInHole then c else erased
+           then do scty <- updateHoleType plusNeutral var zs sc as
                    pure (Bind bfc nm (Pi fc' c' e ty) scty)
            else if elem v (map varIdx zs)
-                then do scty <- updateHoleType useInHole var zs sc as
+                then do scty <- updateHoleType c' var zs sc as
                         pure (Bind bfc nm (Pi fc' erased e ty) scty)
-                else do scty <- updateHoleType useInHole var zs sc as
+                else do scty <- updateHoleType c' var zs sc as
                         pure (Bind bfc nm (Pi fc' c e ty) scty)
   updateHoleType useInHole var zs (Bind bfc nm (Pi fc' c e ty) sc) (a :: as)
-      = do ignore $ updateHoleUsage False var zs a
+      = do ignore $ updateHoleUsage plusNeutral var zs a
            scty <- updateHoleType useInHole var zs sc as
            pure (Bind bfc nm (Pi fc' c e ty) scty)
   updateHoleType useInHole var zs ty as
-      = do ignore $ updateHoleUsageArgs False var zs as
+      = do ignore $ updateHoleUsageArgs plusNeutral var zs as
            pure ty
-
-  updateHoleUsagePats : {auto c : Ref Ctxt Defs} ->
-                        {auto u : Ref UST UState} ->
-                        (useInHole : Bool) ->
-                        Var vars -> List (Term vars) ->
-                        (vs ** (Env Term vs, Term vs, Term vs)) ->
-                        Core Bool
-  updateHoleUsagePats {vars} useInHole var args (vs ** (env, lhs, rhs))
-      = do -- Find the argument which corresponds to var
-           let argpos = findArg Z args
-           log "quantity.hole" 10 $ "At positions " ++ show argpos
-           -- Find what it's position is in env by looking at the lhs args
-           let vars = mapMaybe (findLocal (getArgs lhs)) argpos
-           hs <- traverse (\vsel => updateHoleUsage useInHole vsel [] rhs)
-                          vars
-           pure (any id hs)
-    where
-      findArg : Nat -> List (Term vars) -> List Nat
-      findArg i [] = []
-      findArg i (Local _ _ idx vel :: els)
-          = if idx == varIdx var
-               then i :: findArg (1 + i) els
-               else findArg (1 + i) els
-      findArg i (_ :: els) = findArg (1 + i) els
-
-      findLocal : List (Term vs) -> Nat -> Maybe (Var vs)
-      findLocal (Local _ _ _ p :: _) Z = Just (MkVar p)
-      findLocal (As _ _ (Local _ _ _ p) _ :: _) Z = Just (MkVar p)
-      findLocal (As _ _ _ (Local _ _ _ p) :: _) Z = Just (MkVar p)
-      findLocal (_ :: els) (S k) = findLocal els k
-      findLocal _ _ = Nothing
 
   updateHoleUsage : {0 vars : _} ->
                     {auto c : Ref Ctxt Defs} ->
                     {auto u : Ref UST UState} ->
-                    (useInHole : Bool) ->
+                    RigCount ->
                     Var vars -> List (Var vars) ->
                     Term vars -> Core Bool
-  updateHoleUsage useInHole (MkVar var) zs (Bind _ _ (Let _ _ val _) sc)
-      = do h <- updateHoleUsage useInHole (MkVar var) zs val
-           h' <- updateHoleUsage useInHole (MkVar (Later var)) (map weaken zs) sc
+  updateHoleUsage r (MkVar var) zs (Bind _ _ (Let _ _ val _) sc)
+      = do h <- updateHoleUsage r (MkVar var) zs val
+           h' <- updateHoleUsage r (MkVar (Later var)) (map weaken zs) sc
            pure (h || h')
-  updateHoleUsage useInHole (MkVar var) zs (Bind _ n b sc)
-      = updateHoleUsage useInHole (MkVar (Later var)) (map weaken zs) sc
-  updateHoleUsage useInHole var zs (Meta fc n i args)
+  updateHoleUsage r (MkVar var) zs (Bind _ n b sc)
+      = updateHoleUsage r (MkVar (Later var)) (map weaken zs) sc
+  updateHoleUsage r var zs (Meta fc n i args)
       = do defs <- get Ctxt
            Just gdef <- lookupCtxtExact (Resolved i) (gamma defs)
-                | Nothing => updateHoleUsageArgs useInHole var zs args
+                | Nothing => updateHoleUsageArgs r var zs args
            -- only update for holes with no definition yet
            case definition gdef of
                 Hole {} =>
                    do let ty = type gdef
-                      ty' <- updateHoleType useInHole var zs ty args
+                      ty' <- updateHoleType r var zs ty args
                       updateTy i ty'
                       logTerm "quantity.hole.update" 5 ("New type of " ++
                                  show (fullname gdef)) ty'
                       logTerm "quantity.hole.update" 5 ("Updated from " ++
                                  show (fullname gdef)) (type gdef)
                       pure True
-                _ => updateHoleUsageArgs useInHole var zs args
-  updateHoleUsage useInHole var zs (As _ _ a p)
-      = do h <- updateHoleUsage useInHole var zs a
-           h' <- updateHoleUsage useInHole var zs a
+                _ => updateHoleUsageArgs r var zs args
+  updateHoleUsage r var zs (As _ _ a p)
+      = do h <- updateHoleUsage r var zs a
+           h' <- updateHoleUsage r var zs a
            pure (h || h')
-  updateHoleUsage useInHole var zs (TDelayed _ _ t)
-      = updateHoleUsage useInHole var zs t
-  updateHoleUsage useInHole var zs (TDelay _ _ _ t)
-      = updateHoleUsage useInHole var zs t
-  updateHoleUsage useInHole var zs (TForce _ _ t)
-      = updateHoleUsage useInHole var zs t
-  updateHoleUsage useInHole var zs tm
+  updateHoleUsage r var zs (TDelayed _ _ t)
+      = updateHoleUsage r var zs t
+  updateHoleUsage r var zs (TDelay _ _ _ t)
+      = updateHoleUsage r var zs t
+  updateHoleUsage r var zs (TForce _ _ t)
+      = updateHoleUsage r var zs t
+  updateHoleUsage r var zs tm
       = case getFnArgs tm of
              (Ref _ _ fn, args) =>
                   -- no need to look inside 'fn' for holes since we did that
                   -- when working through lcheckDef recursively
-                  updateHoleUsageArgs useInHole var zs args
+                  updateHoleUsageArgs r var zs args
              (f, []) => pure False
-             (f, args) => updateHoleUsageArgs useInHole var zs (f :: args)
+             (f, args) => updateHoleUsageArgs r var zs (f :: args)
 
 -- Linearity checking of an already checked term. This serves two purposes:
 --  + Checking correct usage of linear bindings
@@ -244,7 +212,7 @@ mutual
 
            let used_in = getUsage first usedsc
            holeFound <- if not erase && isLinear (multiplicity b)
-                           then updateHoleUsage (isErased used_in)
+                           then updateHoleUsage (if isErased used_in then linear else erased)
                                          first
                                          (map weaken (getErased env))
                                          sc'
@@ -446,7 +414,7 @@ mutual
                            do rest <- getCaseUsage sc env args used rhs
                               let var = MkVar p
                               let used_in = getUsage var used
-                              holeFound <- updateHoleUsage (isErased used_in) var [] rhs
+                              holeFound <- updateHoleUsage (if isErased used_in then linear else erased) var [] rhs
                               let ause
                                   = if holeFound && isErased used_in
                                             then UseUnknown
@@ -494,7 +462,7 @@ mutual
                let used_in = getUsage pos usage
 
                holeFound <- if isLinear (multiplicity b)
-                               then updateHoleUsage (isErased used_in) pos [] tm
+                               then updateHoleUsage (if isErased used_in then linear else erased) pos [] tm
                                else pure False
                let used = if isLinear (multiplicity b |*| rig) &&
                              holeFound && isErased used_in
@@ -670,8 +638,10 @@ checkEnvUsage fc s rig {vars = nm :: xs} (b :: env) usage tm
                       --                      pure $ if holeFound
                       --                                then used_in |+| r
                       --                                else used_in
-                      Just r => do holeFound <- updateHoleUsage (isErased used_in) pos [] tm
-                                   pure $ if holeFound then expected else used_in
+                      Just r => do holeFound <- updateHoleUsage r pos [] tm
+                                   pure $ if holeFound
+                                             then expected -- expected = used_in |+| r
+                                             else used_in
                       Nothing => throw (LinearMisuse fc nm expected used_in)
          checkUsageOK fc nm used expected
          checkEnvUsage fc (s :< nm) rig env usage tm
