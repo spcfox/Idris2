@@ -15,6 +15,14 @@ import Libraries.Data.WithDefault
 
 %default covering
 
+updateCount : Env tm vs -> Core (Env tm vs)
+updateCount [] = pure Env.empty
+updateCount (b :: bs)
+    = let c = multiplicity b in
+          case c |-| c of
+               Nothing => throw (InternalError "Impossible happend: \{show c} - \{show c} = Nothing")
+               Just r  => (setMultiplicity b r ::) <$> updateCount bs
+
 export
 localHelper : {vars : _} ->
              {auto c : Ref Ctxt Defs} ->
@@ -43,10 +51,7 @@ localHelper {vars} nest env nestdecls_in func
 
          -- If the parent function is erased, then the nested definitions
          -- will be erased too
-         let nestdeclsMult =
-           if mult == erased
-              then map setErased nestdeclsVis
-              else nestdeclsVis
+         let nestdeclsMult = map (setCount mult) nestdeclsVis
 
          let defNames = definedInBlock emptyNS nestdeclsMult
          names' <- traverse (applyEnv f) defNames
@@ -56,7 +61,7 @@ localHelper {vars} nest env nestdecls_in func
          -- unless they're explicitly passed.
          -- This is because, at the moment, we don't have any mechanism of
          -- ensuring the nested definition is used exactly once
-         let env' = eraseLinear env
+         env' <- updateCount env
          -- We don't want to keep rechecking delayed elaborators in the
          -- locals block, because they're not going to make progress until
          -- we come out again, so save them
@@ -140,14 +145,14 @@ localHelper {vars} nest env nestdecls_in func
         = INamespace fc ps (map setPublic decls)
     setPublic d = d
 
-    setErased : ImpDecl -> ImpDecl
-    setErased (IClaim claim)
-        = IClaim $ map {rig := erased} claim
-    setErased (IParameters fc ps decls)
-        = IParameters fc ps (map setErased decls)
-    setErased (INamespace fc ps decls)
-        = INamespace fc ps (map setErased decls)
-    setErased d = d
+    setCount : RigCount -> ImpDecl -> ImpDecl
+    setCount rig (IClaim claim)
+        = IClaim $ map {rig $= (rig |*|)} claim
+    setCount rig (IParameters fc ps decls)
+        = IParameters fc ps (map (setCount rig) decls)
+    setCount rig (INamespace fc ps decls)
+        = INamespace fc ps (map (setCount rig) decls)
+    setCount _ d = d
 
 export
 checkLocal : {vars : _} ->

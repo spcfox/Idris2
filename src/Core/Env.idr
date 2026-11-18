@@ -56,14 +56,6 @@ namesNoLet (Let _ _ _ _ :: xs) = namesNoLet xs
 namesNoLet {xs = x :: _} (_ :: env) = x :: namesNoLet env
 
 export
-eraseLinear : Env tm vs -> Env tm vs
-eraseLinear [] = Env.empty
-eraseLinear (b :: bs)
-    = if isLinear (multiplicity b)
-         then setMultiplicity b erased :: eraseLinear bs
-         else b :: eraseLinear bs
-
-export
 getErased : {0 vs : _} -> Env tm vs -> List (Var vs)
 getErased env = go env [<] where
 
