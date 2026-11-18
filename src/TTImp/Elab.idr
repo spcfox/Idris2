@@ -19,16 +19,16 @@ import Libraries.Data.NameMap
 %default covering
 
 findPLetRenames : {vars : _} ->
-                  Term vars -> List (Name, (RigCount, Name))
-findPLetRenames (Bind fc n (PLet _ c (Local _ _ idx p) ty) sc)
+                  Term vars -> List (Name, Name)
+findPLetRenames (Bind fc n (PLet _ _ (Local _ _ idx p) ty) sc)
     = case nameAt p of
-           x@(MN {}) => (x, (c, n)) :: findPLetRenames sc
+           x@(MN {}) => (x, n) :: findPLetRenames sc
            _ => findPLetRenames sc
 findPLetRenames (Bind fc n _ sc) = findPLetRenames sc
 findPLetRenames tm = []
 
 doPLetRenames : {vars : _} ->
-                List (Name, (RigCount, Name)) ->
+                List (Name, Name) ->
                 List Name -> Term vars -> Term vars
 doPLetRenames ns drops (Bind fc n b@(PLet {}) sc)
     = if n `elem` drops
@@ -36,9 +36,8 @@ doPLetRenames ns drops (Bind fc n b@(PLet {}) sc)
          else Bind fc n b (doPLetRenames ns drops sc)
 doPLetRenames ns drops (Bind fc n b sc)
     = case lookup n ns of
-           Just (c, n') =>
-             Bind fc n' (setMultiplicity b (c `lub` (multiplicity b)))
-                     (doPLetRenames ns (n' :: drops) (compat sc))
+           Just n' =>
+             Bind fc n' b (doPLetRenames ns (n' :: drops) (compat sc))
            Nothing => Bind fc n b (doPLetRenames ns drops sc)
 doPLetRenames ns drops sc = sc
 
