@@ -179,7 +179,7 @@ getAllDesc (n@(Resolved i) :: rest) arr defs
               do (def, bin) <- getMinimalDef entry
                  ignore $ addDef n def
                  let refs = refersToRuntime def
-                 if multiplicity def /= erased
+                 if not $ isErased $ multiplicity def
                     then do coreLift_ $ writeArray arr i (i, bin)
                             let refs = refersToRuntime def
                             refs' <- traverse toResolvedNames (keys refs)
@@ -239,7 +239,7 @@ nonErased n
     = do defs <- get Ctxt
          Just gdef <- lookupCtxtExact n (gamma defs)
               | Nothing => pure True
-         pure (multiplicity gdef /= erased)
+         pure $ not $ isErased $ multiplicity gdef
 
 export
 addForeignImpl : {auto c : Ref Ctxt Defs} ->

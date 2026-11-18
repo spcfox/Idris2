@@ -629,7 +629,7 @@ calcRefs rt at fn
         = do defs <- get Ctxt
              Just gdef <- lookupCtxtExact n (gamma defs)
                   | Nothing => dropErased ns refs
-             if multiplicity gdef /= erased
+             if not $ isErased $ multiplicity gdef
                 then dropErased ns refs
                 else dropErased ns (delete n refs)
 

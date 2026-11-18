@@ -598,4 +598,4 @@ compileAndInlineAll
         = do defs <- get Ctxt
              Just gdef <- lookupCtxtExact n (gamma defs)
                   | Nothing => pure False
-             pure (multiplicity gdef /= erased)
+             pure $ not $ isErased $ multiplicity gdef
