@@ -34,14 +34,14 @@ lub Rig1 x = x
 lub x Rig1 = x
 lub _ _ = RigW
 
-||| Greatest Lower Bound
 export
-glb : ZeroOneOmega -> ZeroOneOmega -> ZeroOneOmega
-glb RigW y = y
-glb x RigW = x
-glb Rig1 x = x
-glb x Rig1 = x
-glb _ _ = Rig0
+glbSubusage : ZeroOneOmega -> ZeroOneOmega -> Maybe ZeroOneOmega
+glbSubusage Rig0 y = Just y
+glbSubusage x Rig0 = Just x
+glbSubusage Rig1 Rig1 = Just Rig1
+glbSubusage _ RigW = Just RigW
+glbSubusage RigW _ = Just RigW
+glbSubusage _ _ = Nothing
 
 public export
 (<) : ZeroOneOmega -> ZeroOneOmega -> Bool

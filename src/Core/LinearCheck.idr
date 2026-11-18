@@ -389,31 +389,30 @@ mutual
                 {auto e : Ref UST UState} ->
                 FC -> RigCount -> ClosedTerm ->
                 List (vs ** (Env Term vs, Term vs, Term vs)) ->
-                Core (List ArgUsage)
+                Core (List (Maybe RigCount))
   getArgUsage topfc rig ty pats
       = do us <- traverse (getPUsage ty) pats
            pure (map snd !(combine us))
     where
       getCaseUsage : Term ns -> Env Term vs -> List (Term vs) ->
                      Usage vs -> Term vs ->
-                     Core (List (Name, ArgUsage))
+                     Core (List (Name, Maybe RigCount))
       getCaseUsage ty env (As _ _ _ p :: args) used rhs
           = getCaseUsage ty env (p :: args) used rhs
       getCaseUsage (Bind _ n (Pi _ rig _ ty) sc) env (arg :: args) used rhs
           = do rest <- getCaseUsage sc env args used rhs
-               ause <- if isLinear rig
-                          then case arg of
-                                    (Local _ _ _ p) =>
-                                      do let var = MkVar p
-                                         let used_in = getUsage var used
-                                         holeFound <- updateHoleUsage (if isErased used_in then linear else erased) var [] rhs
-                                         pure $ if holeFound && isErased used_in
-                                            then UseUnknown
-                                            else if isErased used_in
-                                                    then Use0
-                                                    else Use1
-                                    _ => pure UseKeep
-                          else pure UseKeep
+               ause <- case arg of
+                            Local _ _ _ p =>
+                                 do let var = MkVar p
+                                    let used_in = getUsage var used
+                                    case rig |-| used_in of
+                                         Just r => do holeFound <- updateHoleUsage r var [] rhs
+                                                      pure $ Just $
+                                                        if used_in <= rig || holeFound
+                                                           then rig
+                                                           else used_in
+                                         Nothing => pure Nothing -- TODO: throw error here?
+                            _ => pure Nothing
                pure ((n, ause) :: rest)
       getCaseUsage tm env args used rhs = pure []
 
@@ -453,7 +452,7 @@ mutual
                checkEnvUsage (s :< nm) rig env usage args tm
 
       getPUsage : ClosedTerm -> (vs ** (Env Term vs, Term vs, Term vs)) ->
-                  Core (List (Name, ArgUsage))
+                  Core (List (Name, Maybe RigCount))
       getPUsage ty (_ ** (penv, lhs, rhs))
           = do logEnv "quantity" 10 "Env" penv
                logTerm "quantity" 10 "LHS" lhs
@@ -466,20 +465,16 @@ mutual
                log "quantity" 10 $ "Arg usage: " ++ show ause
                pure ause
 
-      combineUsage : (Name, ArgUsage) -> (Name, ArgUsage) ->
-                     Core (Name, ArgUsage)
-      combineUsage (n, Use0) (_, Use1)
-          = throw (GenericMsg topfc ("Inconsistent usage of " ++ show n ++ " in case branches"))
-      combineUsage (n, Use1) (_, Use0)
-          = throw (GenericMsg topfc ("Inconsistent usage of " ++ show n ++ " in case branches"))
-      combineUsage (n, UseKeep) _ = pure (n, UseKeep)
-      combineUsage _ (n, UseKeep) = pure (n, UseKeep)
-      combineUsage (n, UseUnknown) _ = pure (n, UseUnknown)
-      combineUsage _ (n, UseUnknown) = pure (n, UseUnknown)
-      combineUsage x y = pure x
+      combineUsage : (Name, Maybe RigCount) -> (Name, Maybe RigCount) ->
+                     Core (Name, Maybe RigCount)
+      combineUsage (n, Just c) (_, Just c')
+          = case glbSubusage c c' of
+                 Just r => pure (n, Just r)
+                 Nothing => throw (GenericMsg topfc ("Inconsistent usage of " ++ show n ++ " in case branches"))
+      combineUsage (n, c) (_, c') = pure (n, c <|> c')
 
-      combineUsages : List (Name, ArgUsage) -> List (Name, ArgUsage) ->
-                      Core (List (Name, ArgUsage))
+      combineUsages : List (Name, Maybe RigCount) -> List (Name, Maybe RigCount) ->
+                      Core (List (Name, Maybe RigCount))
       combineUsages [] [] = pure []
       combineUsages (u :: us) (v :: vs)
           = do u' <- combineUsage u v
@@ -487,8 +482,8 @@ mutual
                pure (u' :: us')
       combineUsages _ _ = throw (InternalError "Argument usage lists inconsistent")
 
-      combine : List (List (Name, ArgUsage)) ->
-                Core (List (Name, ArgUsage))
+      combine : List (List (Name, Maybe RigCount)) ->
+                Core (List (Name, Maybe RigCount))
       combine [] = pure []
       combine [x] = pure x
       combine (x :: xs)
@@ -528,15 +523,9 @@ mutual
                                pure ty'
                         _ => pure (type def)
     where
-      updateUsage : List ArgUsage -> Term ns -> Term ns
+      updateUsage : List (Maybe RigCount) -> Term ns -> Term ns
       updateUsage (u :: us) (Bind bfc n (Pi fc c e ty) sc)
-          = let sc' = updateUsage us sc
-                c' = case u of
-                          Use0 => erased
-                          Use1 => linear -- ignore usage elsewhere, we checked here
-                          UseUnknown => c -- don't know, assumed unchanged and update hole types
-                          UseKeep => c -- matched here, so count usage elsewhere
-             in Bind bfc n (Pi fc c' e ty) sc'
+          = Bind bfc n (Pi fc (fromMaybe c u) e ty) (updateUsage us sc)
       updateUsage _ ty = ty
 
   expandMeta : {vars : _} ->
