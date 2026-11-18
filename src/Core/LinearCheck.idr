@@ -316,7 +316,6 @@ mutual
       = do log "quantity" 15 "lcheck TType"
            pure (TType fc u, gType fc (MN "top" 0), empty)
 
-  -- TODO: don't return empty
   lcheckBinder : {vars : _} ->
                  {auto c : Ref Ctxt Defs} ->
                  {auto u : Ref UST UState} ->

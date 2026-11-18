@@ -266,14 +266,6 @@ caseBlock {vars} rigc elabinfo fc nest env opts scr scrtm scrty caseRig alts exp
 
          pure (appTm, gnf env caseretty)
   where
-    mkLocalEnv : Env Term vs -> Env Term vs
-    mkLocalEnv [] = Env.empty
-    mkLocalEnv (b :: bs)
-        = let b' = if isLinear (multiplicity b)
-                      then setMultiplicity b erased
-                      else b in
-              b' :: mkLocalEnv bs
-
     -- Return the original name in the environment, and what it needs to be
     -- called in the case block. We need to mapping to build the ICaseLocal
     -- so that it applies to the right original variable
