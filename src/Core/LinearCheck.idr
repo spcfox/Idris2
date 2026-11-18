@@ -448,7 +448,7 @@ mutual
                                                    then expected -- expected = used_in |+| r
                                                    else used_in
                             Nothing => throw (LinearMisuse fc nm expected used_in)
-               unless (isLocArg pos args) $  checkUsageOK fc nm used expected
+               unless (isLocArg pos args) $ checkUsageOK fc nm used expected
                checkEnvUsage (s :< nm) rig env usage args tm
 
       getPUsage : ClosedTerm -> (vs ** (Env Term vs, Term vs, Term vs)) ->

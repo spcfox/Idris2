@@ -212,11 +212,7 @@ combineLinear loc ((n, count) :: cs)
 
     -- Those combine rules are obtuse enough that they are worth investigating
     combine : RigCount -> RigCount -> Core RigCount
-    combine l r = if (isLinear l || isLinear r) && not (l |+| r <= linear)
-                     then throw (LinearUsed loc (l |+| r) n)
-                     -- if everything is fine, return the linearity that has the
-                     -- highest bound
-                     else pure (l `lub` r)
+    combine l r = pure $ l |+| r
 
     combineAll : RigCount -> List RigCount -> Core RigCount
     combineAll c [] = pure c
