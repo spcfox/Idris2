@@ -210,23 +210,17 @@ mutual
            (b', bt, usedb) <- lcheckBinder rig erase env b
            (sc', sct, usedsc) <- lcheck rig erase (b' :: env) sc
 
-           let used_in = getUsage first usedsc
-           holeFound <- if not erase && isLinear (multiplicity b)
-                           then updateHoleUsage (if isErased used_in then linear else erased)
-                                         first
-                                         (map weaken (getErased env))
-                                         sc'
-                           else pure False
+           when (not erase && not isPi) $ do
+             let expected = multiplicity b |*| rig
+             let used_in = getUsage first usedsc
+             used <- case expected |-| used_in of
+                          Just r => do holeFound <- updateHoleUsage r first [] sc'
+                                       pure $ if holeFound
+                                                 then expected -- expected = used_in |+| r
+                                                 else used_in
+                          Nothing => throw (LinearMisuse fc nm expected used_in)
+             checkUsageOK fc nm used expected
 
-           -- if there's a hole, assume it will contain the missing usage
-           -- if there is none already
-           let used = if isLinear (multiplicity b |*| rig) &&
-                         holeFound && isErased used_in
-                         then linear
-                         else used_in
-
-           when (not erase && not isPi) $
-               checkUsageOK fc nm used (multiplicity b |*| rig)
            defs <- get Ctxt
            discharge defs env fc nm b' bt sc' sct (usedb `mergeUsage` strengthen usedsc)
     where
@@ -460,17 +454,16 @@ mutual
       checkEnvUsage s rig {done} {vars = nm :: xs} (b :: env) usage args tm
           = do let pos = mkVarChiply s
                let used_in = getUsage pos usage
+               let fc = getLoc (binderType b)
 
-               holeFound <- if isLinear (multiplicity b)
-                               then updateHoleUsage (if isErased used_in then linear else erased) pos [] tm
-                               else pure False
-               let used = if isLinear (multiplicity b |*| rig) &&
-                             holeFound && isErased used_in
-                             then linear
-                             else used_in
-               checkUsageOK (getLoc (binderType b))
-                            used nm (isLocArg pos args)
-                                    (multiplicity b |*| rig)
+               let expected = multiplicity b |*| rig
+               used <- case expected |-| used_in of
+                            Just r => do holeFound <- updateHoleUsage r pos [] tm
+                                         pure $ if holeFound
+                                                   then expected -- expected = used_in |+| r
+                                                   else used_in
+                            Nothing => throw (LinearMisuse fc nm expected used_in)
+               checkUsageOK fc used nm (isLocArg pos args) expected
                checkEnvUsage (s :< nm) rig env usage args tm
 
       getPUsage : ClosedTerm -> (vs ** (Env Term vs, Term vs, Term vs)) ->
@@ -632,12 +625,6 @@ checkEnvUsage fc s rig {vars = nm :: xs} (b :: env) usage tm
 
          let expected = multiplicity b |*| rig
          used <- case expected |-| used_in of
-                      -- Just r => if r == timesNeutral
-                      --              then pure used_in
-                      --              else do holeFound <- updateHoleUsage (isErased used_in) pos [] tm
-                      --                      pure $ if holeFound
-                      --                                then used_in |+| r
-                      --                                else used_in
                       Just r => do holeFound <- updateHoleUsage r pos [] tm
                                    pure $ if holeFound
                                              then expected -- expected = used_in |+| r
