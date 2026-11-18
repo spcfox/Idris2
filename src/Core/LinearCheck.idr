@@ -371,14 +371,12 @@ mutual
        = pure (Bind fc nm (PVTy fc' c ty) scope, gbindty, used)
 
   data ArgUsage
-       = UseAny -- RigW so we don't care
-       | Use0 -- argument position not used
+       = Use0 -- argument position not used
        | Use1 -- argument position used exactly once
        | UseKeep -- keep as is
        | UseUnknown -- hole, so can't tell
 
   Show ArgUsage where
-    show UseAny = "any"
     show Use0 = "0"
     show Use1 = "1"
     show UseKeep = "keep"
@@ -402,34 +400,22 @@ mutual
       getCaseUsage ty env (As _ _ _ p :: args) used rhs
           = getCaseUsage ty env (p :: args) used rhs
       getCaseUsage (Bind _ n (Pi _ rig _ ty) sc) env (arg :: args) used rhs
-          = if isLinear rig
-               then case arg of
-                         (Local _ _ _ p) =>
-                           do rest <- getCaseUsage sc env args used rhs
-                              let var = MkVar p
-                              let used_in = getUsage var used
-                              holeFound <- updateHoleUsage (if isErased used_in then linear else erased) var [] rhs
-                              let ause
-                                  = if holeFound && isErased used_in
+          = do rest <- getCaseUsage sc env args used rhs
+               ause <- if isLinear rig
+                          then case arg of
+                                    (Local _ _ _ p) =>
+                                      do let var = MkVar p
+                                         let used_in = getUsage var used
+                                         holeFound <- updateHoleUsage (if isErased used_in then linear else erased) var [] rhs
+                                         pure $ if holeFound && isErased used_in
                                             then UseUnknown
                                             else if isErased used_in
                                                     then Use0
                                                     else Use1
-                              pure ((n, ause) :: rest)
-                         _ => do elseCase
-               else elseCase
-          where
-            elseCase : Core (List (Name, ArgUsage))
-            elseCase = do rest <- getCaseUsage sc env args used rhs
-                          pure $ if isErased rig
-                             then ((n, Use0) :: rest)
-                             else ((n, UseKeep) :: rest)
+                                    _ => pure UseKeep
+                          else pure UseKeep
+               pure ((n, ause) :: rest)
       getCaseUsage tm env args used rhs = pure []
-
-      checkUsageOK : FC -> RigCount -> Name -> Bool -> RigCount -> Core ()
-      checkUsageOK fc used nm isloc rig
-          = when (isLinear rig && ((isloc && isRigOther used) || (not isloc && not (isLinear used))))
-                 (throw (LinearUsed fc used nm))
 
       -- Is the variable one of the lhs arguments; i.e. do we treat it as
       -- affine rather than linear
@@ -463,7 +449,7 @@ mutual
                                                    then expected -- expected = used_in |+| r
                                                    else used_in
                             Nothing => throw (LinearMisuse fc nm expected used_in)
-               checkUsageOK fc used nm (isLocArg pos args) expected
+               unless (isLocArg pos args) $  checkUsageOK fc nm used expected
                checkEnvUsage (s :< nm) rig env usage args tm
 
       getPUsage : ClosedTerm -> (vs ** (Env Term vs, Term vs, Term vs)) ->
@@ -486,8 +472,6 @@ mutual
           = throw (GenericMsg topfc ("Inconsistent usage of " ++ show n ++ " in case branches"))
       combineUsage (n, Use1) (_, Use0)
           = throw (GenericMsg topfc ("Inconsistent usage of " ++ show n ++ " in case branches"))
-      combineUsage (n, UseAny) _ = pure (n, UseAny)
-      combineUsage _ (n, UseAny) = pure (n, UseAny)
       combineUsage (n, UseKeep) _ = pure (n, UseKeep)
       combineUsage _ (n, UseKeep) = pure (n, UseKeep)
       combineUsage (n, UseUnknown) _ = pure (n, UseUnknown)
@@ -552,8 +536,7 @@ mutual
                           Use1 => linear -- ignore usage elsewhere, we checked here
                           UseUnknown => c -- don't know, assumed unchanged and update hole types
                           UseKeep => c -- matched here, so count usage elsewhere
-                          UseAny => c in -- no constraint, so leave alone
-                Bind bfc n (Pi fc c' e ty) sc'
+             in Bind bfc n (Pi fc c' e ty) sc'
       updateUsage _ ty = ty
 
   expandMeta : {vars : _} ->
