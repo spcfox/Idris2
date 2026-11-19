@@ -17,6 +17,10 @@ public export
 interface Semiring a => SubtractiveSemiring a where
   (|-|) : a -> a -> Maybe a
 
+public export
+isIdempotent : Semiring a => Eq a => a -> Bool
+isIdempotent x = (x |+| x) == x
+
 ||| Erased linearity corresponds to the neutral for |+|
 public export
 erased : Semiring a => a

@@ -58,15 +58,15 @@ checkAs rig elabinfo nest env fc nameFC side n_in pat topexp
     -- to be the new variable (UseRight), but in generated case blocks it's
     -- better if it's the pattern (UseLeft)
     rigPat' : UseSide -> RigCount
-    rigPat' UseLeft = if isLinear rig then linear else rig
-    rigPat' UseRight = if isLinear rig then erased else rig
+    rigPat' UseLeft = rig
+    rigPat' UseRight = if isIdempotent rig then rig else plusNeutral
 
     rigPat : RigCount
     rigPat = rigPat' side
 
     rigAs' : UseSide -> RigCount
-    rigAs' UseLeft = if isLinear rig then erased else rig
-    rigAs' UseRight = if isLinear rig then linear else rig
+    rigAs' UseLeft = if isIdempotent rig then rig else plusNeutral
+    rigAs' UseRight = rig
 
     rigAs : RigCount
     rigAs = rigAs' side
