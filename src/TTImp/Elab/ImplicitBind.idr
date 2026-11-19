@@ -471,23 +471,8 @@ checkBindVar rig elabinfo nest env fc nm topexp
 
                    checkExp rig elabinfo env fc tm (gnf env ty) topexp
   where
-    updateRig : Name -> RigCount -> List (Name, ImplBinding vars) ->
-                List (Name, ImplBinding vars)
-    updateRig n c [] = []
-    updateRig n c ((bn, r) :: bs)
-        = if n == bn
-             then case r of
-                  NameBinding loc _ p tm ty => (bn, NameBinding loc c p tm ty) :: bs
-                  AsBinding _ p tm ty pat => (bn, AsBinding c p tm ty pat) :: bs
-             else (bn, r) :: updateRig n c bs
-
-    -- Two variables are incompatble if at least one of them appears in a linear position
-    -- and their sum is bigger than 1
-    isIncompatible : RigCount -> RigCount -> Bool
-    isIncompatible l r = (isLinear l || isLinear r) && linear < l |+| r
-
     combine : Name -> RigCount -> RigCount -> Core ()
-    combine n l r = when (isIncompatible l r)
+    combine n l r = when (isNothing $ merge l r)
                          (throw (LinearUsed fc (l |+| r) n))
 
 checkPolyConstraint :

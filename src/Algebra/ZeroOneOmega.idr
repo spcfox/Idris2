@@ -35,13 +35,20 @@ lub x Rig1 = x
 lub _ _ = RigW
 
 export
-glbSubusage : ZeroOneOmega -> ZeroOneOmega -> Maybe ZeroOneOmega
-glbSubusage Rig0 y = Just y
-glbSubusage x Rig0 = Just x
-glbSubusage Rig1 Rig1 = Just Rig1
-glbSubusage _ RigW = Just RigW
-glbSubusage RigW _ = Just RigW
-glbSubusage _ _ = Nothing
+lubSubusage : ZeroOneOmega -> ZeroOneOmega -> Maybe ZeroOneOmega
+lubSubusage Rig0 y = Just y
+lubSubusage x Rig0 = Just x
+lubSubusage Rig1 Rig1 = Just Rig1
+lubSubusage _ RigW = Just RigW
+lubSubusage RigW _ = Just RigW
+lubSubusage _ _ = Nothing
+
+export
+merge : ZeroOneOmega -> ZeroOneOmega -> Maybe ZeroOneOmega
+merge Rig0 y = Just y
+merge x Rig0 = Just x
+merge RigW RigW = Just RigW
+merge _ _ = Nothing
 
 public export
 (<) : ZeroOneOmega -> ZeroOneOmega -> Bool

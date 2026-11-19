@@ -467,7 +467,7 @@ mutual
       combineUsage : (Name, Maybe RigCount) -> (Name, Maybe RigCount) ->
                      Core (Name, Maybe RigCount)
       combineUsage (n, Just c) (_, Just c')
-          = case glbSubusage c c' of
+          = case lubSubusage c c' of
                  Just r => pure (n, Just r)
                  Nothing => throw (GenericMsg topfc ("Inconsistent usage of " ++ show n ++ " in case branches"))
       combineUsage (n, c) (_, c') = pure (n, c <|> c')

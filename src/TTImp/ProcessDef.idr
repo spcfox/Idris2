@@ -212,7 +212,7 @@ combineLinear loc ((n, count) :: cs)
 
     -- Those combine rules are obtuse enough that they are worth investigating
     combine : RigCount -> RigCount -> Core RigCount
-    combine l r = pure $ l |+| r
+    combine l r = maybe (throw $ LinearUsed loc (l |+| r) n) pure (merge l r)
 
     combineAll : RigCount -> List RigCount -> Core RigCount
     combineAll c [] = pure c
