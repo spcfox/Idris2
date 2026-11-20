@@ -151,18 +151,31 @@ findLinear top bound rig tm
       findLinArg : {vars : _} ->
                    RigCount -> ClosedNF -> List (Term vars) ->
                    Core (List (Name, RigCount))
-      findLinArg rig ty@(NBind _ _ (Pi _ c _ _) _) (As fc u a p :: as)
-          = if isLinear c
-               then case u of
-                         UseLeft => findLinArg rig ty (p :: as)
-                         UseRight => findLinArg rig ty (a :: as)
-               else pure $ !(findLinArg rig ty [a]) ++ !(findLinArg rig ty (p :: as))
+      findLinArg rig ty@(NBind _ x (Pi _ c _ _) sc) (As fc u a p :: as)
+          = do defs <- get Ctxt
+               pure $ !(findLinArg (rigPat |*| rig) ty [p])
+                   ++ !(findLinArg (rigAs |*| rig) ty [a])
+                   ++ !(findLinArg rig !(sc defs (toClosure defaultOpts Env.empty (Ref fc Bound x))) as)
+        where
+          rigPat' : UseSide -> RigCount
+          rigPat' UseLeft = c
+          rigPat' UseRight = if isIdempotent c then c else plusNeutral
+
+          rigPat : RigCount
+          rigPat = rigPat' u
+
+          rigAs' : UseSide -> RigCount
+          rigAs' UseLeft = if isIdempotent c then c else plusNeutral
+          rigAs' UseRight = c
+
+          rigAs : RigCount
+          rigAs = rigAs' u
       findLinArg rig (NBind _ x (Pi _ c _ _) sc) (Local {name=a} fc _ idx prf :: as)
           = do defs <- get Ctxt
                let a = nameAt prf
                if idx < bound
                  then do sc' <- sc defs (toClosure defaultOpts Env.empty (Ref fc Bound x))
-                         pure $ (a, rigMult c rig) ::
+                         pure $ (a, c |*| rig) ::
                                     !(findLinArg rig sc' as)
                  else do sc' <- sc defs (toClosure defaultOpts Env.empty (Ref fc Bound x))
                          findLinArg rig sc' as
