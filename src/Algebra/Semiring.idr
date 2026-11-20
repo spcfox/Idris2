@@ -44,11 +44,3 @@ elimSemi zero one other r {a} =
 export
 isErased : (Semiring a, Eq a) => a -> Bool
 isErased = elimSemi True False (const False)
-
-export
-isLinear : (Semiring a, Eq a) => a -> Bool
-isLinear = elimSemi False True (const False)
-
-export
-branchOne : (Semiring a, Eq a) => Lazy b -> Lazy b -> a -> b
-branchOne yes no rig = if isLinear rig then yes else no

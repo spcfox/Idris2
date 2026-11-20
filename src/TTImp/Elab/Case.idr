@@ -384,12 +384,9 @@ checkCase rig elabinfo nest env fc opts scr scrty_in alts exp
                   pure (fst c, snd c, chrig))
             $ \case
                 e@(LinearMisuse _ _ r _)
-                  => branchOne
-                     (do c <- runDelays (const True) $ check linear elabinfo nest env scr
-                              (Just (gnf env scrtyv))
-                         pure (fst c, snd c, linear))
-                     (throw e)
-                     r
+                  => do c <- runDelays (const True) $ check r elabinfo nest env scr
+                             (Just (gnf env scrtyv))
+                        pure (fst c, snd c, r)
                 e => throw e
 
            scrty <- getTerm gscrty

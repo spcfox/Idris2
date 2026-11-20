@@ -149,11 +149,10 @@ checkLambda : {vars : _} ->
               (argTy : RawImp) -> (scope : RawImp) ->
               (expTy : Maybe (Glued vars)) ->
               Core (Term vars, Glued vars)
-checkLambda rig_in elabinfo nest env fc rigl info n argTy scope Nothing
-    = let rig = if isErased rig_in then erased else linear in
-          inferLambda rig elabinfo nest env fc rigl info n argTy scope Nothing
-checkLambda rig_in elabinfo nest env fc rigl info n argTy scope (Just expty_in)
-    = do let rig = if isErased rig_in then erased else linear
+checkLambda rig elabinfo nest env fc rigl info n argTy scope Nothing
+    = inferLambda rig elabinfo nest env fc rigl info n argTy scope Nothing
+checkLambda rig elabinfo nest env fc rigl info n argTy scope (Just expty_in)
+    = do let rig = if isErased rig then erased else linear -- TODO: why it's important?
          let solvemode = case elabMode elabinfo of
                               InLHS _ => inLHS
                               _ => inTerm
@@ -228,34 +227,27 @@ checkLet : {vars : _} ->
            (nTy : RawImp) -> (nVal : RawImp) -> (scope : RawImp) ->
            (expTy : Maybe (Glued vars)) ->
            Core (Term vars, Glued vars)
-checkLet rigc_in elabinfo nest env fc lhsFC rigl n nTy nVal scope expty {vars}
-    = do let rigc = if isErased rigc_in then erased else linear
-         u <- uniVar fc
+checkLet rigc elabinfo nest env fc lhsFC rigl n nTy nVal scope expty {vars}
+    = do u <- uniVar fc
          (tyv, tyt) <- check erased elabinfo nest env nTy (Just (gType fc u))
          -- Try checking at the given multiplicity; if that doesn't work,
          -- try checking at Rig1 (meaning that we're using a linear variable
          -- so the resulting binding should be linear)
          -- Also elaborate any case blocks in the value via runDelays
          (valv, valt, rigb) <- handle
-              (do c <- runDelays (==CaseBlock) $ check (rigl |*| rigc)
+              (do c <- runDelays (==CaseBlock) $ check rigl
                              ({ preciseInf := True } elabinfo)
                              nest env nVal (Just (gnf env tyv))
-                  pure (fst c, snd c, rigl |*| rigc))
+                  pure (fst c, snd c, rigl))
               (\err => case linearErr err of
                             Just r
-                              => do branchOne
-                                     (do c <- runDelays (==CaseBlock) $ check linear elabinfo
-                                                  nest env nVal (Just (gnf env tyv))
-                                         pure (fst c, snd c, linear))
-                                     (do c <- check (rigl |*| rigc)
-                                                  elabinfo -- without preciseInf
-                                                  nest env nVal (Just (gnf env tyv))
-                                         pure (fst c, snd c, rigMult rigl rigc))
-                                     r
-                            _ => do c <- check (rigl |*| rigc)
+                              => do c <- runDelays (==CaseBlock) $ check r elabinfo
+                                             nest env nVal (Just (gnf env tyv))
+                                    pure (fst c, snd c, r)
+                            _ => do c <- check rigl
                                                elabinfo -- without preciseInf
                                                nest env nVal (Just (gnf env tyv))
-                                    pure (fst c, snd c, rigl |*| rigc))
+                                    pure (fst c, snd c, rigl))
          let env' : Env Term (n :: _) = Lam fc rigb Explicit tyv :: env
          let nest' = weaken (dropName n nest)
          expScope <- weakenExp env' expty

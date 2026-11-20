@@ -9,13 +9,13 @@ Test1:4:8--4:22
             ^^^^^^^^^^^^^^
 
 1/1: Building Test2 (Test2.idr)
-Error: While processing right hand side of f. Main.G is not accessible in this context.
+Error: While processing right hand side of f. Can't match on (arg : Foo ?x') -> ?_ (Erased argument).
 
-Test2:8:12--8:13
- 4 | G yv = Foo yv -> Bool
+Test2:9:13--9:24
  5 |
  6 | partial
  7 | f : (0 x : Nat) -> Nat
  8 | f x = case G x of
-                ^
+ 9 |            (Foo x' -> _) => x'
+                 ^^^^^^^^^^^
 
