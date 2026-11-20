@@ -145,7 +145,7 @@ findLinear top bound rig tm
            _ => pure []
     where
       accessible : NameType -> RigCount -> RigCount
-      accessible Func r = if top then r else erased
+      accessible Func r = if top then r else plusNeutral
       accessible _ r = r
 
       findLinArg : {vars : _} ->

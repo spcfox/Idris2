@@ -165,9 +165,9 @@ toCExpTm n (Bind fc x (Lam {}) sc)
     = pure $ CLam fc x !(toCExp n sc)
 toCExpTm n (Bind fc x (Let _ rig val _) sc)
     = do sc' <- toCExp n sc
-         pure $ branchZero (shrinkCExp (Drop Refl) sc')
-                        (CLet fc x YesInline !(toCExp n val) sc')
-                        rig
+         if isErased rig
+            then pure $ shrinkCExp (Drop Refl) sc'
+            else pure $ CLet fc x YesInline !(toCExp n val) sc'
 toCExpTm n (Bind fc x (Pi _ c e ty) sc)
     = pure $ CCon fc (UN (Basic "->")) TYCON Nothing
                      [ !(toCExp n ty)

@@ -173,14 +173,11 @@ mutual
            defs <- get Ctxt
            Just gdef <- lookupCtxtExact (Resolved idx) (gamma defs)
                 | _ => undefinedName fc n
-           let expand = branchZero
-                          (case type gdef of
-                                Erased {} => True -- defined elsewhere, need to expand
-                                _ => False)
-                          (case definition gdef of
-                                PMDef {} => True
-                                _ => False)
-                          rig
+           let expand = if isErased rig
+                          then isErased (type gdef)
+                          else case definition gdef of
+                                    PMDef {} => True
+                                    _ => False
            logC "quantity" 10 $ do
              def <- case definition gdef of
                          PMDef _ _ (STerm _ tm) _ _ =>

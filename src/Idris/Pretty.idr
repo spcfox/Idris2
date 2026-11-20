@@ -195,11 +195,10 @@ mutual
         forall_ <++> commaSep (map (prettyBinder . val) (forget names)) <++> dot <++> pretty scope
     prettyPrec d (PPi _ rig Explicit Nothing arg ret) =
       parenthesise (d > startPrec) $ group $
-        branchVal
-          (pretty arg <++> arrow <++> pretty ret)
-          (parens (prettyRig rig <+> "_" <++> colon <++> pretty arg)
-                  <++> arrow <+> softline <+> pretty ret)
-          rig
+        if rig == top
+          then pretty arg <++> arrow <++> pretty ret
+          else parens (prettyRig rig <+> "_" <++> colon <++> pretty arg)
+                      <++> arrow <+> softline <+> pretty ret
     prettyPrec d (PPi _ rig Explicit (Just n) arg ret) =
       parenthesise (d > startPrec) $ group $
         parens (prettyRig rig <+> prettyBinder n
@@ -217,12 +216,11 @@ mutual
              <++> arrow <+> softline <+> pretty ret
     prettyPrec d (PPi _ rig AutoImplicit Nothing arg ret) =
       parenthesise (d > startPrec) $ group $
-        branchVal
-          (pretty arg <++> fatArrow <+> softline <+> pretty ret)
-          (braces (auto_ <++> prettyRig rig <+> "_"
-                <++> colon <++> pretty arg)
-                <++> arrow <+> softline <+> pretty ret)
-          rig
+        if rig == top
+          then pretty arg <++> fatArrow <+> softline <+> pretty ret
+          else braces (auto_ <++> prettyRig rig <+> "_"
+                      <++> colon <++> pretty arg)
+                      <++> arrow <+> softline <+> pretty ret
     prettyPrec d (PPi _ rig AutoImplicit (Just n) arg ret) =
       parenthesise (d > startPrec) $ group $
         braces (auto_ <++> prettyRig rig <+> prettyBinder n

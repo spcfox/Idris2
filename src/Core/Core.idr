@@ -276,10 +276,9 @@ Show Error where
   show ImpossibleCase
        = "Case is impossible (not an error)"
   show (LinearUsed fc count n)
-      = branchZero
-          (show fc ++ ":Linear name " ++ show n ++ " is not used")
-          (show fc ++ ":Non-linear use of linear name " ++ show n)
-          count
+      = if count == erased
+          then show fc ++ ":Linear name " ++ show n ++ " is not used"
+          else show fc ++ ":Non-linear use of linear name " ++ show n
   show (LinearMisuse fc n exp ctx)
       = show fc ++ ":Trying to use " ++ showRig exp ++ " name " ++ show n ++
                    " in " ++ showRel ctx ++ " context"

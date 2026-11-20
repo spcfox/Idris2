@@ -210,9 +210,10 @@ getRelevantArg : {auto c : Ref Ctxt Defs} ->
                  Defs -> Nat -> Maybe Nat -> Bool -> ClosedNF ->
                  Core (Maybe (Bool, Nat))
 getRelevantArg defs i rel world (NBind fc _ (Pi _ rig _ val) sc)
-    = branchZero (getRelevantArg defs (1 + i) rel world
-                              !(sc defs (toClosure defaultOpts Env.empty (Erased fc Placeholder))))
-                 (case !(evalClosure defs val) of
+    = if isErased rig
+         then getRelevantArg defs (1 + i) rel world
+                              !(sc defs (toClosure defaultOpts Env.empty (Erased fc Placeholder)))
+         else case !(evalClosure defs val) of
                        -- %World is never inspected, so might as well be deleted from data types,
                        -- although it needs care when compiling to ensure that the function that
                        -- returns the IO/%World type isn't erased
@@ -226,8 +227,7 @@ getRelevantArg defs i rel world (NBind fc _ (Pi _ rig _ val) sc)
                            maybe (do sc' <- sc defs (toClosure defaultOpts Env.empty (Erased fc Placeholder))
                                      getRelevantArg defs (1 + i) (Just i) False sc')
                                  (const (pure Nothing))
-                                 rel)
-                 rig
+                                 rel
 getRelevantArg defs i rel world tm
     = pure ((world,) <$> rel)
 
