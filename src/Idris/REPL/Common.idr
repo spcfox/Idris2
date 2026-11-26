@@ -273,7 +273,7 @@ equivTypes ty1 ty2 =
      b <- catch
            (do res <- unify inTerm EmptyFC Env.empty ty1 ty2
                case res of
-                 (MkUnifyResult [] _ [] NoLazy) => pure True
+                 (MkUnifyResult [] _ [] []) => pure True
                  _ => pure False)
            (\err => pure False)
      when b $ logTerm "typesearch.equiv" 20 "Accepted: " ty1

@@ -73,13 +73,12 @@ Show UnifyMode where
 -- explicit force or delay to the first argument to unification. This says
 -- which to add, if any. Can only added at the very top level.
 public export
-data AddLazy = NoLazy | AddForce LazyReason | AddDelay LazyReason
+data AddLazy = AddForce LazyReason | AddDelay LazyReason
 
 export
 Show AddLazy where
-  show NoLazy = "NoLazy"
-  show (AddForce _) = "AddForce"
-  show (AddDelay _) = "AddDelay"
+  show (AddForce r) = "AddForce " ++ show r
+  show (AddDelay r) = "AddDelay " ++ show r
 
 public export
 record UnifyResult where
@@ -87,27 +86,27 @@ record UnifyResult where
   constraints : List Int
   holesSolved : Bool -- did we solve any holes
   namesSolved : List Int -- which ones did we solve (as name indices)
-  addLazy : AddLazy
+  addLazy : List AddLazy
 
 union : UnifyResult -> UnifyResult -> UnifyResult
 union u1 u2 = MkUnifyResult (union (constraints u1) (constraints u2))
                             (holesSolved u1 || holesSolved u2)
                             (namesSolved u1 ++ namesSolved u2)
-                            NoLazy -- only top level, so assume no annotation
+                            [] -- only top level, so assume no annotation
 
 unionAll : List UnifyResult -> UnifyResult
-unionAll [] = MkUnifyResult [] False [] NoLazy
+unionAll [] = MkUnifyResult [] False [] []
 unionAll [c] = c
 unionAll (c :: cs) = union c (unionAll cs)
 
 constrain : Int -> UnifyResult
-constrain c = MkUnifyResult [c] False [] NoLazy
+constrain c = MkUnifyResult [c] False [] []
 
 success : UnifyResult
-success = MkUnifyResult [] False [] NoLazy
+success = MkUnifyResult [] False [] []
 
 solvedHole : Int -> UnifyResult
-solvedHole n = MkUnifyResult [] True [n] NoLazy
+solvedHole n = MkUnifyResult [] True [n] []
 
 public export
 interface Unify tm where
@@ -1279,11 +1278,11 @@ mutual
             -- given type delayed, expected unknown, so let's wait and see
             -- what the expected type turns out to be
             then postpone loc mode "Postponing in lazy" env x tmy
-            else do vs <- unify (lower mode) loc env tmx tmy
-                    pure ({ addLazy := AddForce r } vs)
+            else do vs <- unifyWithLazy (lower mode) loc env tmx tmy
+                    pure ({ addLazy $= (AddForce r ::) } vs)
     unifyWithLazyD _ _ mode loc env tmx (NDelayed _ r tmy)
-       = do vs <- unify (lower mode) loc env tmx tmy
-            pure ({ addLazy := AddDelay r } vs)
+       = do vs <- unifyWithLazy (lower mode) loc env tmx tmy
+            pure ({ addLazy $= (AddDelay r ::) } vs)
     unifyWithLazyD _ _ mode loc env tmx tmy
        = unify mode loc env tmx tmy
 
@@ -1412,6 +1411,48 @@ forceMeta r (S k) (Bind fc n b sc)
     = Bind fc n b (forceMeta r k sc)
 forceMeta r envb tm = TForce (getLoc tm) r tm
 
+export
+wrapLazy : {auto c : Ref Ctxt Defs} ->
+           {vars : _} ->
+           FC -> Env Term vars ->
+           List AddLazy -> Term vars -> Glued vars ->
+           Core (Term vars, Glued vars)
+wrapLazy _ _ [] tm got = pure (tm, got)
+wrapLazy fc env vs tm got
+    = do defs <- get Ctxt
+         ty <- getTerm got
+         ty <- normaliseHoles defs env ty
+         log "elab" 5 $ "Lazy wrappers: " ++ show vs
+         logTerm "elab" 5 "Got term" tm
+         logTerm "elab" 5 "Got type" ty
+         (tm', ty') <- go vs tm ty
+         logTerm "elab" 5 "Wrapped term" tm'
+         logTerm "elab" 5 "Wrapped type" ty'
+         pure (tm', gnf env ty')
+  where
+    go : List AddLazy -> Term vars -> Term vars -> Core (Term vars, Term vars)
+    go [] tm ty = pure (tm, ty)
+    go (AddForce r :: rest) tm (TDelayed _ r' ty)
+      = do when (r /= r') $ -- We expect this never to happen
+             throw $ InternalError $ "Type mismatch in wrapLazyMeta: expected delayed type with reason " ++ show r ++ ", got " ++ show r'
+           mapFst (TForce fc r) <$> go rest tm ty
+    go (AddForce _ :: _) _ ty
+      = throw $ InternalError $ "Type mismatch in wrapLazyMeta: expected delayed type, got " ++ show ty
+    -- go (AddDelay r :: rest) tm ty = bimap (TDelay fc r ty) (TDelayed (getLoc ty) r) <$> go rest tm ty
+    go (AddDelay r :: rest) tm ty
+      = do (tm, ty) <- go rest tm ty
+           pure (TDelay fc r ty tm, TDelayed (getLoc ty) r ty)
+
+wrapLazyMeta : {auto c : Ref Ctxt Defs} ->
+               FC -> Nat -> List AddLazy -> ClosedTerm ->
+               Core ClosedTerm
+wrapLazyMeta _ _ [] tm = pure tm
+wrapLazyMeta fc envb vs tm = go envb Env.empty tm
+  where
+    go : {vars : _} -> Nat -> Env Term vars -> Term vars -> Core (Term vars)
+    go (S k) env (Bind fc n b sc) = Bind fc n b <$> go k (b :: env) sc
+    go _ env tm = fst <$> wrapLazy fc env vs tm !(getType env tm)
+
 -- Check whether it's worth trying a search again, based on what went wrong
 recoverable : Error -> Bool
 recoverable (UndefinedName {}) = False
@@ -1466,26 +1507,14 @@ retryGuess mode smode (hid, (loc, hname))
                                      _ => mode
                     cs <- retry umode constr
                     case constraints cs of
-                         [] => do tm' <- case addLazy cs of
-                                           NoLazy => pure tm
-                                           AddForce r => pure $ forceMeta r envb tm
-                                           AddDelay r =>
-                                              do ty <- getType Env.empty tm
-                                                 logTerm "unify.retry" 5 "Retry Delay" tm
-                                                 pure $ delayMeta r envb !(getTerm ty) tm
+                         [] => do tm' <- wrapLazyMeta loc envb (addLazy cs) tm
                                   let gdef = { definition := PMDef (MkPMDefInfo NotHole True False)
                                                                    Scope.empty (STerm 0 tm') (STerm 0 tm') [] } def
                                   logTerm "unify.retry" 5 ("Resolved " ++ show hname) tm'
                                   ignore $ addDef (Resolved hid) gdef
                                   removeGuess hid
                                   pure (holesSolved cs)
-                         newcs => do tm' <- case addLazy cs of
-                                           NoLazy => pure tm
-                                           AddForce r => pure $ forceMeta r envb tm
-                                           AddDelay r =>
-                                              do ty <- getType Env.empty tm
-                                                 logTerm "unify.retry" 5 "Retry Delay (constrained)" tm
-                                                 pure $ delayMeta r envb !(getTerm ty) tm
+                         newcs => do tm' <- wrapLazyMeta loc envb (addLazy cs) tm
                                      let gdef = { definition := Guess tm' envb newcs } def
                                      ignore $ addDef (Resolved hid) gdef
                                      pure False
