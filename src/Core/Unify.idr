@@ -226,7 +226,7 @@ postpone loc mode logstr env x y
          checkDefined defs x
          checkDefined defs y
 
-         c <- addConstraint (MkConstraint loc (atTop mode) env x y)
+         c <- addConstraint (MkConstraint loc (atTop mode && !isLazyActive) env x y)
          log "unify.postpone" 10 $
                  show c ++ " NEW CONSTRAINT " ++ show loc
          logNF "unify.postpone" 10 "X" env x
