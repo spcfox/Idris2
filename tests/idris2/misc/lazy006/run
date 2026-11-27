@@ -1,0 +1,7 @@
+. ../../../testutils.sh
+
+run Issue1900.idr
+echo "------"
+run HoleType.idr
+echo "------"
+run Twice.idr

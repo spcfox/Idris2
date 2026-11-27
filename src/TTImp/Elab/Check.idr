@@ -376,6 +376,16 @@ implBindVar fc rig env n ty
          pure tm
 
 export
+metaVarL : {vars : _} ->
+           {auto c : Ref Ctxt Defs} ->
+           {auto u : Ref UST UState} ->
+           FC -> RigCount ->
+           Env Term vars -> Name -> Term vars -> Core (Term vars)
+metaVarL fc rig env n ty
+    = do (_, tm) <- newMeta fc rig env n ty (Hole (length env) ({ preserveLazy := True } (holeInit False))) True
+         pure tm
+
+export
 metaVarI : {vars : _} ->
            {auto c : Ref Ctxt Defs} ->
            {auto u : Ref UST UState} ->

@@ -241,7 +241,13 @@ checkLet : {vars : _} ->
 checkLet rigc_in elabinfo nest env fc lhsFC rigl n nTy nVal scope expty {vars}
     = do let rigc = if isErased rigc_in then erased else linear
          u <- uniVar fc
-         (tyv, tyt) <- check erased elabinfo nest env nTy (Just (gType fc u))
+
+         tyv <- case nTy of
+                     -- Preserve delayed wrappers when inferring an omitted let type
+                     Implicit {} => do nm <- genName "letTy"
+                                       metaVarL (getFC nTy) erased env nm (TType fc u)
+                     _ => fst <$> check erased elabinfo nest env nTy (Just (gType fc u))
+
          -- Try checking at the given multiplicity; if that doesn't work,
          -- try checking at Rig1 (meaning that we're using a linear variable
          -- so the resulting binding should be linear)

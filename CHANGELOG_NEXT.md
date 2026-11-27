@@ -111,6 +111,8 @@ should target this file (`CHANGELOG_NEXT`).
 * Improved checking of impossible clauses with omitted arguments.
 * Improved interactive case splitting by recognising uninhabited types.
 * Fixed interactive case splitting to reject invalid generated clauses (#1849).
+* Fixed inference of let-binding types to preserve delayed values instead of
+  forcing them prematurely.
 
 ### Building/Packaging changes
 

@@ -1230,9 +1230,9 @@ mutual
       isDelay (NDelayed {}) = True
       isDelay _ = False
 
-  isHoleApp : NF vars -> Bool
-  isHoleApp (NApp _ (NMeta {}) _) = True
-  isHoleApp _ = False
+  isHoleApp : NF vars -> Maybe Int
+  isHoleApp (NApp _ (NMeta _ i _) _) = Just i
+  isHoleApp _ = Nothing
 
   export
   Unify NF where
@@ -1242,7 +1242,7 @@ mutual
         = do defs <- get Ctxt
              logNF "unify" 10 "EtaR" env tmx
              logNF "unify" 10 "...with" env tmy
-             if isHoleApp tmy
+             if isJust $ isHoleApp tmy
                 then if not !(convert defs env tmx tmy)
                         then unifyNoEta (lower mode) loc env tmx tmy
                         else pure success
@@ -1258,7 +1258,7 @@ mutual
         = do defs <- get Ctxt
              logNF "unify" 10 "EtaL" env tmx
              logNF "unify" 10 "...with" env tmy
-             if isHoleApp tmx
+             if isJust $ isHoleApp tmx
                 then if not !(convert defs env tmx tmy)
                         then unifyNoEta (lower mode) loc env tmx tmy
                         else pure success
@@ -1275,12 +1275,19 @@ mutual
     unifyWithLazyD _ _ mode loc env (NDelayed _ _ tmx) (NDelayed _ _ tmy)
        = unify (lower mode) loc env tmx tmy
     unifyWithLazyD _ _ mode loc env x@(NDelayed _ r tmx) tmy
-       = if isHoleApp tmy && not (umode mode == InMatch)
-            -- given type delayed, expected unknown, so let's wait and see
-            -- what the expected type turns out to be
-            then postpone loc mode "Postponing in lazy" env x tmy
-            else do vs <- unify (lower mode) loc env tmx tmy
-                    pure ({ addLazy := AddForce r } vs)
+       = case (isHoleApp tmy, umode mode == InMatch) of
+              (Just i, False) =>
+                do defs <- get Ctxt
+                   Just (Hole _ hf) <- lookupDefExact (Resolved i) (gamma defs)
+                     | _ => postpone loc mode "Postponing in lazy" env x tmy
+                   if hf.preserveLazy
+                      -- Keep the delay in holes marked to preserve lazy values
+                      then unify (lower mode) loc env x tmy
+                      -- Otherwise, wait for the expected type
+                      else postpone loc mode "Postponing in lazy" env x tmy
+              _ =>
+                do vs <- unify (lower mode) loc env tmx tmy
+                   pure ({ addLazy := AddForce r } vs)
     unifyWithLazyD _ _ mode loc env tmx (NDelayed _ r tmy)
        = do vs <- unify (lower mode) loc env tmx tmy
             pure ({ addLazy := AddDelay r } vs)

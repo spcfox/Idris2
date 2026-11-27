@@ -66,10 +66,11 @@ record HoleFlags where
   constructor MkHoleFlags
   implbind : Bool -- stands for an implicitly bound name
   precisetype : Bool -- don't generalise multiplicities when instantiating
+  preserveLazy : Bool -- don't force evaluation of the term when instantiating
 
 export
 holeInit : Bool -> HoleFlags
-holeInit b = MkHoleFlags b False
+holeInit b = MkHoleFlags b False False
 
 public export
 data Def : Type where
