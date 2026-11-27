@@ -153,6 +153,9 @@ Hashable ty => Hashable (Binder ty) where
 Hashable (Var vars) where
   hashWithSalt h (MkVar {varIdx = i} _) = hashWithSalt h i
 
+Hashable MetaInfo where
+  hashWithSalt h (MkMetaInfo i) = hashWithSalt h i
+
 mutual
   export
   Hashable (Term vars) where

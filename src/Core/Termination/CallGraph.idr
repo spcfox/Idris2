@@ -178,7 +178,7 @@ mutual
   sizeCompare fuel s@(Meta {}) t@(Meta {}) = pure (if sizeEq s t then Same else Unknown)
   -- otherwise try to expand RHS meta
   sizeCompare fuel s@(Meta n _ i args) t = do
-    Just gdef <- lookupCtxtExact (Resolved i) (gamma defs) | _ => pure Unknown
+    Just gdef <- lookupCtxtExact (Resolved i.metaIndex) (gamma defs) | _ => pure Unknown
     let (PMDef _ [] (STerm _ tm) _ _) = definition gdef | _ => pure Unknown
     tm <- substMeta (embed tm) args zero Subst.empty
     sizeCompare fuel tm t

@@ -484,14 +484,14 @@ mutual
              when (onLHS (elabMode elabinfo)) $
                 case aty' of
                      NApp _ (NMeta _ i _) _ =>
-                          do Just gdef <- lookupCtxtExact (Resolved i) (gamma defs)
+                          do Just gdef <- lookupCtxtExact (Resolved i.metaIndex) (gamma defs)
                                   | Nothing => pure ()
-                             when (isErased (multiplicity gdef)) $ addNoSolve i
+                             when (isErased (multiplicity gdef)) $ addNoSolve i.metaIndex
                      _ => pure ()
              res <- check argRig ({ topLevel := False } elabinfo) nest env arg (Just $ glueBack defs env aty')
              when (onLHS (elabMode elabinfo)) $
                 case aty' of
-                     NApp _ (NMeta _ i _) _ => removeNoSolve i
+                     NApp _ (NMeta _ i _) _ => removeNoSolve i.metaIndex
                      _ => pure ()
 
              (argv, argt) <-

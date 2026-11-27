@@ -436,7 +436,7 @@ HasNames (Term vars) where
            pure (Ref fc x (fullname gdef))
   full gam (Meta fc x i xs)
       = do xs <- traverse (full gam) xs
-           pure $ case !(lookupCtxtExact (Resolved i) gam) of
+           pure $ case !(lookupCtxtExact (Resolved i.metaIndex) gam) of
              Nothing => Meta fc x i xs
              Just gdef => Meta fc (fullname gdef) i xs
   full gam (Bind fc x b scope)
@@ -463,11 +463,11 @@ HasNames (Term vars) where
       = do let Just i = getNameID n gam
                 | Nothing => pure (Ref fc x n)
            pure (Ref fc x (Resolved i))
-  resolved gam (Meta fc x y xs)
+  resolved gam (Meta fc nm info xs)
       = do xs' <- traverse (resolved gam) xs
-           let Just i = getNameID x gam
-               | Nothing => pure (Meta fc x y xs')
-           pure (Meta fc x i xs')
+           let Just i = getNameID nm gam
+               | Nothing => pure (Meta fc nm info xs')
+           pure (Meta fc nm ({ metaIndex := i } info) xs')
   resolved gam (Bind fc x b scope)
       = pure (Bind fc x !(traverse (resolved gam) b) !(resolved gam scope))
   resolved gam (App fc fn arg)

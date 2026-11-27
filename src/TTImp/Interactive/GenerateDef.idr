@@ -62,8 +62,9 @@ expandClause loc opts n c
                                    -- appropriate
 
          let MkClause {vars} env lhs rhs = clause
-         let Meta _ i fn _ = getFn rhs
+         let Meta _ i info _ = getFn rhs
             | _ => throw (GenericMsg loc "No searchable hole on RHS")
+         let fn = info.metaName
          defs <- get Ctxt
          Just (Hole locs _) <- lookupDefExact (Resolved fn) (gamma defs)
             | _ => throw (GenericMsg loc "No searchable hole on RHS")

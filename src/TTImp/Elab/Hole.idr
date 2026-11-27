@@ -18,7 +18,7 @@ import TTImp.TTImp
 mkPrecise : {auto c : Ref Ctxt Defs} ->
             NF vars -> Core ()
 mkPrecise (NApp _ (NMeta n i _) _)
-    = updateDef (Resolved i)
+    = updateDef (Resolved i.metaIndex)
                 (\case
                     Hole i p => Just (Hole i ({ precisetype := True} p))
                     d => Nothing)

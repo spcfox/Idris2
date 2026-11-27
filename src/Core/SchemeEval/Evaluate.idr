@@ -22,7 +22,7 @@ mutual
   data SHead : Scoped where
        SLocal : (idx : Nat) -> (0 p : IsVar nm idx vars) -> SHead vars
        SRef : NameType -> Name -> SHead vars
-       SMeta : Name -> Int -> List (Core (SNF vars)) -> SHead vars
+       SMeta : Name -> MetaInfo -> List (Core (SNF vars)) -> SHead vars
 
   public export
   data SNF : Scoped where
@@ -160,7 +160,7 @@ mutual
            defs <- get Ctxt
            fnameF <- toFullNames fname
            (idx, _) <- getPosition fname (gamma defs)
-           pure (apply emptyFC (Meta emptyFC fnameF idx (take arity args))
+           pure (apply emptyFC (Meta emptyFC fnameF (MkMetaInfo idx) (take arity args))
                                (drop arity args))
   quoteVector svs (-11) [_, loc_in, args_in] -- Blocked local var application
       = do loc <- quote' svs loc_in
@@ -400,7 +400,7 @@ mutual
            defs <- get Ctxt
            fnameF <- toFullNames fname
            (idx, _) <- getPosition fnameF (gamma defs)
-           pure (SApp emptyFC (SMeta fnameF idx (take arity args))
+           pure (SApp emptyFC (SMeta fnameF (MkMetaInfo idx) (take arity args))
                                (drop arity args))
   snfVector svs (-11) [_, loc_in, args_in] -- Blocked local var application
       = do SApp fc loc args <- snf' svs loc_in

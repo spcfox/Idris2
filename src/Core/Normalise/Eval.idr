@@ -261,13 +261,13 @@ parameters (defs : Defs) (topopts : EvalOpts)
     evalMeta : {auto c : Ref Ctxt Defs} ->
                {free : _} ->
                Env Term free ->
-               FC -> Name -> Int -> List (Closure free) ->
+               FC -> Name -> MetaInfo -> List (Closure free) ->
                Stack free -> Core (NF free)
     evalMeta env fc nm i args stk
         = let args' = if isNil stk then map (EmptyFC,) args
                          else map (EmptyFC,) args ++ stk
                         in
-              evalRef env True fc Func (Resolved i) args'
+              evalRef env True fc Func (Resolved i.metaIndex) args'
                           (NApp fc (NMeta nm i args) stk)
 
     -- The commented out logging here might still be useful one day, but

@@ -375,7 +375,7 @@ getToBind {vars} fc elabmode impmode env excepts
                 -- n reduces to another hole, n', so treat it as that as long
                 -- as it isn't already done
                 (Meta _ n' i margs, args) =>
-                    do hole <- isCurrentHole i
+                    do hole <- isCurrentHole i.metaIndex
                        if hole && not (n' `elem` ns)
                           then do rest <- normImps defs (n' :: ns) ts
                                   btynf <- normBindingTy defs bty

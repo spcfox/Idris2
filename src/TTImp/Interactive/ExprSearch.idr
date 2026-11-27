@@ -573,7 +573,7 @@ makeHelper fc rig opts env letty targetty ((locapp, ds) :: next)
     -- convert a metavar application (as created by 'metaVar') to a normal
     -- application (as required by a case block)
     toApp : forall vars . Term vars -> Term vars
-    toApp (Meta fc n i args) = apply fc (Ref fc Func (Resolved i)) args
+    toApp (Meta fc n i args) = apply fc (Ref fc Func (Resolved i.metaIndex)) args
     toApp tm = tm
 
 

@@ -115,14 +115,14 @@ mutual
       = updateHoleUsage useInHole (MkVar (Later var)) (map weaken zs) sc
   updateHoleUsage useInHole var zs (Meta fc n i args)
       = do defs <- get Ctxt
-           Just gdef <- lookupCtxtExact (Resolved i) (gamma defs)
+           Just gdef <- lookupCtxtExact (Resolved i.metaIndex) (gamma defs)
                 | Nothing => updateHoleUsageArgs useInHole var zs args
            -- only update for holes with no definition yet
            case definition gdef of
                 Hole {} =>
                    do let ty = type gdef
                       ty' <- updateHoleType useInHole var zs ty args
-                      updateTy i ty'
+                      updateTy i.metaIndex ty'
                       logTerm "quantity.hole.update" 5 ("New type of " ++
                                  show (fullname gdef)) ty'
                       logTerm "quantity.hole.update" 5 ("Updated from " ++
@@ -185,10 +185,10 @@ mutual
   -- Otherwise, don't count variable usage in holes, so as far as linearity
   -- checking is concerned, update the type so that the binders
   -- are in Rig0
-  lcheck {vars} rig erase env (Meta fc n idx args)
+  lcheck {vars} rig erase env (Meta fc n info args)
       = do log "quantity" 15 "lcheck Meta"
            defs <- get Ctxt
-           Just gdef <- lookupCtxtExact (Resolved idx) (gamma defs)
+           Just gdef <- lookupCtxtExact (Resolved info.metaIndex) (gamma defs)
                 | _ => undefinedName fc n
            let expand = branchZero
                           (case type gdef of
@@ -207,13 +207,13 @@ mutual
              pure (show rig ++ ": " ++ show n ++ " " ++ show fc ++ "\n"
                      ++ show def)
            if expand
-              then expandMeta rig erase env n idx (definition gdef) args
+              then expandMeta rig erase env n (definition gdef) args
               else do let ty : ClosedTerm
                              = case definition gdef of
                                     Hole {} => unusedHoleArgs args (type gdef)
                                     _ => type gdef
                       nty <- nf defs env (embed ty)
-                      lcheckMeta rig erase env fc n idx args [] nty
+                      lcheckMeta rig erase env fc n info args [] nty
     where
       unusedHoleArgs : List a -> Term vs -> Term vs
       unusedHoleArgs (_ :: args) (Bind bfc n (Pi fc _ e ty) sc)
@@ -609,9 +609,9 @@ mutual
                {auto c : Ref Ctxt Defs} ->
                {auto u : Ref UST UState} ->
                RigCount -> (erase : Bool) -> Env Term vars ->
-               Name -> Int -> Def -> List (Term vars) ->
+               Name -> Def -> List (Term vars) ->
                Core (Term vars, Glued vars, Usage vars)
-  expandMeta rig erase env n idx (PMDef _ [] (STerm _ fn) _ _) args
+  expandMeta rig erase env n (PMDef _ [] (STerm _ fn) _ _) args
       = do tm <- substMeta (embed fn) args zero Subst.empty
            lcheck rig erase env tm
     where
@@ -625,18 +625,18 @@ mutual
           = substMeta (subst val sc) as drop env
       substMeta rhs [] drop env = pure (substs drop env rhs)
       substMeta rhs _ _ _ = throw (InternalError ("Badly formed metavar solution " ++ show n ++ " " ++ show fn))
-  expandMeta rig erase env n idx def _
+  expandMeta rig erase env n def _
       = throw (InternalError ("Badly formed metavar solution " ++ show n ++ " " ++ show def))
 
   lcheckMeta : {vars : _} ->
                {auto c : Ref Ctxt Defs} ->
                {auto u : Ref UST UState} ->
                RigCount -> Bool -> Env Term vars ->
-               FC -> Name -> Int ->
+               FC -> Name -> MetaInfo ->
                (args : List (Term vars)) ->
                (checked : List (Term vars)) ->
                NF vars -> Core (Term vars, Glued vars, Usage vars)
-  lcheckMeta rig erase env fc n idx
+  lcheckMeta rig erase env fc n info
              (arg :: args) chk (NBind _ _ (Pi _ rigf _ ty) sc)
       = do let checkRig = rigf |*| rig
            (arg', gargTy, aused) <- lcheck checkRig erase env arg
@@ -645,19 +645,19 @@ mutual
            let aerased = if erase && isErased rigf
                             then Erased fc Placeholder
                             else arg'
-           (tm, gty, u) <- lcheckMeta rig erase env fc n idx args
+           (tm, gty, u) <- lcheckMeta rig erase env fc n info args
                                       (aerased :: chk) sc'
            pure (tm, gty, aused ++ u)
-  lcheckMeta rig erase env fc n idx (arg :: args) chk nty
+  lcheckMeta rig erase env fc n info (arg :: args) chk nty
       = do defs <- get Ctxt
            empty <- clearDefs defs
            ty <- quote empty env nty
            throw (GenericMsg fc ("Linearity checking failed on metavar "
                       ++ show !(toFullNames n) ++ " (" ++ show !(toFullNames ty)
                       ++ " not a function type)"))
-  lcheckMeta rig erase env fc n idx [] chk nty
+  lcheckMeta rig erase env fc n info [] chk nty
       = do defs <- get Ctxt
-           pure (Meta fc n idx (reverse chk), glueBack defs env nty, [])
+           pure (Meta fc n info (reverse chk), glueBack defs env nty, [])
 
 
 checkEnvUsage : {vars : _} ->

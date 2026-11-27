@@ -493,7 +493,7 @@ addMetas : (usingResolved : Bool) -> NameMap Bool -> Term vars -> NameMap Bool
 addMetas res ns (Local fc x idx y) = ns
 addMetas res ns (Ref fc x name) = ns
 addMetas res ns (Meta fc n i xs)
-  = addMetaArgs (insert (ifThenElse res (Resolved i) n) False ns) xs
+  = addMetaArgs (insert (ifThenElse res (Resolved i.metaIndex) n) False ns) xs
   where
     addMetaArgs : NameMap Bool -> List (Term vars) -> NameMap Bool
     addMetaArgs ns [] = ns

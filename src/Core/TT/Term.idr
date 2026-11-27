@@ -89,6 +89,14 @@ Traversable WhyErased where
   traverse f Impossible = pure Impossible
   traverse f (Dotted x) = Dotted <$> f x
 
+public export
+record MetaInfo where
+  constructor MkMetaInfo
+  metaIndex : Int
+
+export
+Eq MetaInfo where
+  (MkMetaInfo i) == (MkMetaInfo j) = i == j
 
 ------------------------------------------------------------------------
 -- Core Terms
@@ -99,7 +107,7 @@ data Term : Scoped where
              (idx : Nat) -> (0 p : IsVar name idx vars) -> Term vars
      Ref : FC -> NameType -> (name : Name) -> Term vars
      -- Metavariables and the scope they are applied to
-     Meta : FC -> Name -> Int -> List (Term vars) -> Term vars
+     Meta : FC -> Name -> MetaInfo -> List (Term vars) -> Term vars
      Bind : FC -> (x : Name) ->
             (b : Binder (Term vars)) ->
             (scope : Term (Scope.bind vars x)) -> Term vars

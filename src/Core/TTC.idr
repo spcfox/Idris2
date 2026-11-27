@@ -299,6 +299,10 @@ mkPrf : (idx : Nat) -> IsVar n idx ns
 mkPrf {n} {ns} Z = believe_me (First {n} {ns = n :: ns})
 mkPrf {n} {ns} (S k) = believe_me (Later {m=n} (mkPrf {n} {ns} k))
 
+TTC MetaInfo where
+  toBuf (MkMetaInfo _) = pure ()
+  fromBuf = pure (MkMetaInfo 0)
+
 mutual
   export
   {vars : _} -> TTC (Binder (Term vars)) where
@@ -345,7 +349,7 @@ mutual
              toBuf nt; toBuf name
     toBuf (Meta fc n i xs)
         = do tag 2;
-             toBuf n; toBuf xs
+             toBuf n; toBuf xs; toBuf i
     toBuf (Bind fc x bnd scope)
         = do tag 3;
              toBuf x;
@@ -390,7 +394,8 @@ mutual
                        pure (Ref emptyFC nt name)
                2 => do n <- fromBuf
                        xs <- fromBuf
-                       pure (Meta emptyFC n 0 xs) -- needs resolving
+                       i <- fromBuf
+                       pure (Meta emptyFC n i xs) -- needs resolving
                3 => do x <- fromBuf
                        bnd <- fromBuf; scope <- fromBuf
                        pure (Bind emptyFC x bnd scope)

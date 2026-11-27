@@ -467,9 +467,9 @@ concreteDets {vars} fc defaults env top pos dets (arg :: args)
                                      concrete defs argnf False) (map snd args)
     concrete defs (NApp _ (NMeta n i _) _) True
         = do Just (Hole _ b) <- lookupDefExact n (gamma defs)
-                  | _ => throw (DeterminingArg fc n i Env.empty top)
+                  | _ => throw (DeterminingArg fc n i.metaIndex Env.empty top)
              unless (implbind b) $
-                  throw (DeterminingArg fc n i Env.empty top)
+                  throw (DeterminingArg fc n i.metaIndex Env.empty top)
     concrete defs (NApp _ (NMeta n i _) _) False
         = do Just (Hole _ b) <- lookupDefExact n (gamma defs)
                   | def => throw (CantSolveGoal fc (gamma defs) Env.empty top Nothing)

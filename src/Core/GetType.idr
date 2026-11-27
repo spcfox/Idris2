@@ -27,7 +27,7 @@ mutual
            pure $ gnf env (embed ty)
   chk env (Meta fc n i args)
       = do defs <- get Ctxt
-           Just mty <- lookupTyExact (Resolved i) (gamma defs)
+           Just mty <- lookupTyExact (Resolved i.metaIndex) (gamma defs)
                | Nothing => undefinedName fc n
            chkMeta fc env !(nf defs env (embed mty)) args
   chk env (Bind fc nm b sc)

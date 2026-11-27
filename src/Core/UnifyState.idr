@@ -413,7 +413,7 @@ newMetaLets {vars} fc rig env n ty def nocyc lets
          logTerm "unify.meta" 10 ("New meta type " ++ show n) hty
          idx <- addDef n hole
          addHoleName fc n idx
-         pure (idx, Meta fc n idx envArgs)
+         pure (idx, Meta fc n (MkMetaInfo idx) envArgs)
   where
     envArgs : List (Term vars)
     envArgs = let args = reverse (mkConstantAppArgs {done = Scope.empty} lets fc env [<]) in
@@ -459,7 +459,7 @@ newConstant {vars} fc rig env tm ty constrs
          logTerm "unify.constant" 10 ("New constant type " ++ show cn) defty
          idx <- addDef cn guess
          addGuessName fc cn idx
-         pure (Meta fc cn idx envArgs)
+         pure (Meta fc cn (MkMetaInfo idx) envArgs)
   where
     envArgs : List (Term vars)
     envArgs = let args = reverse (mkConstantAppArgs {done = Scope.empty} True fc env [<]) in
@@ -481,7 +481,7 @@ newSearch {vars} fc rig depth def env n ty
          logTermNF "unify.search" 10 "New search type" Env.empty hty
          idx <- addDef n hole
          addGuessName fc n idx
-         pure (idx, Meta fc n idx envArgs)
+         pure (idx, Meta fc n (MkMetaInfo idx) envArgs)
   where
     envArgs : List (Term vars)
     envArgs = let args = reverse (mkConstantAppArgs {done = Scope.empty} False fc env [<]) in
@@ -501,7 +501,7 @@ newDelayed {vars} fc rig env n ty
          idx <- addDef n hole
          log "unify.delay" 10 $ "Added delayed elaborator " ++ show (n, idx)
          addHoleName fc n idx
-         pure (idx, Meta fc n idx envArgs)
+         pure (idx, Meta fc n (MkMetaInfo idx) envArgs)
   where
     envArgs : List (Term vars)
     envArgs = let args = reverse (mkConstantAppArgs {done = Scope.empty} False fc env [<]) in
